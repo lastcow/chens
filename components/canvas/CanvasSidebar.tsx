@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 const NAV = [
   { href: "/canvas/overview",    label: "Overview",    icon: "⊞" },
   { href: "/canvas/students",    label: "Students",    icon: "👥", countKey: "students" },
-  { href: "/canvas/assignments", label: "Assignments", icon: "📋" },
+  { href: "/canvas/assignments", label: "Assignments", icon: "📋", countKey: "ungraded" },
   { href: "/canvas/grades",      label: "Grades",      icon: "📊" },
   { href: "/canvas/atrisk",      label: "At-Risk",     icon: "⚠️" },
   { href: "/canvas",             label: "AI Agent",    icon: "🤖" },
@@ -15,11 +15,22 @@ const NAV = [
 export default function CanvasSidebar() {
   const path = usePathname();
   const [studentCount, setStudentCount] = useState<number | null>(null);
+  const [ungradedCount, setUngradedCount] = useState<number | null>(null);
 
   useEffect(() => {
     fetch("/api/professor/students/count")
       .then(r => r.json())
       .then(d => setStudentCount(d.count ?? null))
+      .catch(() => {});
+
+    fetch("/api/professor/courses")
+      .then(r => r.json())
+      .then(d => {
+        const total = (d.courses ?? []).reduce(
+          (sum: number, c: { ungraded_count: number }) => sum + Number(c.ungraded_count), 0
+        );
+        setUngradedCount(total);
+      })
       .catch(() => {});
   }, []);
 
@@ -47,6 +58,13 @@ export default function CanvasSidebar() {
                   active ? "bg-amber-500/20 text-amber-400" : "bg-gray-800 text-gray-500"
                 }`}>
                   {studentCount}
+                </span>
+              )}
+              {item.countKey === "ungraded" && ungradedCount !== null && ungradedCount > 0 && (
+                <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${
+                  active ? "bg-red-500/20 text-red-400" : "bg-red-900/30 text-red-500"
+                }`}>
+                  {ungradedCount}
                 </span>
               )}
             </Link>
