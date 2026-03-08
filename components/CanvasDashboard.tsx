@@ -9,6 +9,13 @@ interface TaskUsage {
   totalCostUsd: number;
 }
 
+interface ReActStep {
+  step: number;
+  thought?: string;
+  action?: { tool: string; input: Record<string, unknown> };
+  observation?: unknown;
+}
+
 interface Task {
   id: string;
   title: string;
@@ -18,6 +25,7 @@ interface Task {
   result?: { answer: string };
   error?: string;
   usage?: TaskUsage;
+  steps?: ReActStep[];
 }
 
 interface Tool {
@@ -217,7 +225,7 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
 
   const fetchTasks = async () => {
     const res = await fetch("/api/agent/tasks");
-    if (res.ok) { const d = await res.json(); setTasks(d.tasks ?? []); }
+    if (res.ok) { const d = await res.json(); const list = d.tasks ?? []; setTasks(list); schedulePoll(list); }
   };
 
   const fetchTools = async () => {
@@ -235,10 +243,17 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
     await fetchTools();
   };
 
+  // Adaptive polling: 1.5s when a task is running, 5s otherwise
+  const schedulePoll = (taskList: Task[]) => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    const hasRunning = taskList.some(t => t.status === "RUNNING" || t.status === "QUEUED");
+    pollRef.current = setInterval(fetchTasks, hasRunning ? 1500 : 5000);
+  };
+
   useEffect(() => {
     fetchTasks();
     fetchTools();
-    pollRef.current = setInterval(fetchTasks, 3000);
+    pollRef.current = setInterval(fetchTasks, 5000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
@@ -448,7 +463,35 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
                 <div className="mt-4 pt-4 border-t border-gray-800 text-sm space-y-2">
                   {task.usage && <UsageBadge usage={task.usage} />}
                   {task.status === "RUNNING" && (
-                    <p className="text-blue-400 animate-pulse">⟳ Agent is working...</p>
+                    <div className="space-y-1">
+                      {/* Live steps log */}
+                      {task.steps && task.steps.length > 0 ? (
+                        <div className="bg-gray-900/60 rounded-lg px-3 py-2 space-y-1 font-mono text-xs">
+                          {task.steps.map((s) => (
+                            <div key={s.step}>
+                              {s.action && !s.observation && (
+                                <p className="text-blue-300 animate-pulse">
+                                  ⟳ Calling tool: <span className="text-amber-300">{s.action.tool}</span>
+                                </p>
+                              )}
+                              {s.action && s.observation && (
+                                <p className="text-green-400">
+                                  ✓ {s.action.tool} →{" "}
+                                  <span className="text-gray-400">
+                                    {typeof s.observation === "object"
+                                      ? JSON.stringify(s.observation).slice(0, 80) + (JSON.stringify(s.observation).length > 80 ? "…" : "")
+                                      : String(s.observation).slice(0, 80)}
+                                  </span>
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                          <p className="text-blue-400 animate-pulse">⟳ Thinking...</p>
+                        </div>
+                      ) : (
+                        <p className="text-blue-400 animate-pulse text-xs">⟳ Agent starting...</p>
+                      )}
+                    </div>
                   )}
                   {task.status === "FAILED" && (
                     <div className="bg-red-900/20 border border-red-700/40 rounded-lg px-3 py-2">
