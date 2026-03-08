@@ -25,16 +25,18 @@ export default function GradesPage() {
 
   return (
     <div className="space-y-5">
-      {/* Course filter pills */}
-      <div className="flex flex-wrap gap-2">
-        {courses.map(c => (
-          <button key={c} onClick={() => setCourse(c)}
-            className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-              course === c ? "bg-amber-500/10 border-amber-500/30 text-amber-400" : "border-gray-800 text-gray-500 hover:text-gray-300 hover:border-gray-700"
-            }`}>
-            {c === "all" ? "All Courses" : c.replace(/^(ITEC|SCIA)\s/, "$1 ")}
-          </button>
-        ))}
+      {/* Sticky course filter pills */}
+      <div className="sticky top-16 z-10 -mx-1 px-1 py-2 bg-gray-950/90 backdrop-blur-md">
+        <div className="flex flex-wrap gap-2">
+          {courses.map(c => (
+            <button key={c} onClick={() => setCourse(c)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                course === c ? "bg-amber-500/10 border-amber-500/30 text-amber-400" : "border-gray-800 text-gray-500 hover:text-gray-300 hover:border-gray-700"
+              }`}>
+              {c === "all" ? "All Courses" : c.match(/(ITEC|SCIA)\s[\d]+-[\w]+/)?.[0] ?? c.match(/(ITEC|SCIA)\s[\d]+/)?.[0] ?? c}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
