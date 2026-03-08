@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 interface StudentRow {
   name: string; canvas_uid: number; email: string;
   course_name: string; course_canvas_id: number;
+  enrollment_state: string;
   attendance: number; missing_count: number; ungraded_count: number;
   avg_grade: number | null; total_due: number; course_count: number;
 }
@@ -66,15 +67,17 @@ function StudentsContent() {
         );
         if (search && courseRows.length === 0) return null;
 
-        const allRows = rows.filter(r => r.course_canvas_id === cid);
-        const atRisk  = allRows.filter(r => Number(r.missing_count) >= 4 || Number(r.attendance) < 30).length;
-        const watch   = allRows.filter(r => (Number(r.missing_count) >= 2 || Number(r.attendance) < 60) && !(Number(r.missing_count) >= 4 || Number(r.attendance) < 30)).length;
-        const avgAtt  = allRows.length ? (allRows.reduce((s, r) => s + Number(r.attendance), 0) / allRows.length).toFixed(0) : "—";
+        const allRows    = rows.filter(r => r.course_canvas_id === cid);
+        const activeRows = allRows.filter(r => r.enrollment_state === 'active');
+        const inactiveCount = allRows.length - activeRows.length;
+        const atRisk  = activeRows.filter(r => Number(r.missing_count) >= 4 || Number(r.attendance) < 30).length;
+        const watch   = activeRows.filter(r => (Number(r.missing_count) >= 2 || Number(r.attendance) < 60) && !(Number(r.missing_count) >= 4 || Number(r.attendance) < 30)).length;
+        const avgAtt  = activeRows.length ? (activeRows.reduce((s, r) => s + Number(r.attendance), 0) / activeRows.length).toFixed(0) : "—";
         const avgGrade = (() => {
-          const valid = allRows.filter(r => r.avg_grade !== null);
+          const valid = activeRows.filter(r => r.avg_grade !== null);
           return valid.length ? (valid.reduce((s, r) => s + Number(r.avg_grade), 0) / valid.length).toFixed(1) : null;
         })();
-        const totalMissing = allRows.reduce((s, r) => s + Number(r.missing_count), 0);
+        const totalMissing = activeRows.reduce((s, r) => s + Number(r.missing_count), 0);
         const isOpen = open[cid] ?? true;
 
         return (
@@ -91,7 +94,10 @@ function StudentsContent() {
               {/* Course name */}
               <div className="flex-1 min-w-0">
                 <div className="text-white font-semibold text-sm">{courseName}</div>
-                <div className="text-xs text-gray-600 mt-0.5">{allRows.length} students</div>
+                <div className="text-xs text-gray-600 mt-0.5">
+                  {activeRows.length} active
+                  {inactiveCount > 0 && <span className="ml-2 text-gray-700">· {inactiveCount} inactive</span>}
+                </div>
               </div>
 
               {/* Summary pills */}
@@ -147,15 +153,22 @@ function StudentsContent() {
                       <tr><td colSpan={5} className="text-center py-6 text-gray-600">No students match.</td></tr>
                     ) : courseRows.map(r => (
                       <tr key={r.canvas_uid}
-                        className={`hover:bg-gray-800/30 transition-colors border-l-2 ${
-                          Number(r.missing_count) >= 4 || Number(r.attendance) < 30 ? "border-l-red-600" :
-                          Number(r.missing_count) >= 2 || Number(r.attendance) < 60 ? "border-l-amber-500" :
-                          "border-l-transparent"
+                        className={`transition-colors border-l-2 ${
+                          r.enrollment_state === 'inactive'
+                            ? "opacity-40 bg-gray-900/20 border-l-gray-700"
+                            : Number(r.missing_count) >= 4 || Number(r.attendance) < 30 ? "hover:bg-gray-800/30 border-l-red-600"
+                            : Number(r.missing_count) >= 2 || Number(r.attendance) < 60 ? "hover:bg-gray-800/30 border-l-amber-500"
+                            : "hover:bg-gray-800/30 border-l-transparent"
                         }`}>
                         <td className="px-5 py-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-white font-medium">{r.name}</span>
-                            {Number(r.course_count) > 1 && (
+                            {r.enrollment_state === 'inactive' && (
+                              <span className="text-xs bg-gray-800 text-gray-500 border border-gray-700 rounded-full px-1.5 py-0.5 shrink-0">
+                                Inactive
+                              </span>
+                            )}
+                            {Number(r.course_count) > 1 && r.enrollment_state !== 'inactive' && (
                               <span className="text-xs bg-blue-900/30 text-blue-400 border border-blue-700/30 rounded-full px-1.5 py-0.5 shrink-0">
                                 {r.course_count} courses
                               </span>
@@ -164,12 +177,12 @@ function StudentsContent() {
                           <div className="text-xs text-gray-600">{r.email}</div>
                         </td>
                         <td className="text-center px-3 py-3">
-                          <span className={`font-mono font-semibold ${attColor(Number(r.attendance))}`}>
+                          <span className={`font-mono font-semibold ${r.enrollment_state === 'inactive' ? 'text-gray-600' : attColor(Number(r.attendance))}`}>
                             {Number(r.attendance).toFixed(0)}%
                           </span>
                         </td>
                         <td className="text-center px-3 py-3">
-                          <span className={`font-mono font-semibold ${gradeColor(r.avg_grade)}`}>
+                          <span className={`font-mono font-semibold ${r.enrollment_state === 'inactive' ? 'text-gray-600' : gradeColor(r.avg_grade)}`}>
                             {r.avg_grade !== null ? `${r.avg_grade}%` : "—"}
                           </span>
                         </td>
@@ -178,7 +191,9 @@ function StudentsContent() {
                             ? <span className="text-red-400 font-semibold">{r.missing_count}</span>
                             : <span className="text-gray-700">0</span>}
                         </td>
-                        <td className="text-center px-3 py-3">{riskBadge(r)}</td>
+                        <td className="text-center px-3 py-3">
+                          {r.enrollment_state === 'inactive' ? <span className="text-xs text-gray-600">—</span> : riskBadge(r)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
