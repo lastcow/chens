@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import CanvasTokenCard from "@/components/canvas/CanvasTokenCard";
 
 interface Course {
   id: number; canvas_id: number; name: string; course_code: string;
@@ -20,6 +21,9 @@ export default function OverviewPage() {
 
   return (
     <div className="space-y-6">
+      {/* Canvas token */}
+      <CanvasTokenCard />
+
       {/* Summary stat cards */}
       <div className="grid grid-cols-3 gap-4">
         {[

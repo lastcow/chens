@@ -299,40 +299,26 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
 
   return (
     <div className="space-y-6">
-      {/* Token status bar */}
-      <div className={`flex items-center justify-between px-4 py-3 rounded-lg border ${
-        tokenMasked
-          ? "border-green-500/20 bg-green-500/5"
-          : "border-red-500/20 bg-red-500/5"
-      }`}>
-        <div className="flex items-center gap-2 text-sm">
-          <span>{tokenMasked ? "🔓" : "🔒"}</span>
-          {tokenMasked
-            ? <span className="text-gray-300">Canvas token saved: <code className="font-mono text-green-400">{tokenMasked}</code></span>
-            : <span className="text-red-400">No Canvas token — agent tasks will fail</span>
-          }
-        </div>
-        <button
-          onClick={() => setShowTokenForm(!showTokenForm)}
-          className="text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 rounded px-3 py-1 transition-colors"
-        >
-          {tokenMasked ? "Update Token" : "Add Token"}
-        </button>
+      {/* Notice — token management moved to Overview */}
+      <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-700/50 bg-gray-800/30 text-sm text-gray-500">
+        <span>🔑</span>
+        <span>Canvas token is managed from the <a href="/canvas/overview" className="text-amber-400 hover:underline">Overview</a> page.</span>
       </div>
 
-      {/* Token setup form */}
-      {(!tokenMasked || showTokenForm) && (
-        <CanvasTokenSetup
-          onSaved={(masked) => {
-            setTokenMasked(masked);
-            setShowTokenForm(false);
-          }}
-        />
-      )}
-
-      {/* Task submission */}
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-4">🤖 Run Agent Task</h2>
+      {/* Task submission — disabled overlay */}
+      <div className="relative">
+        <div className="absolute inset-0 z-10 bg-gray-950/60 rounded-xl backdrop-blur-[1px] flex items-start justify-center pt-8 pointer-events-auto">
+          <div className="text-center">
+            <div className="text-2xl mb-2">🚧</div>
+            <div className="text-sm font-semibold text-gray-400">AI Agent coming soon</div>
+            <div className="text-xs text-gray-600 mt-1">Manage your Canvas token on the <a href="/canvas/overview" className="text-amber-400 hover:underline">Overview</a> page</div>
+          </div>
+        </div>
+      <div className="card pointer-events-none select-none">
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-lg font-semibold">🤖 Run Agent Task</h2>
+          <span className="text-xs bg-gray-800 text-gray-500 border border-gray-700 rounded-full px-2 py-0.5">Coming soon</span>
+        </div>
         <form onSubmit={submitTask} className="space-y-4">
           {/* Model selector */}
           <div>
@@ -515,6 +501,8 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
           ))}
         </div>
       )}
+
+      </div>{/* end relative overlay wrapper */}
 
       {/* Tools */}
       {activeTab === "tools" && (
