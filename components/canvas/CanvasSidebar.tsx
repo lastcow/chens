@@ -1,18 +1,32 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const NAV = [
-  { href: "/canvas/overview",    label: "Overview",     icon: "⊞" },
-  { href: "/canvas/students",    label: "Students",     icon: "👥" },
-  { href: "/canvas/assignments", label: "Assignments",  icon: "📋" },
-  { href: "/canvas/grades",      label: "Grades",       icon: "📊" },
-  { href: "/canvas/atrisk",      label: "At-Risk",      icon: "⚠️" },
-  { href: "/canvas",             label: "AI Agent",     icon: "🤖" },
+  { href: "/canvas/overview",    label: "Overview",    icon: "⊞" },
+  { href: "/canvas/students",    label: "Students",    icon: "👥", countKey: "students" },
+  { href: "/canvas/assignments", label: "Assignments", icon: "📋" },
+  { href: "/canvas/grades",      label: "Grades",      icon: "📊" },
+  { href: "/canvas/atrisk",      label: "At-Risk",     icon: "⚠️" },
+  { href: "/canvas",             label: "AI Agent",    icon: "🤖" },
 ];
 
 export default function CanvasSidebar() {
   const path = usePathname();
+  const [studentCount, setStudentCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/professor/courses")
+      .then(r => r.json())
+      .then(d => {
+        const total = (d.courses ?? []).reduce(
+          (sum: number, c: { student_count: number }) => sum + Number(c.student_count), 0
+        );
+        setStudentCount(total);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <aside className="w-48 shrink-0">
@@ -32,7 +46,14 @@ export default function CanvasSidebar() {
               }`}
             >
               <span>{item.icon}</span>
-              <span>{item.label}</span>
+              <span className="flex-1">{item.label}</span>
+              {item.countKey === "students" && studentCount !== null && (
+                <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${
+                  active ? "bg-amber-500/20 text-amber-400" : "bg-gray-800 text-gray-500"
+                }`}>
+                  {studentCount}
+                </span>
+              )}
             </Link>
           );
         })}
