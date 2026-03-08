@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const url = `${process.env.CHENS_API_URL}/api/professor/assignments${courseId ? `?course_id=${courseId}` : ""}`;
 
   const res = await fetch(url, {
-    headers: { "x-api-key": process.env.API_SECRET_KEY!, "x-user-id": session.user.id },
+    headers: { "x-api-key": process.env.CHENS_API_SECRET_KEY!, "x-user-id": session.user.id },
     cache: "no-store",
   });
   return NextResponse.json(await res.json(), { status: res.status });

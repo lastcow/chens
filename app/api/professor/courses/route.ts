@@ -7,7 +7,7 @@ export async function GET() {
 
   const res = await fetch(`${process.env.CHENS_API_URL}/api/professor/courses`, {
     headers: {
-      "x-api-key": process.env.API_SECRET_KEY!,
+      "x-api-key": process.env.CHENS_API_SECRET_KEY!,
       "x-user-id": session.user.id,
     },
     cache: "no-store",
