@@ -1,17 +1,14 @@
 import { auth } from "@/auth";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const res = await fetch(`${process.env.CHENS_API_URL}/api/professor/courses`, {
-    headers: {
-      "x-api-key": process.env.CHENS_API_SECRET_KEY!,
-      "x-user-id": session.user.id,
-    },
+  const termId = req.nextUrl.searchParams.get("term_id");
+  const url = `${process.env.CHENS_API_URL}/api/professor/courses${termId ? `?term_id=${termId}` : ""}`;
+  const res = await fetch(url, {
+    headers: { "x-api-key": process.env.CHENS_API_SECRET_KEY!, "x-user-id": session.user.id },
     cache: "no-store",
   });
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+  return NextResponse.json(await res.json(), { status: res.status });
 }

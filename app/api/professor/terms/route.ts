@@ -1,12 +1,11 @@
 import { auth } from "@/auth";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const termId = req.nextUrl.searchParams.get("term_id");
-  const url = `${process.env.CHENS_API_URL}/api/professor/students/count${termId ? `?term_id=${termId}` : ""}`;
-  const res = await fetch(url, {
+
+  const res = await fetch(`${process.env.CHENS_API_URL}/api/professor/terms`, {
     headers: { "x-api-key": process.env.CHENS_API_SECRET_KEY!, "x-user-id": session.user.id },
     cache: "no-store",
   });

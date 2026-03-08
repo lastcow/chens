@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTerm } from "./TermProvider";
 
 const NAV = [
   { href: "/canvas/overview",    label: "Overview",    icon: "⊞" },
@@ -14,18 +15,22 @@ const NAV = [
 
 export default function CanvasSidebar() {
   const path = usePathname();
+  const { termParam, activeTerm } = useTerm();
   const [studentCount, setStudentCount]   = useState<number | null>(null);
   const [ungradedCount, setUngradedCount] = useState<number | null>(null);
   const [pendingCount, setPendingCount]   = useState<number | null>(null);
   const [atRiskCount, setAtRiskCount]     = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("/api/professor/students/count")
+    if (!activeTerm) return;
+    const q = termParam ? `?${termParam}` : "";
+
+    fetch(`/api/professor/students/count${q}`)
       .then(r => r.json())
       .then(d => setStudentCount(d.count ?? null))
       .catch(() => {});
 
-    fetch("/api/professor/courses")
+    fetch(`/api/professor/courses${q}`)
       .then(r => r.json())
       .then(d => {
         const total = (d.courses ?? []).reduce((s: number, c: { ungraded_count: number }) => s + Number(c.ungraded_count), 0);
@@ -34,11 +39,11 @@ export default function CanvasSidebar() {
       })
       .catch(() => {});
 
-    fetch("/api/professor/atrisk")
+    fetch(`/api/professor/atrisk${q}`)
       .then(r => r.json())
       .then(d => setAtRiskCount((d.students ?? []).length))
       .catch(() => {});
-  }, []);
+  }, [termParam, activeTerm]);
 
   return (
     <aside className="w-48 shrink-0">

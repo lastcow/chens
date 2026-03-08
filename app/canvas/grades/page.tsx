@@ -1,11 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useTerm } from "@/components/canvas/TermProvider";
 
 interface Assignment { id: number; name: string; points_possible: number; due_at: string | null; avg_score: number | null; graded_count: number; ungraded_count: number; missing_count: number; total_students: number; course_name: string; }
 
 type SortKey = "name" | "due" | "avg" | "ungraded" | "missing";
 
 export default function GradesPage() {
+  const { termParam, activeTerm } = useTerm();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [course, setCourse] = useState<string>("all");
@@ -13,8 +15,10 @@ export default function GradesPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
-    fetch("/api/professor/assignments").then(r => r.json()).then(d => { setAssignments(d.assignments ?? []); setLoading(false); });
-  }, []);
+    if (!activeTerm) return;
+    setLoading(true);
+    fetch(`/api/professor/assignments?${termParam}`).then(r => r.json()).then(d => { setAssignments(d.assignments ?? []); setLoading(false); });
+  }, [termParam, activeTerm]);
 
   const courses = ["all", ...Array.from(new Set(assignments.map(a => a.course_name)))];
   const handleSort = (key: SortKey) => {

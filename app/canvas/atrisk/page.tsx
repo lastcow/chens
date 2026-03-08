@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useTerm } from "@/components/canvas/TermProvider";
 
 interface AtRiskStudent {
   name: string; canvas_uid: number;
@@ -8,12 +9,15 @@ interface AtRiskStudent {
 }
 
 export default function AtRiskPage() {
+  const { termParam, activeTerm } = useTerm();
   const [students, setStudents] = useState<AtRiskStudent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/professor/atrisk").then(r => r.json()).then(d => { setStudents(d.students ?? []); setLoading(false); });
-  }, []);
+    if (!activeTerm) return;
+    setLoading(true);
+    fetch(`/api/professor/atrisk?${termParam}`).then(r => r.json()).then(d => { setStudents(d.students ?? []); setLoading(false); });
+  }, [termParam, activeTerm]);
 
   const level = (s: AtRiskStudent) => {
     if (Number(s.missing_count) >= 4 || Number(s.attendance) < 30) return "critical";

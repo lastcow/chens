@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useTerm } from "@/components/canvas/TermProvider";
 
 interface Assignment {
   id: number; canvas_id: number; name: string; points_possible: number;
@@ -13,14 +14,17 @@ interface Assignment {
 function AssignmentsContent() {
   const params = useSearchParams();
   const router = useRouter();
+  const { termParam, activeTerm } = useTerm();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/professor/assignments")
+    if (!activeTerm) return;
+    setLoading(true);
+    fetch(`/api/professor/assignments?${termParam}`)
       .then(r => r.json())
       .then(d => { setAssignments(d.assignments ?? []); setLoading(false); });
-  }, []);
+  }, [termParam, activeTerm]);
 
   // Build course tabs from data
   const courses = Array.from(

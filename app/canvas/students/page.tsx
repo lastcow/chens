@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
+import { useTerm } from "@/components/canvas/TermProvider";
 
 interface StudentRow {
   name: string; canvas_uid: number; email: string;
@@ -10,23 +11,25 @@ interface StudentRow {
 }
 
 function StudentsContent() {
+  const { termParam, activeTerm } = useTerm();
   const [rows, setRows]       = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState("");
   const [open, setOpen]       = useState<Record<number, boolean>>({});
 
   useEffect(() => {
-    fetch("/api/professor/students")
+    if (!activeTerm) return;
+    setLoading(true);
+    fetch(`/api/professor/students?${termParam}`)
       .then(r => r.json())
       .then(d => {
         const students: StudentRow[] = d.students ?? [];
         setRows(students);
-        // Open all accordions by default
         const ids = Array.from(new Set(students.map(s => s.course_canvas_id)));
         setOpen(Object.fromEntries(ids.map(id => [id, true])));
         setLoading(false);
       });
-  }, []);
+  }, [termParam, activeTerm]);
 
   const courses = Array.from(
     new Map(rows.map(r => [r.course_canvas_id, r.course_name])).entries()
