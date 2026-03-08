@@ -5,7 +5,7 @@ interface StudentRow {
   name: string; canvas_uid: number; email: string;
   course_name: string; course_canvas_id: number;
   attendance: number; missing_count: number; ungraded_count: number;
-  avg_grade: number | null; total_due: number;
+  avg_grade: number | null; total_due: number; course_count: number;
 }
 
 function StudentsContent() {
@@ -151,7 +151,14 @@ function StudentsContent() {
                           "border-l-transparent"
                         }`}>
                         <td className="px-5 py-3">
-                          <div className="text-white font-medium">{r.name}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-medium">{r.name}</span>
+                            {Number(r.course_count) > 1 && (
+                              <span className="text-xs bg-blue-900/30 text-blue-400 border border-blue-700/30 rounded-full px-1.5 py-0.5 shrink-0">
+                                {r.course_count} courses
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs text-gray-600">{r.email}</div>
                         </td>
                         <td className="text-center px-3 py-3">
