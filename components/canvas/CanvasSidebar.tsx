@@ -17,14 +17,9 @@ export default function CanvasSidebar() {
   const [studentCount, setStudentCount] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("/api/professor/courses")
+    fetch("/api/professor/students/count")
       .then(r => r.json())
-      .then(d => {
-        const total = (d.courses ?? []).reduce(
-          (sum: number, c: { student_count: number }) => sum + Number(c.student_count), 0
-        );
-        setStudentCount(total);
-      })
+      .then(d => setStudentCount(d.count ?? null))
       .catch(() => {});
   }, []);
 
