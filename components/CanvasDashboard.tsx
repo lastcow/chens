@@ -109,6 +109,8 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
   const [courseId, setCourseId] = useState("");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
+  const [reseedingTool, setReseedingTool] = useState<string | null>(null);
+  const [reseedMsg, setReseedMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [activeTab, setActiveTab] = useState<"tasks" | "tools">("tasks");
@@ -137,6 +139,16 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
   const fetchTools = async () => {
     const res = await fetch("/api/agent/tools");
     if (res.ok) { const d = await res.json(); setTools(d.tools ?? []); }
+  };
+
+  const reseedTool = async (name: string) => {
+    setReseedingTool(name);
+    setReseedMsg("");
+    const res = await fetch(`/api/agent/tools/${name}/reseed`, { method: "POST" });
+    const d = await res.json();
+    setReseedMsg(res.ok ? "✅ Tool updated to latest definition" : `❌ ${d.error}`);
+    setReseedingTool(null);
+    await fetchTools();
   };
 
   useEffect(() => {
@@ -344,6 +356,11 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
       {/* Tools */}
       {activeTab === "tools" && (
         <div className="space-y-3">
+          {reseedMsg && (
+            <div className={`text-sm px-3 py-2 rounded-lg border ${reseedMsg.startsWith("✅") ? "border-green-500/20 bg-green-500/5 text-green-400" : "border-red-500/20 bg-red-500/5 text-red-400"}`}>
+              {reseedMsg}
+            </div>
+          )}
           {tools.map((tool) => (
             <div key={tool.name} className="card">
               <div className="flex justify-between items-start mb-2">
@@ -351,13 +368,23 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
                   <span className="font-mono text-sm text-amber-400">{tool.name}</span>
                   <span className="text-gray-600 text-xs ml-2">v{tool.version}</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   <span className={`text-xs px-2 py-0.5 rounded border ${TIER_COLOR[tool.tier] ?? ""}`}>
                     {tool.tier}
                   </span>
                   <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded">
                     {tool.createdBy === "agent" ? "🧬 evolved" : "👤 seeded"}
                   </span>
+                  {tool.createdBy !== "agent" && (
+                    <button
+                      onClick={() => reseedTool(tool.name)}
+                      disabled={reseedingTool === tool.name}
+                      title="Force update this tool to the latest definition"
+                      className="text-xs text-gray-500 hover:text-amber-400 border border-gray-800 hover:border-amber-500/40 rounded px-2 py-0.5 transition-colors disabled:opacity-40"
+                    >
+                      {reseedingTool === tool.name ? "⟳" : "↻ reseed"}
+                    </button>
+                  )}
                 </div>
               </div>
               <p className="text-sm text-gray-400">{tool.description}</p>
