@@ -32,8 +32,8 @@ interface Tool {
 
 const MODELS = [
   {
-    id: "claude-haiku-3-5",
-    name: "Claude Haiku 3.5",
+    id: "claude-haiku-4-5-20251001",
+    name: "Claude Haiku 4.5",
     provider: "Anthropic",
     inputPer1M: 0.80,
     outputPer1M: 4.00,
@@ -43,7 +43,7 @@ const MODELS = [
     recommended: true,
   },
   {
-    id: "claude-sonnet-4-5",
+    id: "claude-sonnet-4-5-20250929",
     name: "Claude Sonnet 4.5",
     provider: "Anthropic",
     inputPer1M: 3.00,
@@ -190,7 +190,7 @@ function CanvasTokenSetup({ onSaved }: { onSaved: (masked: string) => void }) {
 export default function CanvasDashboard({ userRole }: { userId: string; userRole: string }) {
   const [instruction, setInstruction] = useState("");
   const [courseId, setCourseId] = useState("");
-  const [selectedModel, setSelectedModel] = useState("claude-haiku-3-5");
+  const [selectedModel, setSelectedModel] = useState("claude-haiku-4-5-20251001");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
   const [reseedingTool, setReseedingTool] = useState<string | null>(null);
