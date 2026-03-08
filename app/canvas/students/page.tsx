@@ -47,10 +47,12 @@ function StudentsContent() {
 
   return (
     <div className="space-y-3">
-      {/* Search */}
-      <input value={search} onChange={e => setSearch(e.target.value)}
-        placeholder="Search students…"
-        className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50" />
+      {/* Sticky search */}
+      <div className="sticky top-16 z-10 -mx-1 px-1 py-2 bg-gray-950/90 backdrop-blur-md">
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Search students…"
+          className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50" />
+      </div>
 
       {loading ? (
         [...Array(4)].map((_, i) => (
