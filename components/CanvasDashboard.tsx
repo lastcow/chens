@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 
 interface TaskUsage {
+  model?: string;
   claude: { inputTokens: number; outputTokens: number; calls: number; costUsd: number };
   flyio: { durationMs: number; costUsd: number };
   gemini: { embeddingCalls: number; costUsd: number };
@@ -27,6 +28,49 @@ interface Tool {
   usageCount: number;
   evolutionReason?: string;
   createdBy: string;
+}
+
+const MODELS = [
+  {
+    id: "claude-haiku-3-5",
+    name: "Claude Haiku 3.5",
+    provider: "Anthropic",
+    inputPer1M: 0.80,
+    outputPer1M: 4.00,
+    badge: "⚡ Fast",
+    badgeColor: "text-green-400 bg-green-400/10 border-green-400/20",
+    note: "Best for simple tasks",
+    recommended: true,
+  },
+  {
+    id: "claude-sonnet-4-5",
+    name: "Claude Sonnet 4.5",
+    provider: "Anthropic",
+    inputPer1M: 3.00,
+    outputPer1M: 15.00,
+    badge: "🧠 Smart",
+    badgeColor: "text-blue-400 bg-blue-400/10 border-blue-400/20",
+    note: "Complex reasoning & grading",
+    recommended: false,
+  },
+  {
+    id: "gemini-2.0-flash",
+    name: "Gemini 2.0 Flash",
+    provider: "Google",
+    inputPer1M: 0.10,
+    outputPer1M: 0.40,
+    badge: "💰 Cheapest",
+    badgeColor: "text-amber-400 bg-amber-400/10 border-amber-400/20",
+    note: "~8K token task ≈ $0.004",
+    recommended: false,
+  },
+];
+
+// Estimated cost for a typical 8K token task
+function estimateCost(model: typeof MODELS[0]) {
+  const inTok = 6000; const outTok = 2000;
+  const cost = (inTok / 1_000_000) * model.inputPer1M + (outTok / 1_000_000) * model.outputPer1M;
+  return cost < 0.001 ? "<$0.001" : `~$${cost.toFixed(3)}`;
 }
 
 const TIER_COLOR: Record<string, string> = {
@@ -62,9 +106,9 @@ function UsageBadge({ usage }: { usage: TaskUsage }) {
 
   return (
     <div className="flex flex-wrap gap-1.5 mt-2">
-      <span title={`Input: ${usage.claude.inputTokens.toLocaleString()} / Output: ${usage.claude.outputTokens.toLocaleString()} / Calls: ${usage.claude.calls}`}
+      <span title={`Model: ${usage.model ?? "?"} | Input: ${usage.claude.inputTokens.toLocaleString()} / Output: ${usage.claude.outputTokens.toLocaleString()} / Calls: ${usage.claude.calls}`}
         className="text-xs bg-purple-900/30 border border-purple-700/30 text-purple-300 rounded px-2 py-0.5 cursor-help">
-        🤖 Claude {tokK}K tok · ${usage.claude.costUsd.toFixed(4)}
+        🤖 {usage.model?.split("-").slice(1, 3).join("-") ?? "AI"} · {tokK}K tok · ${usage.claude.costUsd.toFixed(4)}
       </span>
       <span title={`Duration: ${durS}s @ shared-cpu-1x`}
         className="text-xs bg-blue-900/30 border border-blue-700/30 text-blue-300 rounded px-2 py-0.5 cursor-help">
@@ -146,6 +190,7 @@ function CanvasTokenSetup({ onSaved }: { onSaved: (masked: string) => void }) {
 export default function CanvasDashboard({ userRole }: { userId: string; userRole: string }) {
   const [instruction, setInstruction] = useState("");
   const [courseId, setCourseId] = useState("");
+  const [selectedModel, setSelectedModel] = useState("claude-haiku-3-5");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
   const [reseedingTool, setReseedingTool] = useState<string | null>(null);
@@ -212,7 +257,7 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
     const res = await fetch("/api/agent/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ instruction, courseId: courseId || undefined, createdBy: "teacher" }),
+      body: JSON.stringify({ instruction, courseId: courseId || undefined, createdBy: "teacher", model: selectedModel }),
     });
 
     if (!res.ok) {
@@ -274,6 +319,38 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
       <div className="card">
         <h2 className="text-lg font-semibold mb-4">🤖 Run Agent Task</h2>
         <form onSubmit={submitTask} className="space-y-4">
+          {/* Model selector */}
+          <div>
+            <label className="block text-xs text-gray-500 mb-2 uppercase tracking-wider">AI Model</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {MODELS.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setSelectedModel(m.id)}
+                  className={`text-left px-3 py-2.5 rounded-lg border transition-all ${
+                    selectedModel === m.id
+                      ? "border-amber-500/60 bg-amber-500/10"
+                      : "border-gray-800 hover:border-gray-600 bg-transparent"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-white">{m.name}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded border ${m.badgeColor}`}>{m.badge}</span>
+                  </div>
+                  <div className="text-xs text-gray-500">{m.note}</div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    ${m.inputPer1M}/M in · ${m.outputPer1M}/M out
+                    <span className="ml-1 text-amber-600/80">· {estimateCost(m)}/task</span>
+                  </div>
+                  {m.recommended && (
+                    <div className="text-xs text-green-500 mt-0.5">✓ recommended</div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <textarea
               value={instruction}
