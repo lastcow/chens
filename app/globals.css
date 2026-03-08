@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+:root {
+  --accent: #d4af37;
+}
+
+body {
+  background-color: #030712;
+}
+
+.accent { color: var(--accent); }
+.bg-accent { background-color: var(--accent); }
+.border-accent { border-color: var(--accent); }
+
+.btn-primary {
+  @apply bg-amber-500 hover:bg-amber-400 text-gray-950 font-semibold px-6 py-3 rounded-lg transition-all duration-200;
+}
+
+.btn-secondary {
+  @apply border border-gray-600 hover:border-amber-500 text-gray-300 hover:text-amber-400 font-semibold px-6 py-3 rounded-lg transition-all duration-200;
+}
+
+.card {
+  @apply bg-gray-900 border border-gray-800 rounded-xl p-6;
+}
+
+.input-field {
+  @apply w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors;
+}
