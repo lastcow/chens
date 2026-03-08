@@ -35,6 +35,9 @@ export default function Navbar() {
                 <Link href="/dashboard" className="text-gray-300 text-sm hover:text-white">
                   Dashboard
                 </Link>
+                <Link href="/canvas" className="text-gray-300 text-sm hover:text-white">
+                  Canvas
+                </Link>
                 <button
                   onClick={() => signOut()}
                   className="text-sm text-gray-500 hover:text-red-400 transition-colors"
