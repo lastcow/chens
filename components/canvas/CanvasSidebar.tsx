@@ -7,15 +7,17 @@ const NAV = [
   { href: "/canvas/overview",    label: "Overview",    icon: "⊞" },
   { href: "/canvas/students",    label: "Students",    icon: "👥", countKey: "students" },
   { href: "/canvas/assignments", label: "Assignments", icon: "📋", countKey: "ungraded" },
-  { href: "/canvas/grades",      label: "Grades",      icon: "📊" },
-  { href: "/canvas/atrisk",      label: "At-Risk",     icon: "⚠️" },
+  { href: "/canvas/grades",      label: "Grades",      icon: "📊", countKey: "pending" },
+  { href: "/canvas/atrisk",      label: "At-Risk",     icon: "⚠️", countKey: "atrisk" },
   { href: "/canvas",             label: "AI Agent",    icon: "🤖" },
 ];
 
 export default function CanvasSidebar() {
   const path = usePathname();
-  const [studentCount, setStudentCount] = useState<number | null>(null);
+  const [studentCount, setStudentCount]   = useState<number | null>(null);
   const [ungradedCount, setUngradedCount] = useState<number | null>(null);
+  const [pendingCount, setPendingCount]   = useState<number | null>(null);
+  const [atRiskCount, setAtRiskCount]     = useState<number | null>(null);
 
   useEffect(() => {
     fetch("/api/professor/students/count")
@@ -26,11 +28,15 @@ export default function CanvasSidebar() {
     fetch("/api/professor/courses")
       .then(r => r.json())
       .then(d => {
-        const total = (d.courses ?? []).reduce(
-          (sum: number, c: { ungraded_count: number }) => sum + Number(c.ungraded_count), 0
-        );
+        const total = (d.courses ?? []).reduce((s: number, c: { ungraded_count: number }) => s + Number(c.ungraded_count), 0);
         setUngradedCount(total);
+        setPendingCount(total);
       })
+      .catch(() => {});
+
+    fetch("/api/professor/atrisk")
+      .then(r => r.json())
+      .then(d => setAtRiskCount((d.students ?? []).length))
       .catch(() => {});
   }, []);
 
@@ -63,9 +69,17 @@ export default function CanvasSidebar() {
               {item.countKey === "ungraded" && ungradedCount !== null && ungradedCount > 0 && (
                 <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${
                   active ? "bg-red-500/20 text-red-400" : "bg-red-900/30 text-red-500"
-                }`}>
-                  {ungradedCount}
-                </span>
+                }`}>{ungradedCount}</span>
+              )}
+              {item.countKey === "pending" && pendingCount !== null && pendingCount > 0 && (
+                <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${
+                  active ? "bg-amber-500/20 text-amber-400" : "bg-amber-900/30 text-amber-500"
+                }`}>{pendingCount}</span>
+              )}
+              {item.countKey === "atrisk" && atRiskCount !== null && atRiskCount > 0 && (
+                <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${
+                  active ? "bg-red-500/20 text-red-400" : "bg-red-900/30 text-red-500"
+                }`}>{atRiskCount}</span>
               )}
             </Link>
           );
