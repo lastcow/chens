@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-interface Assignment { id: number; name: string; points_possible: number; avg_score: number | null; graded_count: number; ungraded_count: number; missing_count: number; total_students: number; course_name: string; }
+interface Assignment { id: number; name: string; points_possible: number; due_at: string | null; avg_score: number | null; graded_count: number; ungraded_count: number; missing_count: number; total_students: number; course_name: string; }
 
 type SortKey = "name" | "due" | "avg" | "ungraded" | "missing";
 
