@@ -1,10 +1,11 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const services = [
-  { icon: "⚡", title: "Service One", desc: "Placeholder description for your first core service offering." },
-  { icon: "🛡️", title: "Service Two", desc: "Placeholder description for your second core service offering." },
-  { icon: "📊", title: "Service Three", desc: "Placeholder description for your third core service offering." },
-  { icon: "🌐", title: "Service Four", desc: "Placeholder description for your fourth core service offering." },
+  { icon: "feature_security", label: "⚡", title: "Security", desc: "Enterprise-grade security solutions protecting your business assets 24/7." },
+  { icon: "feature_analytics", label: "📊", title: "Analytics", desc: "Deep data insights and intelligence to drive smarter business decisions." },
+  { icon: "feature_cloud", label: "🌐", title: "Cloud", desc: "Scalable cloud infrastructure built for reliability and performance." },
+  { icon: "feature_support", label: "🛡️", title: "Support", desc: "Dedicated 24/7 expert support whenever your business needs it." },
 ];
 
 export default function Home() {
@@ -12,8 +13,19 @@ export default function Home() {
     <>
       {/* Hero */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-900/20 via-transparent to-transparent" />
+        {/* Imagen-generated hero background */}
+        <div className="absolute inset-0">
+          <Image
+            src="/api/images/hero"
+            alt="Chen's hero"
+            fill
+            className="object-cover opacity-30"
+            priority
+            unoptimized
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/70 to-gray-950/40" />
+
         <div className="relative text-center px-4 max-w-4xl mx-auto">
           <div className="inline-block border border-amber-500/30 rounded-full px-4 py-1 text-amber-400 text-sm mb-6">
             Professional Business Services
@@ -27,12 +39,8 @@ export default function Home() {
             Trusted expertise. Proven results.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register" className="btn-primary">
-              Get Started Today
-            </Link>
-            <Link href="/#services" className="btn-secondary">
-              Our Services
-            </Link>
+            <Link href="/register" className="btn-primary">Get Started Today</Link>
+            <Link href="/#services" className="btn-secondary">Our Services</Link>
           </div>
         </div>
       </section>
@@ -47,8 +55,16 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {services.map((s) => (
-            <div key={s.title} className="card hover:border-amber-500/40 transition-colors group">
-              <div className="text-4xl mb-4">{s.icon}</div>
+            <div key={s.title} className="card hover:border-amber-500/40 transition-all group overflow-hidden">
+              <div className="relative h-36 mb-4 rounded-lg overflow-hidden bg-gray-800">
+                <Image
+                  src={`/api/images/${s.icon}`}
+                  alt={s.title}
+                  fill
+                  className="object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"
+                  unoptimized
+                />
+              </div>
               <h3 className="text-lg font-semibold mb-2 group-hover:text-amber-400 transition-colors">
                 {s.title}
               </h3>
@@ -71,17 +87,26 @@ export default function Home() {
               Add your story, team information, years of experience, and any certifications
               or achievements that build trust with potential clients.
             </p>
-            <Link href="/register" className="btn-primary inline-block">
-              Work With Us
-            </Link>
+            <Link href="/register" className="btn-primary inline-block">Work With Us</Link>
           </div>
-          <div className="grid grid-cols-2 gap-6">
-            {[["10+", "Years Experience"], ["500+", "Clients Served"], ["99%", "Satisfaction Rate"], ["24/7", "Support"]].map(([num, label]) => (
-              <div key={label} className="card text-center">
-                <div className="text-3xl font-bold text-amber-400 mb-1">{num}</div>
-                <div className="text-gray-400 text-sm">{label}</div>
-              </div>
-            ))}
+          <div className="space-y-6">
+            <div className="relative h-64 rounded-xl overflow-hidden">
+              <Image
+                src="/api/images/about"
+                alt="About Chen's"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {[["10+", "Years Experience"], ["500+", "Clients Served"], ["99%", "Satisfaction Rate"], ["24/7", "Support"]].map(([num, label]) => (
+                <div key={label} className="card text-center">
+                  <div className="text-3xl font-bold text-amber-400 mb-1">{num}</div>
+                  <div className="text-gray-400 text-sm">{label}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

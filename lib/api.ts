@@ -62,3 +62,11 @@ export async function apiUpdateUser(id: string, data: { name?: string; role?: st
 export async function apiDeleteUser(id: string, adminRole: string) {
   return apiFetch(`/api/users/${id}`, { method: "DELETE" }, adminRole);
 }
+
+// Images
+export async function apiGenerateImage(preset: string, aspectRatio = "16:9") {
+  return apiFetch("/api/images/generate", {
+    method: "POST",
+    body: JSON.stringify({ preset, aspectRatio }),
+  });
+}
