@@ -3,17 +3,35 @@ import { useEffect, useState } from "react";
 
 interface Assignment { id: number; name: string; points_possible: number; avg_score: number | null; graded_count: number; ungraded_count: number; missing_count: number; total_students: number; course_name: string; }
 
+type SortKey = "name" | "due" | "avg" | "ungraded" | "missing";
+
 export default function GradesPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [course, setCourse] = useState<string>("all");
+  const [sort, setSort] = useState<SortKey>("due");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     fetch("/api/professor/assignments").then(r => r.json()).then(d => { setAssignments(d.assignments ?? []); setLoading(false); });
   }, []);
 
   const courses = ["all", ...Array.from(new Set(assignments.map(a => a.course_name)))];
-  const filtered = course === "all" ? assignments : assignments.filter(a => a.course_name === course);
+  const handleSort = (key: SortKey) => {
+    if (sort === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSort(key); setSortDir("asc"); }
+  };
+
+  const base = course === "all" ? assignments : assignments.filter(a => a.course_name === course);
+  const filtered = [...base].sort((a, b) => {
+    let v = 0;
+    if (sort === "name")     v = a.name.localeCompare(b.name);
+    if (sort === "due")      v = (a.due_at ?? "zzz").localeCompare(b.due_at ?? "zzz");
+    if (sort === "avg")      v = (Number(a.avg_score) || 0) - (Number(b.avg_score) || 0);
+    if (sort === "ungraded") v = Number(a.ungraded_count) - Number(b.ungraded_count);
+    if (sort === "missing")  v = Number(a.missing_count) - Number(b.missing_count);
+    return sortDir === "asc" ? v : -v;
+  });
 
   const gradeColor = (score: number | null) => {
     if (score === null) return "bg-gray-800 text-gray-600";
@@ -34,6 +52,18 @@ export default function GradesPage() {
                 course === c ? "bg-amber-500/10 border-amber-500/30 text-amber-400" : "border-gray-800 text-gray-500 hover:text-gray-300 hover:border-gray-700"
               }`}>
               {c === "all" ? "All Courses" : c.match(/(ITEC|SCIA)\s[\d]+-[\w]+/)?.[0] ?? c.match(/(ITEC|SCIA)\s[\d]+/)?.[0] ?? c}
+            </button>
+          ))}
+        </div>
+        {/* Sort bar */}
+        <div className="flex gap-1 mt-2 flex-wrap">
+          {([["name","Name"],["due","Due Date"],["avg","Avg Score"],["ungraded","Ungraded"],["missing","Missing"]] as [SortKey,string][]).map(([key, label]) => (
+            <button key={key} onClick={() => handleSort(key)}
+              className={`text-xs px-2.5 py-1 rounded border transition-colors flex items-center gap-1 ${
+                sort === key ? "bg-gray-800 border-gray-600 text-white" : "border-gray-800 text-gray-600 hover:text-gray-400 hover:border-gray-700"
+              }`}>
+              {label}
+              {sort === key && <span className="text-amber-400">{sortDir === "asc" ? "↑" : "↓"}</span>}
             </button>
           ))}
         </div>
