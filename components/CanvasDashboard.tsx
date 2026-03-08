@@ -1,6 +1,13 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
+interface TaskUsage {
+  claude: { inputTokens: number; outputTokens: number; calls: number; costUsd: number };
+  flyio: { durationMs: number; costUsd: number };
+  gemini: { embeddingCalls: number; costUsd: number };
+  totalCostUsd: number;
+}
+
 interface Task {
   id: string;
   title: string;
@@ -9,6 +16,7 @@ interface Task {
   toolsUsed: string[];
   result?: { answer: string };
   error?: string;
+  usage?: TaskUsage;
 }
 
 interface Tool {
@@ -42,6 +50,37 @@ const STATUS_ICON: Record<string, string> = {
   FAILED: "✗",
   CANCELLED: "○",
 };
+
+// ── Usage badge ───────────────────────────────────────────────────────────────
+function UsageBadge({ usage }: { usage: TaskUsage }) {
+  const totalTok = usage.claude.inputTokens + usage.claude.outputTokens;
+  const tokK = (totalTok / 1000).toFixed(1);
+  const costStr = usage.totalCostUsd < 0.001
+    ? `<$0.001`
+    : `$${usage.totalCostUsd.toFixed(4)}`;
+  const durS = (usage.flyio.durationMs / 1000).toFixed(1);
+
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      <span title={`Input: ${usage.claude.inputTokens.toLocaleString()} / Output: ${usage.claude.outputTokens.toLocaleString()} / Calls: ${usage.claude.calls}`}
+        className="text-xs bg-purple-900/30 border border-purple-700/30 text-purple-300 rounded px-2 py-0.5 cursor-help">
+        🤖 Claude {tokK}K tok · ${usage.claude.costUsd.toFixed(4)}
+      </span>
+      <span title={`Duration: ${durS}s @ shared-cpu-1x`}
+        className="text-xs bg-blue-900/30 border border-blue-700/30 text-blue-300 rounded px-2 py-0.5 cursor-help">
+        ✈️ Fly {durS}s · ${usage.flyio.costUsd.toFixed(6)}
+      </span>
+      {usage.gemini.embeddingCalls > 0 && (
+        <span className="text-xs bg-green-900/30 border border-green-700/30 text-green-300 rounded px-2 py-0.5">
+          🔮 Gemini {usage.gemini.embeddingCalls} embed · free
+        </span>
+      )}
+      <span className="text-xs bg-amber-900/30 border border-amber-700/30 text-amber-300 rounded px-2 py-0.5 font-medium">
+        Total {costStr}
+      </span>
+    </div>
+  );
+}
 
 // ── Token setup card ──────────────────────────────────────────────────────────
 function CanvasTokenSetup({ onSaved }: { onSaved: (masked: string) => void }) {
@@ -321,10 +360,16 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
               <p className="text-xs text-gray-600 mt-1">
                 {new Date(task.createdAt).toLocaleString()}
                 {task.toolsUsed?.length > 0 && ` · ${task.toolsUsed.join(", ")}`}
+                {task.usage && (
+                  <span className="ml-2 text-amber-600/70">
+                    {((task.usage.claude.inputTokens + task.usage.claude.outputTokens) / 1000).toFixed(1)}K tok · ${task.usage.totalCostUsd < 0.001 ? "<0.001" : task.usage.totalCostUsd.toFixed(4)}
+                  </span>
+                )}
               </p>
 
               {selectedTask === task.id && (
                 <div className="mt-4 pt-4 border-t border-gray-800 text-sm space-y-2">
+                  {task.usage && <UsageBadge usage={task.usage} />}
                   {task.status === "RUNNING" && (
                     <p className="text-blue-400 animate-pulse">⟳ Agent is working...</p>
                   )}
