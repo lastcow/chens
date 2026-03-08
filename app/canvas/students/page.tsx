@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface StudentRow {
   name: string; canvas_uid: number; email: string;
@@ -8,22 +9,12 @@ interface StudentRow {
   avg_grade: number | null; total_due: number;
 }
 
-interface StudentGroup {
-  name: string; canvas_uid: number; email: string;
-  courses: {
-    course_name: string; course_canvas_id: number;
-    attendance: number; missing_count: number;
-    avg_grade: number | null;
-  }[];
-  total_missing: number;
-  min_attendance: number;
-}
-
 function StudentsContent() {
+  const params = useSearchParams();
+  const router = useRouter();
   const [rows, setRows] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<"name" | "missing" | "attendance">("name");
 
   useEffect(() => {
     fetch("/api/professor/students")
@@ -31,170 +22,131 @@ function StudentsContent() {
       .then(d => { setRows(d.students ?? []); setLoading(false); });
   }, []);
 
-  // Group rows by student
-  const grouped = Object.values(
-    rows.reduce<Record<number, StudentGroup>>((acc, r) => {
-      if (!acc[r.canvas_uid]) {
-        acc[r.canvas_uid] = {
-          name: r.name, canvas_uid: r.canvas_uid, email: r.email,
-          courses: [], total_missing: 0, min_attendance: 100,
-        };
-      }
-      acc[r.canvas_uid].courses.push({
-        course_name: r.course_name,
-        course_canvas_id: r.course_canvas_id,
-        attendance: Number(r.attendance),
-        missing_count: Number(r.missing_count),
-        avg_grade: r.avg_grade,
-      });
-      acc[r.canvas_uid].total_missing += Number(r.missing_count);
-      acc[r.canvas_uid].min_attendance = Math.min(
-        acc[r.canvas_uid].min_attendance, Number(r.attendance)
-      );
-      return acc;
-    }, {})
+  // Course tabs
+  const courses = Array.from(
+    new Map(rows.map(r => [r.course_canvas_id, r.course_name])).entries()
   );
 
-  // Filter + sort
-  const filtered = grouped
-    .filter(s => s.name.toLowerCase().includes(search.toLowerCase()) ||
-                 s.email.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => {
-      if (sort === "missing")    return b.total_missing - a.total_missing;
-      if (sort === "attendance") return a.min_attendance - b.min_attendance;
-      return a.name.localeCompare(b.name);
-    });
+  const activeCourse = params.get("course_id")
+    ? Number(params.get("course_id"))
+    : courses[0]?.[0] ?? null;
 
-  const riskLevel = (s: StudentGroup) => {
-    if (s.total_missing >= 4 || s.min_attendance < 30) return "critical";
-    if (s.total_missing >= 2 || s.min_attendance < 60) return "high";
-    if (s.total_missing >= 1 || s.min_attendance < 75) return "watch";
-    return "ok";
-  };
+  const filtered = rows.filter(r =>
+    r.course_canvas_id === activeCourse &&
+    (r.name.toLowerCase().includes(search.toLowerCase()) ||
+     r.email.toLowerCase().includes(search.toLowerCase()))
+  );
 
-  const riskBadge: Record<string, string> = {
-    critical: "bg-red-900/30 text-red-400 border-red-700/30",
-    high:     "bg-amber-900/30 text-amber-400 border-amber-700/30",
-    watch:    "bg-yellow-900/20 text-yellow-500 border-yellow-700/20",
-    ok:       "bg-green-900/20 text-green-600 border-green-800/20",
-  };
-  const riskLabel: Record<string, string> = {
-    critical: "At Risk", high: "Watch", watch: "Monitor", ok: "Good",
-  };
-
-  const attColor = (v: number) =>
-    v < 50 ? "text-red-400" : v < 75 ? "text-amber-400" : "text-green-400";
+  const attColor  = (v: number) => v < 50 ? "text-red-400" : v < 75 ? "text-amber-400" : "text-green-400";
   const gradeColor = (v: number | null) =>
     v === null ? "text-gray-600" : v >= 90 ? "text-green-400" : v >= 70 ? "text-amber-400" : "text-red-400";
 
-  // Short course code
+  const riskBadge = (r: StudentRow) => {
+    const m = Number(r.missing_count), a = Number(r.attendance);
+    if (m >= 4 || a < 30) return <span className="text-xs bg-red-900/30 text-red-400 border border-red-700/30 rounded-full px-2 py-0.5">At Risk</span>;
+    if (m >= 2 || a < 60) return <span className="text-xs bg-amber-900/30 text-amber-400 border border-amber-700/30 rounded-full px-2 py-0.5">Watch</span>;
+    if (m >= 1 || a < 75) return <span className="text-xs bg-yellow-900/20 text-yellow-500 border border-yellow-700/20 rounded-full px-2 py-0.5">Monitor</span>;
+    return <span className="text-xs text-green-700">✓</span>;
+  };
+
   const shortCode = (name: string) => {
     const m = name.match(/(ITEC|SCIA)\s[\d]+/);
-    return m ? m[0] : name.split(" ").slice(0, 2).join(" ");
+    return m ? m[0] : name.split(" ").slice(0,2).join(" ");
   };
 
   return (
-    <div className="space-y-4">
-      {/* Controls */}
-      <div className="flex gap-3 items-center flex-wrap">
-        <input
-          value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Search students…"
-          className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white flex-1 min-w-48 focus:outline-none focus:border-amber-500/50"
-        />
-        <div className="flex gap-1 text-xs">
-          {(["name", "missing", "attendance"] as const).map(s => (
-            <button key={s} onClick={() => setSort(s)}
-              className={`px-3 py-2 rounded-lg border transition-colors capitalize ${
-                sort === s
-                  ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                  : "border-gray-800 text-gray-500 hover:text-gray-300 hover:border-gray-700"
-              }`}>
-              Sort: {s}
-            </button>
-          ))}
-        </div>
-        {!loading && (
-          <span className="text-xs text-gray-600">{filtered.length} students</span>
-        )}
+    <div className="space-y-0">
+      {/* Course tabs */}
+      <div className="flex border-b border-gray-800 gap-0">
+        {loading
+          ? [...Array(4)].map((_, i) => (
+              <div key={i} className="h-10 w-24 bg-gray-800/40 animate-pulse rounded-t-lg mr-1" />
+            ))
+          : courses.map(([cid, name]) => {
+              const isActive = cid === activeCourse;
+              const courseRows = rows.filter(r => r.course_canvas_id === cid);
+              const atRisk = courseRows.filter(r => Number(r.missing_count) >= 2 || Number(r.attendance) < 60).length;
+              return (
+                <button key={cid}
+                  onClick={() => router.replace(`/canvas/students?course_id=${cid}`)}
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2
+                    ${isActive
+                      ? "text-amber-400 border-b-2 border-amber-400 -mb-px bg-gray-900/50"
+                      : "text-gray-500 hover:text-gray-300 border-b-2 border-transparent"}`}>
+                  {shortCode(name)}
+                  <span className={`text-xs rounded-full px-1.5 py-0.5 font-mono
+                    ${isActive ? "bg-gray-800 text-gray-400" : "bg-gray-800/50 text-gray-600"}`}>
+                    {courseRows.length}
+                  </span>
+                  {atRisk > 0 && (
+                    <span className={`text-xs rounded-full px-1.5 py-0.5
+                      ${isActive ? "bg-red-900/40 text-red-400" : "bg-gray-800 text-gray-600"}`}>
+                      ⚠ {atRisk}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
       </div>
 
-      {/* Student cards */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl h-40 animate-pulse" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {filtered.map(s => {
-            const risk = riskLevel(s);
-            return (
-              <div key={s.canvas_uid}
-                className={`bg-gray-900 border rounded-xl overflow-hidden transition-colors hover:border-gray-700 ${
-                  risk === "critical" ? "border-red-800/60" :
-                  risk === "high"     ? "border-amber-800/50" :
-                  "border-gray-800"
-                }`}>
-                {/* Header */}
-                <div className="px-4 py-3 flex justify-between items-start border-b border-gray-800/70">
-                  <div>
-                    <div className="text-white font-semibold text-sm leading-tight">{s.name}</div>
-                    <div className="text-xs text-gray-600 mt-0.5">{s.email}</div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-xs border rounded-full px-2 py-0.5 ${riskBadge[risk]}`}>
-                      {riskLabel[risk]}
+      {/* Search bar */}
+      <div className="bg-gray-900 border-x border-gray-800 px-4 py-3">
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Search students…"
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50" />
+      </div>
+
+      {/* Table */}
+      <div className="bg-gray-900 border border-t-0 border-gray-800 rounded-b-xl overflow-hidden">
+        {loading ? (
+          <div className="p-8 text-center text-gray-600 text-sm animate-pulse">Loading…</div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
+                <th className="text-left px-5 py-3">Student</th>
+                <th className="text-center px-3 py-3">Attendance</th>
+                <th className="text-center px-3 py-3">Avg Grade</th>
+                <th className="text-center px-3 py-3">Missing</th>
+                <th className="text-center px-3 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800/50">
+              {filtered.length === 0 ? (
+                <tr><td colSpan={5} className="text-center py-8 text-gray-600">No students found.</td></tr>
+              ) : filtered.map(r => (
+                <tr key={r.canvas_uid}
+                  className={`hover:bg-gray-800/30 transition-colors border-l-2 ${
+                    Number(r.missing_count) >= 4 || Number(r.attendance) < 30 ? "border-l-red-600" :
+                    Number(r.missing_count) >= 2 || Number(r.attendance) < 60 ? "border-l-amber-500" :
+                    "border-l-transparent"
+                  }`}>
+                  <td className="px-5 py-3">
+                    <div className="text-white font-medium">{r.name}</div>
+                    <div className="text-xs text-gray-600">{r.email}</div>
+                  </td>
+                  <td className="text-center px-3 py-3">
+                    <span className={`font-mono font-semibold ${attColor(Number(r.attendance))}`}>
+                      {Number(r.attendance).toFixed(0)}%
                     </span>
-                    {s.total_missing > 0 && (
-                      <span className="text-xs bg-red-900/30 text-red-400 border border-red-700/30 rounded-full px-2 py-0.5">
-                        {s.total_missing} missing
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Course rows */}
-                <div className="divide-y divide-gray-800/50">
-                  {s.courses.map(c => (
-                    <div key={c.course_canvas_id}
-                      className="px-4 py-2.5 flex items-center gap-3">
-                      {/* Course badge */}
-                      <span className="text-xs font-mono text-amber-400/80 bg-amber-500/5 border border-amber-500/10 rounded px-1.5 py-0.5 shrink-0 w-24 text-center">
-                        {shortCode(c.course_name)}
-                      </span>
-
-                      {/* Attendance */}
-                      <div className="flex items-center gap-1 min-w-[60px]">
-                        <span className="text-xs text-gray-600">Att</span>
-                        <span className={`text-sm font-mono font-semibold ${attColor(c.attendance)}`}>
-                          {Number(c.attendance).toFixed(0)}%
-                        </span>
-                      </div>
-
-                      {/* Grade */}
-                      <div className="flex items-center gap-1 min-w-[60px]">
-                        <span className="text-xs text-gray-600">Avg</span>
-                        <span className={`text-sm font-mono font-semibold ${gradeColor(c.avg_grade)}`}>
-                          {c.avg_grade !== null ? `${c.avg_grade}%` : "—"}
-                        </span>
-                      </div>
-
-                      {/* Missing */}
-                      <div className="ml-auto flex items-center gap-1">
-                        {c.missing_count > 0
-                          ? <span className="text-xs text-red-400 font-semibold">{c.missing_count} missing</span>
-                          : <span className="text-xs text-green-700">✓ complete</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                  </td>
+                  <td className="text-center px-3 py-3">
+                    <span className={`font-mono font-semibold ${gradeColor(r.avg_grade)}`}>
+                      {r.avg_grade !== null ? `${r.avg_grade}%` : "—"}
+                    </span>
+                  </td>
+                  <td className="text-center px-3 py-3">
+                    {Number(r.missing_count) > 0
+                      ? <span className="text-red-400 font-semibold">{r.missing_count}</span>
+                      : <span className="text-gray-700">0</span>}
+                  </td>
+                  <td className="text-center px-3 py-3">{riskBadge(r)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
