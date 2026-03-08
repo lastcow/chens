@@ -1,34 +1,16 @@
 import { auth } from "@/auth";
-import { profQuery } from "@/lib/prof-db";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const uid = session.user.id;
+
   const courseId = req.nextUrl.searchParams.get("course_id");
+  const url = `${process.env.CHENS_API_URL}/api/professor/assignments${courseId ? `?course_id=${courseId}` : ""}`;
 
-  const assignments = await profQuery(`
-    SELECT
-      a.id, a.canvas_id, a.name, a.points_possible, a.due_at, a.assignment_type,
-      c.name AS course_name, c.canvas_id AS course_canvas_id,
-      COUNT(sub.id) FILTER (WHERE sub.workflow_state = 'graded' OR g.id IS NOT NULL) AS graded_count,
-      COUNT(sub.id) FILTER (WHERE sub.workflow_state IN ('submitted','pending_review') AND g.id IS NULL) AS ungraded_count,
-      COUNT(sub.id) FILTER (WHERE sub.workflow_state = 'unsubmitted' OR sub.submitted_at IS NULL) AS missing_count,
-      ROUND(AVG(g.final_score)::numeric, 1) AS avg_score,
-      COUNT(DISTINCT e.student_id) AS total_students
-    FROM prof_assignments a
-    JOIN prof_courses c ON c.id = a.course_id AND c.user_id = $1
-    JOIN prof_enrollments e ON e.course_id = c.id AND e.user_id = $1
-    LEFT JOIN prof_submissions sub ON sub.assignment_id = a.id AND sub.student_id = e.student_id
-    LEFT JOIN prof_grades g ON g.submission_id = sub.id
-    WHERE a.user_id = $1
-      AND a.name NOT ILIKE '%progress report%'
-      AND a.name NOT ILIKE '%attendance%'
-      AND a.name NOT ILIKE '%roll call%'
-      ${courseId ? "AND c.canvas_id = $2" : ""}
-    GROUP BY a.id, c.id ORDER BY c.name, a.due_at NULLS LAST
-  `, courseId ? [uid, parseInt(courseId)] : [uid]);
-
-  return NextResponse.json({ assignments });
+  const res = await fetch(url, {
+    headers: { "x-api-key": process.env.API_SECRET_KEY!, "x-user-id": session.user.id },
+    cache: "no-store",
+  });
+  return NextResponse.json(await res.json(), { status: res.status });
 }
