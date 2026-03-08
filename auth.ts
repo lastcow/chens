@@ -1,14 +1,11 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { apiLogin, apiGoogleSignIn } from "@/lib/api";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
-  pages: {
-    signIn: "/signin",
-  },
+  pages: { signIn: "/signin" },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -22,26 +19,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        });
-
-        if (!user || !user.password) return null;
-
-        const passwordMatch = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        );
-
-        if (!passwordMatch) return null;
-
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        };
+        try {
+          const { user } = await apiLogin(
+            credentials.email as string,
+            credentials.password as string
+          );
+          return user;
+        } catch {
+          return null;
+        }
       },
     }),
   ],
@@ -61,18 +47,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
     async signIn({ user, account }) {
-      // For Google OAuth, upsert user in DB
       if (account?.provider === "google" && user.email) {
-        await prisma.user.upsert({
-          where: { email: user.email },
-          update: { name: user.name, image: user.image },
-          create: {
-            email: user.email,
-            name: user.name,
-            image: user.image,
-            emailVerified: new Date(),
-          },
-        });
+        try {
+          const { user: dbUser } = await apiGoogleSignIn(user.email, user.name, user.image);
+          // Attach role from DB to user object for JWT
+          (user as Record<string, unknown>).role = dbUser.role;
+          user.id = dbUser.id;
+        } catch {
+          return false;
+        }
       }
       return true;
     },

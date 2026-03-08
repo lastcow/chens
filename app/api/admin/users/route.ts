@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { apiGetUsers, apiUpdateUser, apiDeleteUser } from "@/lib/api";
 
 export async function GET() {
   const session = await auth();
   if (!session || session.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
-
-  const users = await prisma.user.findMany({
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
-    orderBy: { createdAt: "desc" },
-  });
-
-  return NextResponse.json(users);
+  const data = await apiGetUsers("ADMIN");
+  return NextResponse.json(data.users);
 }
 
 export async function PATCH(req: Request) {
@@ -21,14 +16,9 @@ export async function PATCH(req: Request) {
   if (!session || session.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
-
   const { id, role } = await req.json();
-  const user = await prisma.user.update({
-    where: { id },
-    data: { role },
-  });
-
-  return NextResponse.json(user);
+  const data = await apiUpdateUser(id, { role }, "ADMIN");
+  return NextResponse.json(data.user);
 }
 
 export async function DELETE(req: Request) {
@@ -36,9 +26,7 @@ export async function DELETE(req: Request) {
   if (!session || session.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
-
   const { id } = await req.json();
-  await prisma.user.delete({ where: { id } });
-
-  return NextResponse.json({ message: "User deleted" });
+  const data = await apiDeleteUser(id, "ADMIN");
+  return NextResponse.json(data);
 }
