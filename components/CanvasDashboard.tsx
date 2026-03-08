@@ -13,7 +13,7 @@ interface ReActStep {
   step: number;
   thought?: string;
   action?: { tool: string; input: Record<string, unknown> };
-  observation?: unknown;
+  observation?: string | number | boolean | null | Record<string, unknown> | unknown[];
 }
 
 interface Task {
@@ -478,9 +478,7 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
                                 <p className="text-green-400">
                                   ✓ {s.action.tool} →{" "}
                                   <span className="text-gray-400">
-                                    {typeof s.observation === "object"
-                                      ? JSON.stringify(s.observation).slice(0, 80) + (JSON.stringify(s.observation).length > 80 ? "…" : "")
-                                      : String(s.observation).slice(0, 80)}
+                                    {(() => { const o = JSON.stringify(s.observation ?? ""); return o.slice(0, 80) + (o.length > 80 ? "…" : ""); })()}
                                   </span>
                                 </p>
                               )}
