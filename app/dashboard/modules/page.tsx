@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ALL_MODULES } from "@/lib/modules";
 import ModulesCatalog from "@/components/dashboard/ModulesCatalog";
+import StripeVerify from "@/components/dashboard/StripeVerify";
 
 const API_BASE = process.env.CHENS_API_URL!;
 const API_KEY = process.env.CHENS_API_SECRET_KEY!;
@@ -31,29 +32,15 @@ async function getUserModules(userId: string) {
   } catch { return {}; }
 }
 
-async function verifySession(stripeSessionId: string, userId: string): Promise<boolean> {
-  try {
-    const res = await fetch(`${API_BASE}/api/user/checkout/verify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
-      body: JSON.stringify({ stripeSessionId, userId }),
-    });
-    const data = await res.json();
-    return data.verified === true;
-  } catch { return false; }
-}
-
-export default async function DashboardModulesPage({ searchParams }: { searchParams: Promise<{ success?: string; cancelled?: string; sid?: string }> }) {
+export default async function DashboardModulesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; cancelled?: string; sid?: string }>;
+}) {
   const session = await auth();
   if (!session) redirect("/signin");
   const params = await searchParams;
   const userId = (session.user as { id?: string })?.id ?? "";
-
-  // If returning from Stripe, verify + activate before rendering (beat the webhook race)
-  let verifyOk = false;
-  if (params.sid && params.success) {
-    verifyOk = await verifySession(params.sid, userId);
-  }
 
   const [dbModules, userModules] = await Promise.all([getModuleCatalog(), getUserModules(userId)]);
   const merged = dbModules.map((dbMod: { id: string }) => ({
@@ -63,21 +50,18 @@ export default async function DashboardModulesPage({ searchParams }: { searchPar
 
   return (
     <div className="space-y-4">
-      {params.success && (
+      {/* Client component handles verify → router.refresh() → re-renders this page with fresh DB data */}
+      {params.success && params.sid ? (
+        <StripeVerify sid={params.sid} />
+      ) : params.success ? (
         <div className="bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-          <span>✓</span>
-          <span>
-            {verifyOk
-              ? "Payment successful! Your module has been activated."
-              : "Payment received! Your module will activate shortly."}
-          </span>
+          <span>✓</span><span>Payment successful! Your module has been activated.</span>
         </div>
-      )}
-      {params.cancelled && (
+      ) : params.cancelled ? (
         <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 px-4 py-3 rounded-lg text-sm">
           Payment cancelled. You can try again anytime.
         </div>
-      )}
+      ) : null}
       <ModulesCatalog modules={merged} userModules={userModules} />
     </div>
   );
