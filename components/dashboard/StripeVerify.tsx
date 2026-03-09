@@ -14,12 +14,13 @@ export default function StripeVerify({ sid }: { sid: string }) {
       body: JSON.stringify({ stripeSessionId: sid }),
     })
       .then(r => r.json())
-      .then(() => {
-        // Hard navigation strips the ?sid= param, forces a clean server render
-        // with fresh DB data — module will now show as active
+      .then(data => {
+        if (data.error) console.error("[StripeVerify] API error:", data.error);
+        // Hard navigation — forces fresh server render with updated DB state
         window.location.replace("/dashboard/modules?activated=1");
       })
-      .catch(() => {
+      .catch(err => {
+        console.error("[StripeVerify] fetch error:", err);
         window.location.replace("/dashboard/modules?activated=1");
       });
   }, [sid]);
