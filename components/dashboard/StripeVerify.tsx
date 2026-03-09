@@ -1,11 +1,8 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 export default function StripeVerify({ sid }: { sid: string }) {
-  const router = useRouter();
   const called = useRef(false);
-  const [status, setStatus] = useState<"verifying" | "ok" | "pending">("verifying");
 
   useEffect(() => {
     if (called.current) return;
@@ -17,34 +14,20 @@ export default function StripeVerify({ sid }: { sid: string }) {
       body: JSON.stringify({ stripeSessionId: sid }),
     })
       .then(r => r.json())
-      .then(data => {
-        setStatus(data.verified ? "ok" : "pending");
-        // Refresh the server component so userModules re-fetches from DB
-        router.refresh();
+      .then(() => {
+        // Hard navigation strips the ?sid= param, forces a clean server render
+        // with fresh DB data — module will now show as active
+        window.location.replace("/dashboard/modules?activated=1");
       })
       .catch(() => {
-        setStatus("pending");
-        router.refresh();
+        window.location.replace("/dashboard/modules?activated=1");
       });
-  }, [sid, router]);
-
-  if (status === "verifying") {
-    return (
-      <div className="bg-blue-500/10 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-        <span className="animate-spin">⟳</span>
-        <span>Confirming your payment…</span>
-      </div>
-    );
-  }
+  }, [sid]);
 
   return (
-    <div className="bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-      <span>✓</span>
-      <span>
-        {status === "ok"
-          ? "Payment confirmed! Your module is now active."
-          : "Payment received! Your module will activate in a moment."}
-      </span>
+    <div className="bg-blue-500/10 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+      <span className="inline-block animate-spin">⟳</span>
+      <span>Activating your module…</span>
     </div>
   );
 }

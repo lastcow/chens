@@ -35,12 +35,13 @@ async function getUserModules(userId: string) {
 export default async function DashboardModulesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string; cancelled?: string; sid?: string }>;
+  searchParams: Promise<{ success?: string; cancelled?: string; sid?: string; activated?: string }>;
 }) {
   const session = await auth();
   if (!session) redirect("/signin");
   const params = await searchParams;
   const userId = (session.user as { id?: string })?.id ?? "";
+  if (params.cancelled) redirect("/dashboard/modules?cancelled=1");
 
   const [dbModules, userModules] = await Promise.all([getModuleCatalog(), getUserModules(userId)]);
   const merged = dbModules.map((dbMod: { id: string }) => ({
@@ -50,12 +51,12 @@ export default async function DashboardModulesPage({
 
   return (
     <div className="space-y-4">
-      {/* Client component handles verify → router.refresh() → re-renders this page with fresh DB data */}
+      {/* ?success=1&sid=xxx — verify client-side then hard-navigate to ?activated=1 */}
       {params.success && params.sid ? (
         <StripeVerify sid={params.sid} />
-      ) : params.success ? (
+      ) : params.activated ? (
         <div className="bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-          <span>✓</span><span>Payment successful! Your module has been activated.</span>
+          <span>✓</span><span>Module activated! Your access is now enabled.</span>
         </div>
       ) : params.cancelled ? (
         <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 px-4 py-3 rounded-lg text-sm">
