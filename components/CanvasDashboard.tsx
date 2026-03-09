@@ -251,7 +251,7 @@ function CanvasTokenSetup({ onSaved }: { onSaved: (masked: string) => void }) {
 }
 
 // ── Main dashboard ────────────────────────────────────────────────────────────
-export default function CanvasDashboard({ userRole }: { userId: string; userRole: string }) {
+export default function CanvasDashboard({ userId, userRole }: { userId: string; userRole: string }) {
   const [instruction, setInstruction] = useState("");
   const [courseId, setCourseId] = useState("");
   const [selectedModel, setSelectedModel] = useState("claude-haiku-4-5-20251001");
@@ -328,7 +328,7 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
     const res = await fetch("/api/agent/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ instruction, courseId: courseId || undefined, createdBy: "teacher", model: selectedModel }),
+      body: JSON.stringify({ instruction, courseId: courseId || undefined, createdBy: userId, model: selectedModel }),
     });
 
     if (!res.ok) {
