@@ -38,6 +38,9 @@ export default function Navbar() {
                 <Link href="/canvas" className="text-gray-300 text-sm hover:text-white">
                   Canvas LMS
                 </Link>
+                <Link href="/profile" className="text-gray-300 text-sm hover:text-white">
+                  Profile
+                </Link>
                 <button
                   onClick={() => signOut()}
                   className="text-sm text-gray-500 hover:text-red-400 transition-colors"
