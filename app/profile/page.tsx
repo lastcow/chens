@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 interface ProfileData {
@@ -28,29 +30,37 @@ const PROVIDER_COLORS: Record<string, string> = {
 };
 
 export default function ProfilePage() {
-  const [data, setData]         = useState<ProfileData | null>(null);
-  const [runs, setRuns]         = useState<RunRow[]>([]);
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  const [data, setData]           = useState<ProfileData | null>(null);
+  const [runs, setRuns]           = useState<RunRow[]>([]);
   const [breakdown, setBreakdown] = useState<Breakdown[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
 
   // Password form
-  const [curPw, setCurPw]       = useState("");
-  const [newPw, setNewPw]       = useState("");
-  const [confPw, setConfPw]     = useState("");
-  const [pwMsg, setPwMsg]       = useState<{ ok: boolean; text: string } | null>(null);
+  const [curPw, setCurPw]     = useState("");
+  const [newPw, setNewPw]     = useState("");
+  const [confPw, setConfPw]   = useState("");
+  const [pwMsg, setPwMsg]     = useState<{ ok: boolean; text: string } | null>(null);
   const [pwLoading, setPwLoading] = useState(false);
 
   useEffect(() => {
+    if (status === "unauthenticated") { router.push("/signin"); return; }
+    if (status !== "authenticated") return;
+
     Promise.all([
       fetch("/api/user/profile").then(r => r.json()),
       fetch("/api/user/agent-runs").then(r => r.json()),
     ]).then(([prof, runsData]) => {
+      if (prof.error) { setError(prof.error); setLoading(false); return; }
       setData(prof);
       setRuns(runsData.runs ?? []);
       setBreakdown(runsData.breakdown ?? []);
       setLoading(false);
-    });
-  }, []);
+    }).catch(e => { setError(String(e)); setLoading(false); });
+  }, [status, router]);
 
   const handlePasswordChange = async () => {
     if (newPw !== confPw) { setPwMsg({ ok: false, text: "Passwords don't match" }); return; }
@@ -67,20 +77,28 @@ export default function ProfilePage() {
     setPwLoading(false);
   };
 
-  if (loading) return (
+  if (status === "loading" || loading) return (
     <div className="max-w-3xl mx-auto px-4 py-12 space-y-6">
-      {[...Array(3)].map((_, i) => <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl h-32 animate-pulse" />)}
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl h-32 animate-pulse" />
+      ))}
     </div>
   );
 
-  const { user, costs } = data!;
+  if (error) return (
+    <div className="max-w-3xl mx-auto px-4 py-12 text-red-400 text-sm">Error: {error}</div>
+  );
+
+  if (!data) return null;
+
+  const { user, costs } = data;
   const isOAuth = user.providers.some(p => p !== "credentials");
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
       <h1 className="text-2xl font-bold text-white">Profile</h1>
 
-      {/* Identity card */}
+      {/* Identity */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex items-center gap-5">
         {user.image ? (
           <Image src={user.image} alt="avatar" width={64} height={64} className="rounded-full" />
@@ -89,9 +107,9 @@ export default function ProfilePage() {
             {user.name?.[0]?.toUpperCase() ?? "?"}
           </div>
         )}
-        <div className="flex-1">
-          <div className="text-lg font-semibold text-white">{user.name}</div>
-          <div className="text-gray-500 text-sm">{user.email}</div>
+        <div className="flex-1 min-w-0">
+          <div className="text-lg font-semibold text-white truncate">{user.name}</div>
+          <div className="text-gray-500 text-sm truncate">{user.email}</div>
           <div className="flex gap-2 mt-2 flex-wrap">
             <span className={`text-xs px-2 py-0.5 rounded-full border ${user.role === "ADMIN" ? "bg-amber-900/30 border-amber-700/30 text-amber-400" : "bg-gray-800 border-gray-700 text-gray-500"}`}>
               {user.role}
@@ -103,7 +121,7 @@ export default function ProfilePage() {
             ))}
           </div>
         </div>
-        <div className="text-xs text-gray-600 text-right">
+        <div className="text-xs text-gray-600 text-right shrink-0">
           Member since<br />
           {new Date(user.created_at).toLocaleDateString()}
         </div>
@@ -114,10 +132,10 @@ export default function ProfilePage() {
         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Agent Usage &amp; Cost</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
           {[
-            { label: "This Month", value: `$${costs.month.toFixed(4)}`, color: "text-amber-400" },
-            { label: "All Time",   value: `$${costs.total.toFixed(4)}`, color: "text-white" },
-            { label: "Runs (Month)", value: costs.month_runs, color: "text-blue-400" },
-            { label: "Runs (Total)", value: costs.total_runs, color: "text-gray-300" },
+            { label: "This Month",    value: `$${costs.month.toFixed(4)}`,  color: "text-amber-400" },
+            { label: "All Time",      value: `$${costs.total.toFixed(4)}`,  color: "text-white" },
+            { label: "Runs (Month)",  value: costs.month_runs,              color: "text-blue-400" },
+            { label: "Runs (Total)",  value: costs.total_runs,              color: "text-gray-300" },
           ].map(s => (
             <div key={s.label} className="text-center bg-gray-800/50 rounded-lg p-3">
               <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
@@ -125,7 +143,6 @@ export default function ProfilePage() {
             </div>
           ))}
         </div>
-
         {breakdown.length > 0 ? (
           <div className="space-y-2">
             <div className="text-xs text-gray-600 mb-2">This month by model</div>
@@ -146,7 +163,7 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* Run history */}
+      {/* Recent Runs */}
       {runs.length > 0 && (
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Recent Runs</h2>
@@ -183,7 +200,13 @@ export default function ProfilePage() {
         {isOAuth ? (
           <div className="flex items-center gap-3 text-sm text-gray-500">
             <span className="text-lg">🔒</span>
-            <span>Your account is signed in via <strong className="text-gray-300">{user.providers.filter(p => p !== "credentials").map(p => PROVIDER_LABELS[p] ?? p).join(", ")}</strong>. Password login is not available.</span>
+            <span>
+              Signed in via{" "}
+              <strong className="text-gray-300">
+                {user.providers.filter(p => p !== "credentials").map(p => PROVIDER_LABELS[p] ?? p).join(", ")}
+              </strong>
+              . Password login is not available.
+            </span>
           </div>
         ) : (
           <div className="space-y-3 max-w-sm">
