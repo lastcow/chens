@@ -21,6 +21,8 @@ interface Task {
   title: string;
   status: string;
   createdAt: string;
+  startedAt?: string;
+  completedAt?: string;
   toolsUsed: string[];
   result?: { answer: string; steps?: unknown[] };
   error?: string;
@@ -484,6 +486,11 @@ export default function CanvasDashboard({ userId, userRole }: { userId: string; 
               </div>
               <p className="text-xs text-gray-600 mt-1">
                 {new Date(task.createdAt).toLocaleString()}
+                {task.startedAt && task.completedAt && (() => {
+                  const ms = new Date(task.completedAt!).getTime() - new Date(task.startedAt!).getTime();
+                  const s = ms / 1000;
+                  return <span className="ml-2 text-gray-500">⏱ {s >= 60 ? `${Math.floor(s/60)}m ${Math.round(s%60)}s` : `${s.toFixed(1)}s`}</span>;
+                })()}
                 {task.toolsUsed?.length > 0 && ` · ${task.toolsUsed.join(", ")}`}
                 {task.usage && (
                   <span className="ml-2 text-amber-600/70">
