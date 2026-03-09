@@ -23,9 +23,9 @@ async function getUserModules(userId: string) {
     });
     const data = await res.json();
     return (data.modules ?? []).reduce(
-      (acc: Record<string, { enabled: boolean; payment_type: string | null; expires_at: string | null; activated_at: string | null }>,
-       m: { module: string; enabled: boolean; payment_type: string | null; expires_at: string | null; activated_at: string | null }) => {
-        acc[m.module] = { enabled: m.enabled, payment_type: m.payment_type, expires_at: m.expires_at, activated_at: m.activated_at };
+      (acc: Record<string, { enabled: boolean; payment_type: string | null; expires_at: string | null; activated_at: string | null; cancelled: boolean }>,
+       m: { module: string; enabled: boolean; payment_type: string | null; expires_at: string | null; activated_at: string | null; cancelled: boolean }) => {
+        acc[m.module] = { enabled: m.enabled, payment_type: m.payment_type, expires_at: m.expires_at, activated_at: m.activated_at, cancelled: m.cancelled ?? false };
         return acc;
       }, {}
     );

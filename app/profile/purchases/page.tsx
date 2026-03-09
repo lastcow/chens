@@ -11,7 +11,7 @@ type Payment = {
 
 type UserModule = {
   module: string; payment_type: string | null;
-  expires_at: string | null; activated_at: string | null;
+  expires_at: string | null; activated_at: string | null; cancelled: boolean;
 };
 
 const MODULE_LABELS: Record<string, string> = {
@@ -39,19 +39,17 @@ function StatusCell({ payment, userMod }: { payment: Payment; userMod?: UserModu
   // Subscription
   const exp = userMod?.expires_at ? new Date(userMod.expires_at) : null;
   const expired = exp && exp < new Date();
-  if (pt === "monthly") {
-    return expired
-      ? <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Expired</span>
-      : <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium">
-          ✓ Monthly{exp ? ` · until ${exp.toLocaleDateString()}` : ""}
-        </span>;
-  }
-  if (pt === "annual") {
-    return expired
-      ? <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Expired</span>
-      : <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-medium">
-          ✓ Annual{exp ? ` · until ${exp.toLocaleDateString()}` : ""}
-        </span>;
+  if (pt === "monthly" || pt === "annual") {
+    if (expired) return <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Expired</span>;
+    if (userMod?.cancelled) return (
+      <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full font-medium">
+        Cancelled · until {exp ? exp.toLocaleDateString() : "—"}
+      </span>
+    );
+    const label = pt === "monthly" ? "Monthly" : "Annual";
+    return <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium">
+      ✓ {label}{exp ? ` · until ${exp.toLocaleDateString()}` : ""}
+    </span>;
   }
   return <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">✓ Active</span>;
 }
