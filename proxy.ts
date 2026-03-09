@@ -1,11 +1,11 @@
+import { auth } from "@/auth";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import type { NextAuthRequest } from "next-auth";
 
-// Paths accessible without signing in
+// Paths accessible without auth
 const PUBLIC_PATHS = ["/", "/signin", "/register", "/unauthorized", "/api/auth", "/api/images", "/_next"];
 
-export async function proxy(req: NextRequest) {
+export const proxy = auth(function middleware(req: NextAuthRequest) {
   const { pathname } = req.nextUrl;
 
   // Allow public paths and static files
@@ -16,20 +16,21 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const session = req.auth;
+  const role = (session?.user as { role?: string } | undefined)?.role;
 
   // Not signed in → sign in
-  if (!token) {
+  if (!session) {
     return NextResponse.redirect(new URL("/signin", req.url));
   }
 
   // Signed in but not ADMIN → unauthorized
-  if (token.role !== "ADMIN") {
+  if (role !== "ADMIN") {
     return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
