@@ -20,25 +20,33 @@ export default function ModulesCatalog({
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<Record<string, "one_time" | "monthly" | "annual">>({});
   const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const getPlan = (id: string, mod: ModuleDef) =>
     selectedPlan[id] ?? (mod.allow_monthly ? "monthly" : mod.allow_annual ? "annual" : "one_time");
 
   const activate = async (mod: ModuleDef) => {
     setLoading(mod.id);
+    setError(null);
     const paymentType = mod.is_free ? "free" : getPlan(mod.id, mod);
 
-    const res = await fetch("/api/user/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ moduleId: mod.id, paymentType }),
-    });
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/user/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moduleId: mod.id, paymentType }),
+      });
+      const data = await res.json();
 
-    if (data.activated) {
-      router.refresh();
-    } else if (data.url) {
-      window.location.href = data.url;
+      if (data.activated) {
+        router.refresh();
+      } else if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error ?? "Something went wrong. Please try again.");
+      }
+    } catch {
+      setError("Network error. Please check your connection and try again.");
     }
     setLoading(null);
   };
@@ -49,6 +57,13 @@ export default function ModulesCatalog({
         <h2 className="text-lg font-semibold text-white mb-1">Available Modules</h2>
         <p className="text-gray-400 text-sm">Extend your platform with additional features.</p>
       </div>
+
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
+          <span>⚠ {error}</span>
+          <button onClick={() => setError(null)} className="ml-4 hover:text-red-300">✕</button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4">
         {modules.map((mod) => {
