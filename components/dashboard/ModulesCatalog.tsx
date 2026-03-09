@@ -9,7 +9,41 @@ type ModuleDef = {
   allow_one_time: boolean; allow_monthly: boolean; allow_annual: boolean;
   features: string[];
 };
-type UserModuleMap = Record<string, { enabled: boolean; payment_type: string | null }>;
+
+type UserModuleEntry = {
+  enabled: boolean;
+  payment_type: string | null;
+  expires_at: string | null;
+  activated_at: string | null;
+};
+type UserModuleMap = Record<string, UserModuleEntry>;
+
+function StatusBadge({ entry }: { entry: UserModuleEntry }) {
+  const pt = entry.payment_type;
+  const exp = entry.expires_at ? new Date(entry.expires_at) : null;
+  const expired = exp && exp < new Date();
+
+  if (expired) {
+    return <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-medium">⚠ Expired</span>;
+  }
+  if (pt === "one_time") {
+    return <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium">✓ Purchased</span>;
+  }
+  if (pt === "free") {
+    return <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium">✓ Active · Free</span>;
+  }
+  if (pt === "monthly") {
+    return <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium">
+      ✓ Monthly{exp ? ` · renews ${exp.toLocaleDateString()}` : ""}
+    </span>;
+  }
+  if (pt === "annual") {
+    return <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-medium">
+      ✓ Annual{exp ? ` · renews ${exp.toLocaleDateString()}` : ""}
+    </span>;
+  }
+  return <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium">✓ Active</span>;
+}
 
 export default function ModulesCatalog({
   modules, userModules,
@@ -85,13 +119,11 @@ export default function ModulesCatalog({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h3 className="font-semibold text-white">{mod.label}</h3>
-                      {enabled ? (
-                        <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium">
-                          ✓ Active{userMod?.payment_type ? ` · ${userMod.payment_type.replace("_", " ")}` : ""}
-                        </span>
-                      ) : mod.is_free ? (
-                        <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Free</span>
-                      ) : null}
+                      {enabled
+                        ? <StatusBadge entry={userMod} />
+                        : mod.is_free
+                          ? <span className="text-xs bg-gray-700 text-gray-400 px-2 py-0.5 rounded-full">Free</span>
+                          : null}
                     </div>
                     <p className="text-sm text-gray-400 mb-3">{mod.description}</p>
                     <ul className="space-y-1">
@@ -108,44 +140,40 @@ export default function ModulesCatalog({
                 {!enabled && (
                   <div className="shrink-0 w-full md:w-52 space-y-3">
                     {!mod.is_free && (
-                      <>
-                        {/* Plan selector */}
-                        <div className="flex flex-col gap-1.5 text-sm">
-                          {mod.allow_one_time && (
-                            <label className={`flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer transition-colors ${plan === "one_time" ? "border-amber-500/50 bg-amber-500/5" : "border-gray-700 hover:border-gray-600"}`}>
-                              <span className="flex items-center gap-2">
-                                <input type="radio" name={`plan-${mod.id}`} value="one_time" checked={plan === "one_time"}
-                                  onChange={() => setSelectedPlan(p => ({ ...p, [mod.id]: "one_time" }))} className="accent-amber-500" />
-                                One-time
-                              </span>
-                              <span className="font-bold text-white">${mod.price_one_time}</span>
-                            </label>
-                          )}
-                          {mod.allow_monthly && (
-                            <label className={`flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer transition-colors ${plan === "monthly" ? "border-amber-500/50 bg-amber-500/5" : "border-gray-700 hover:border-gray-600"}`}>
-                              <span className="flex items-center gap-2">
-                                <input type="radio" name={`plan-${mod.id}`} value="monthly" checked={plan === "monthly"}
-                                  onChange={() => setSelectedPlan(p => ({ ...p, [mod.id]: "monthly" }))} className="accent-amber-500" />
-                                Monthly
-                              </span>
-                              <span className="font-bold text-white">${mod.price_monthly}<span className="text-gray-500 font-normal text-xs">/mo</span></span>
-                            </label>
-                          )}
-                          {mod.allow_annual && (
-                            <label className={`relative flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer transition-colors ${plan === "annual" ? "border-amber-500/50 bg-amber-500/5" : "border-gray-700 hover:border-gray-600"}`}>
-                              <span className="absolute -top-2 right-2 text-xs bg-amber-500 text-black px-1.5 rounded-full font-bold">10% off</span>
-                              <span className="flex items-center gap-2">
-                                <input type="radio" name={`plan-${mod.id}`} value="annual" checked={plan === "annual"}
-                                  onChange={() => setSelectedPlan(p => ({ ...p, [mod.id]: "annual" }))} className="accent-amber-500" />
-                                Annual
-                              </span>
-                              <span className="font-bold text-white">${annualPrice}<span className="text-gray-500 font-normal text-xs">/yr</span></span>
-                            </label>
-                          )}
-                        </div>
-                      </>
+                      <div className="flex flex-col gap-1.5 text-sm">
+                        {mod.allow_one_time && (
+                          <label className={`flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer transition-colors ${plan === "one_time" ? "border-amber-500/50 bg-amber-500/5" : "border-gray-700 hover:border-gray-600"}`}>
+                            <span className="flex items-center gap-2">
+                              <input type="radio" name={`plan-${mod.id}`} value="one_time" checked={plan === "one_time"}
+                                onChange={() => setSelectedPlan(p => ({ ...p, [mod.id]: "one_time" }))} className="accent-amber-500" />
+                              One-time
+                            </span>
+                            <span className="font-bold text-white">${mod.price_one_time}</span>
+                          </label>
+                        )}
+                        {mod.allow_monthly && (
+                          <label className={`flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer transition-colors ${plan === "monthly" ? "border-amber-500/50 bg-amber-500/5" : "border-gray-700 hover:border-gray-600"}`}>
+                            <span className="flex items-center gap-2">
+                              <input type="radio" name={`plan-${mod.id}`} value="monthly" checked={plan === "monthly"}
+                                onChange={() => setSelectedPlan(p => ({ ...p, [mod.id]: "monthly" }))} className="accent-amber-500" />
+                              Monthly
+                            </span>
+                            <span className="font-bold text-white">${mod.price_monthly}<span className="text-gray-500 font-normal text-xs">/mo</span></span>
+                          </label>
+                        )}
+                        {mod.allow_annual && (
+                          <label className={`relative flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer transition-colors ${plan === "annual" ? "border-amber-500/50 bg-amber-500/5" : "border-gray-700 hover:border-gray-600"}`}>
+                            <span className="absolute -top-2 right-2 text-xs bg-amber-500 text-black px-1.5 rounded-full font-bold">10% off</span>
+                            <span className="flex items-center gap-2">
+                              <input type="radio" name={`plan-${mod.id}`} value="annual" checked={plan === "annual"}
+                                onChange={() => setSelectedPlan(p => ({ ...p, [mod.id]: "annual" }))} className="accent-amber-500" />
+                              Annual
+                            </span>
+                            <span className="font-bold text-white">${annualPrice}<span className="text-gray-500 font-normal text-xs">/yr</span></span>
+                          </label>
+                        )}
+                      </div>
                     )}
-
                     <button
                       onClick={() => activate(mod)}
                       disabled={loading === mod.id}

@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
         ...body,
         userId,
         userEmail,
-        successUrl: `${process.env.NEXTAUTH_URL}/dashboard/modules?success=1`,
+        successUrl: `${process.env.NEXTAUTH_URL}/dashboard/modules?success=1&sid={CHECKOUT_SESSION_ID}`,
         cancelUrl: `${process.env.NEXTAUTH_URL}/dashboard/modules?cancelled=1`,
       }),
     });
