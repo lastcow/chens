@@ -3,8 +3,6 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { apiLogin, apiGoogleSignIn } from "@/lib/api";
 
-const PUBLIC_PATHS = ["/", "/signin", "/register", "/unauthorized", "/api/auth", "/api/images"];
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/signin" },
@@ -34,18 +32,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    authorized({ auth: session, request: { nextUrl } }) {
-      const pathname = nextUrl.pathname;
 
-      // Allow public paths
-      if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) return true;
-
-      // Only check if authenticated — role is enforced in server components
-      // Edge runtime cannot reliably decrypt the role from the JWT
-      if (!session) return false;
-
-      return true;
-    },
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as { role?: string }).role;
