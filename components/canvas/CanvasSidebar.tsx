@@ -10,7 +10,7 @@ const NAV = [
   { href: "/canvas/assignments", label: "Assignments", icon: "📋", countKey: "ungraded" },
   { href: "/canvas/grades",      label: "Grades",      icon: "📊", countKey: "pending" },
   { href: "/canvas/atrisk",      label: "At-Risk",     icon: "⚠️", countKey: "atrisk" },
-  { href: "/canvas",             label: "AI Agent",    icon: "🤖" },
+  { href: "/canvas/agent",        label: "AI Agent",    icon: "🤖" },
 ];
 
 export default function CanvasSidebar() {
@@ -49,9 +49,7 @@ export default function CanvasSidebar() {
     <aside className="w-48 shrink-0">
       <nav className="space-y-1 sticky top-24">
         {NAV.map((item) => {
-          const active = item.href === "/canvas"
-            ? path === "/canvas"
-            : path.startsWith(item.href);
+          const active = path.startsWith(item.href);
           return (
             <Link
               key={item.href}
