@@ -17,10 +17,22 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const res = await fetch(`${API_BASE}/api/user/checkout`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
-    body: JSON.stringify({ ...body, userId, userEmail }),
-  });
-  return NextResponse.json(await res.json());
+
+  try {
+    const res = await fetch(`${API_BASE}/api/user/checkout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+      body: JSON.stringify({ ...body, userId, userEmail }),
+    });
+
+    const text = await res.text();
+    console.log("[checkout proxy] status:", res.status, "body:", text.slice(0, 200));
+
+    let data;
+    try { data = JSON.parse(text); } catch { data = { error: text || "Empty response from API" }; }
+    return NextResponse.json(data, { status: res.ok ? 200 : res.status });
+  } catch (err) {
+    console.error("[checkout proxy] fetch error:", err);
+    return NextResponse.json({ error: "Failed to reach payment API: " + String(err) }, { status: 502 });
+  }
 }
