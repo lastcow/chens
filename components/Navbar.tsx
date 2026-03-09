@@ -36,7 +36,7 @@ export default function Navbar() {
                   Dashboard
                 </Link>
                 <Link href="/canvas" className="text-gray-300 text-sm hover:text-white">
-                  Canvas
+                  Canvas LMS Snapshot
                 </Link>
                 <button
                   onClick={() => signOut()}

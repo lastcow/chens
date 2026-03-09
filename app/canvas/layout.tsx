@@ -11,7 +11,7 @@ export default async function CanvasLayout({ children }: { children: React.React
     <TermProvider>
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white">Canvas LMS</h1>
+          <h1 className="text-2xl font-bold text-white">Canvas LMS Snapshot</h1>
           <p className="text-gray-500 text-sm mt-1">Course management</p>
         </div>
         <div className="flex gap-6">
