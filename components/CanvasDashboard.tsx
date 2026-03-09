@@ -361,19 +361,10 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
         <span>Canvas token is managed from the <a href="/canvas/overview" className="text-amber-400 hover:underline">Overview</a> page.</span>
       </div>
 
-      {/* Task submission — disabled overlay */}
-      <div className="relative">
-        <div className="absolute inset-0 z-10 bg-gray-950/60 rounded-xl backdrop-blur-[1px] flex items-start justify-center pt-8 pointer-events-auto">
-          <div className="text-center">
-            <div className="text-2xl mb-2">🚧</div>
-            <div className="text-sm font-semibold text-gray-400">AI Agent coming soon</div>
-            <div className="text-xs text-gray-600 mt-1">Manage your Canvas token on the <a href="/canvas/overview" className="text-amber-400 hover:underline">Overview</a> page</div>
-          </div>
-        </div>
-      <div className="card pointer-events-none select-none">
+      {/* Task submission */}
+      <div className="card">
         <div className="flex items-center gap-2 mb-4">
           <h2 className="text-lg font-semibold">🤖 Run Agent Task</h2>
-          <span className="text-xs bg-gray-800 text-gray-500 border border-gray-700 rounded-full px-2 py-0.5">Coming soon</span>
         </div>
         <form onSubmit={submitTask} className="space-y-4">
           {/* Model selector */}
@@ -557,8 +548,6 @@ export default function CanvasDashboard({ userRole }: { userId: string; userRole
           ))}
         </div>
       )}
-
-      </div>{/* end relative overlay wrapper */}
 
       {/* Tools */}
       {activeTab === "tools" && (
