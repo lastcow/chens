@@ -37,17 +37,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     authorized({ auth: session, request: { nextUrl } }) {
       const pathname = nextUrl.pathname;
 
-      // Allow static files
-      if (pathname.includes(".")) return true;
-
       // Allow public paths
       if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) return true;
 
       // Not signed in → redirect to sign in
       if (!session) return false;
 
-      // Signed in but not ADMIN → redirect to /unauthorized
-      const role = (session.user as { role?: string })?.role;
+      // role lives in token as top-level field; session callback maps it to session.user.role
+      // Fall back to checking both locations
+      const user = session.user as { role?: string; id?: string } | undefined;
+      const role = user?.role;
+
+      console.log("[auth middleware]", pathname, "role=", role, "user=", JSON.stringify(user));
+
+      // Signed in but not ADMIN → unauthorized
       if (role !== "ADMIN") {
         return Response.redirect(new URL("/unauthorized", nextUrl));
       }
