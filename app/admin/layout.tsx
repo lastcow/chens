@@ -8,13 +8,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if ((session.user as { role?: string })?.role !== "ADMIN") redirect("/unauthorized");
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-1">Admin Panel</h1>
-        <p className="text-gray-400 text-sm">Manage users and system settings</p>
+        <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
+        <p className="text-gray-500 text-sm mt-1">Platform management</p>
       </div>
-      <AdminSidebar />
-      {children}
+      <div className="flex gap-6">
+        <AdminSidebar />
+        <main className="flex-1 min-w-0">{children}</main>
+      </div>
     </div>
   );
 }

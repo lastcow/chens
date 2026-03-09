@@ -3,33 +3,35 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV = [
-  { href: "/admin", label: "Overview", icon: "🏠" },
-  { href: "/admin/users", label: "Users", icon: "👥" },
-  { href: "/admin/modules", label: "Modules", icon: "🧩" },
+  { href: "/admin",         label: "Overview", icon: "🏠", exact: true },
+  { href: "/admin/users",   label: "Users",    icon: "👥" },
+  { href: "/admin/modules", label: "Modules",  icon: "🧩" },
 ];
 
 export default function AdminSidebar() {
-  const pathname = usePathname();
+  const path = usePathname();
 
   return (
-    <div className="flex gap-1 border-b border-gray-800 mb-8 pb-0">
-      {NAV.map((item) => {
-        const active = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              active
-                ? "border-amber-400 text-amber-400"
-                : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600"
-            }`}
-          >
-            <span>{item.icon}</span>
-            <span>{item.label}</span>
-          </Link>
-        );
-      })}
-    </div>
+    <aside className="w-48 shrink-0">
+      <nav className="space-y-1 sticky top-24">
+        {NAV.map((item) => {
+          const active = item.exact ? path === item.href : path.startsWith(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                active
+                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                  : "text-gray-400 hover:text-white hover:bg-gray-800/50"
+              }`}
+            >
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </aside>
   );
 }
