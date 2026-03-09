@@ -40,20 +40,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Allow public paths
       if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) return true;
 
-      // Not signed in → redirect to sign in
+      // Only check if authenticated — role is enforced in server components
+      // Edge runtime cannot reliably decrypt the role from the JWT
       if (!session) return false;
-
-      // role lives in token as top-level field; session callback maps it to session.user.role
-      // Fall back to checking both locations
-      const user = session.user as { role?: string; id?: string } | undefined;
-      const role = user?.role;
-
-      console.log("[auth middleware]", pathname, "role=", role, "user=", JSON.stringify(user));
-
-      // Signed in but not ADMIN → unauthorized
-      if (role !== "ADMIN") {
-        return Response.redirect(new URL("/unauthorized", nextUrl));
-      }
 
       return true;
     },
