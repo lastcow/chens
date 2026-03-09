@@ -368,6 +368,18 @@ export default function CanvasDashboard({ userId, userRole }: { userId: string; 
         <div className="flex items-center gap-2 mb-4">
           <h2 className="text-lg font-semibold">🤖 Run Agent Task</h2>
         </div>
+
+        {/* Cost warning */}
+        <div className="flex gap-3 bg-yellow-900/20 border border-yellow-600/30 rounded-xl px-4 py-3 mb-4">
+          <span className="text-yellow-400 text-lg shrink-0">⚠️</span>
+          <div className="text-xs text-yellow-300/80 leading-relaxed">
+            <span className="font-semibold text-yellow-300">Every token costs money.</span>
+            {" "}Do not run tasks if you are unsure how large the job is.
+            Failed tasks <span className="text-yellow-200 font-medium">still charge</span> for tokens consumed.
+            Vague or broad instructions may trigger many tool calls and <span className="text-yellow-200 font-medium">cost unexpectedly high</span>.
+            Start small — test with a single course or student before running wide tasks.
+          </div>
+        </div>
         <form onSubmit={submitTask} className="space-y-4">
           {/* Model selector */}
           <div>
