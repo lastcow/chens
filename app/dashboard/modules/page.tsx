@@ -1,89 +1,62 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ALL_MODULES } from "@/lib/modules";
+import ModulesCatalog from "@/components/dashboard/ModulesCatalog";
 
 const API_BASE = process.env.CHENS_API_URL!;
 const API_KEY = process.env.CHENS_API_SECRET_KEY!;
 
-async function getUserModules(userId: string): Promise<Record<string, boolean>> {
+async function getModuleCatalog() {
+  try {
+    const res = await fetch(`${API_BASE}/api/modules`, {
+      headers: { "x-api-key": API_KEY }, cache: "no-store",
+    });
+    return (await res.json()).modules ?? [];
+  } catch { return []; }
+}
+
+async function getUserModules(userId: string) {
   try {
     const res = await fetch(`${API_BASE}/api/user/modules`, {
-      headers: { "x-api-key": API_KEY, "x-user-id": userId },
-      cache: "no-store",
+      headers: { "x-api-key": API_KEY, "x-user-id": userId }, cache: "no-store",
     });
     const data = await res.json();
     return (data.modules ?? []).reduce(
-      (acc: Record<string, boolean>, m: { module: string; enabled: boolean }) => {
-        acc[m.module] = m.enabled;
+      (acc: Record<string, { enabled: boolean; payment_type: string | null }>, m: { module: string; enabled: boolean; payment_type: string | null }) => {
+        acc[m.module] = { enabled: m.enabled, payment_type: m.payment_type };
         return acc;
-      },
-      {}
+      }, {}
     );
-  } catch {
-    return {};
-  }
+  } catch { return {}; }
 }
 
-export default async function DashboardModulesPage() {
+export default async function DashboardModulesPage({ searchParams }: { searchParams: Promise<{ success?: string; cancelled?: string }> }) {
   const session = await auth();
   if (!session) redirect("/signin");
+  const params = await searchParams;
 
   const userId = (session.user as { id?: string })?.id ?? "";
-  const userModules = await getUserModules(userId);
+
+  // Merge DB catalog with local feature definitions
+  const [dbModules, userModules] = await Promise.all([getModuleCatalog(), getUserModules(userId)]);
+  const merged = dbModules.map((dbMod: { id: string }) => ({
+    ...ALL_MODULES.find(m => m.id === dbMod.id),
+    ...dbMod,
+  }));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-white mb-1">Available Modules</h2>
-        <p className="text-gray-400 text-sm">
-          Modules extend your platform with additional features. Contact your administrator to enable or disable modules for your account.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4">
-        {ALL_MODULES.map((mod) => {
-          const enabled = userModules[mod.id] ?? false;
-          return (
-            <div
-              key={mod.id}
-              className={`card border transition-colors ${
-                enabled ? "border-amber-500/30" : "border-gray-700/50 opacity-70"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className={`text-3xl p-3 rounded-xl ${enabled ? "bg-amber-500/10" : "bg-gray-800"}`}>
-                    {mod.icon}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-white">{mod.label}</h3>
-                      <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          enabled
-                            ? "bg-green-500/20 text-green-400"
-                            : "bg-gray-700 text-gray-400"
-                        }`}
-                      >
-                        {enabled ? "Enabled" : "Disabled"}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-3">{mod.description}</p>
-                    <ul className="space-y-1">
-                      {mod.features.map((f) => (
-                        <li key={f} className="flex items-center gap-2 text-xs text-gray-500">
-                          <span className={enabled ? "text-amber-400" : "text-gray-600"}>✓</span>
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+    <div className="space-y-4">
+      {params.success && (
+        <div className="bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg text-sm">
+          ✓ Payment successful! Your module has been activated.
+        </div>
+      )}
+      {params.cancelled && (
+        <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 px-4 py-3 rounded-lg text-sm">
+          Payment cancelled. You can try again anytime.
+        </div>
+      )}
+      <ModulesCatalog modules={merged} userModules={userModules} />
     </div>
   );
 }

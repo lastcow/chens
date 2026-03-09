@@ -3,9 +3,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV = [
-  { href: "/admin",         label: "Overview", icon: "🏠", exact: true },
-  { href: "/admin/users",   label: "Users",    icon: "👥" },
-  { href: "/admin/modules", label: "Modules",  icon: "🧩" },
+  { href: "/admin",          label: "Overview", icon: "🏠", exact: true },
+  { href: "/admin/users",    label: "Users",    icon: "👥" },
+  { href: "/admin/modules",  label: "Modules",  icon: "🧩" },
+  { href: "/admin/pricing",  label: "Pricing",  icon: "💲" },
 ];
 
 export default function AdminSidebar() {
