@@ -3,6 +3,8 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { apiLogin, apiGoogleSignIn } from "@/lib/api";
 
+const PUBLIC_PATHS = ["/", "/signin", "/register", "/unauthorized", "/api/auth", "/api/images"];
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/signin" },
@@ -32,6 +34,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    authorized({ auth: session, request: { nextUrl } }) {
+      const pathname = nextUrl.pathname;
+
+      // Allow static files
+      if (pathname.includes(".")) return true;
+
+      // Allow public paths
+      if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) return true;
+
+      // Not signed in → redirect to sign in
+      if (!session) return false;
+
+      // Signed in but not ADMIN → redirect to /unauthorized
+      const role = (session.user as { role?: string })?.role;
+      if (role !== "ADMIN") {
+        return Response.redirect(new URL("/unauthorized", nextUrl));
+      }
+
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as { role?: string }).role;
