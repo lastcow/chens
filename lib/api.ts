@@ -36,10 +36,10 @@ export async function apiLogin(email: string, password: string) {
   });
 }
 
-export async function apiGoogleSignIn(email: string, name?: string | null, image?: string | null) {
+export async function apiGoogleSignIn(email: string, name?: string | null, image?: string | null, oauth_provider?: string, oauth_id?: string) {
   return apiFetch("/api/auth/google", {
     method: "POST",
-    body: JSON.stringify({ email, name, image }),
+    body: JSON.stringify({ email, name, image, oauth_provider, oauth_id }),
   });
 }
 

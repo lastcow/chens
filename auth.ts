@@ -49,8 +49,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account }) {
       if (account?.provider === "google" && user.email) {
         try {
-          const { user: dbUser } = await apiGoogleSignIn(user.email, user.name, user.image);
-          // Attach role from DB to user object for JWT
+          const { user: dbUser } = await apiGoogleSignIn(
+            user.email, user.name, user.image,
+            account.provider,        // oauth_provider = "google"
+            account.providerAccountId // oauth_id = Google sub
+          );
           (user as Record<string, unknown>).role = dbUser.role;
           user.id = dbUser.id;
         } catch {
