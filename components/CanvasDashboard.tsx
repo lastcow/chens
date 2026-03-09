@@ -22,7 +22,7 @@ interface Task {
   status: string;
   createdAt: string;
   toolsUsed: string[];
-  result?: { answer: string };
+  result?: { answer: string; steps?: unknown[] };
   error?: string;
   usage?: TaskUsage;
   steps?: ReActStep[];
@@ -533,8 +533,31 @@ export default function CanvasDashboard({ userId, userRole }: { userId: string; 
                     </div>
                   )}
                   {task.result?.answer && (
-                    <div className="bg-gray-800/50 rounded-lg px-3 py-3 text-gray-300 whitespace-pre-wrap">
-                      {task.result.answer}
+                    <div className="space-y-2">
+                      {/* Final Answer */}
+                      <div className="bg-gray-800/50 rounded-lg px-3 py-3 text-gray-300 text-sm whitespace-pre-wrap font-mono leading-relaxed">
+                        {task.result.answer}
+                      </div>
+                      {/* Raw observations from tool calls */}
+                      {task.steps && (task.steps as Array<{observation?: unknown; action?: {tool: string}}>).some(s => s.observation) && (
+                        <details className="group">
+                          <summary className="text-xs text-gray-600 hover:text-gray-400 cursor-pointer select-none py-1">
+                            🔍 Raw tool data ({(task.steps as Array<{observation?: unknown}>).filter(s => s.observation).length} observations)
+                          </summary>
+                          <div className="mt-2 space-y-2">
+                            {(task.steps as Array<{step: number; action?: {tool: string}; observation?: unknown}>)
+                              .filter(s => s.observation)
+                              .map((s, i) => (
+                                <div key={i} className="bg-gray-900 border border-gray-700 rounded-lg p-2">
+                                  <div className="text-xs text-amber-500 mb-1">📡 {s.action?.tool ?? `Step ${s.step}`}</div>
+                                  <pre className="text-xs text-gray-400 whitespace-pre-wrap overflow-x-auto max-h-64 overflow-y-auto">
+                                    {typeof s.observation === "string" ? s.observation : JSON.stringify(s.observation, null, 2)}
+                                  </pre>
+                                </div>
+                              ))}
+                          </div>
+                        </details>
+                      )}
                     </div>
                   )}
                   {task.status === "COMPLETED" && !task.result?.answer && (
