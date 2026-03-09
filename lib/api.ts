@@ -52,7 +52,7 @@ export async function apiGetUser(id: string) {
   return apiFetch(`/api/users/${id}`);
 }
 
-export async function apiUpdateUser(id: string, data: { name?: string; role?: string; image?: string }, callerRole?: string) {
+export async function apiUpdateUser(id: string, data: { name?: string; role?: string; image?: string; suspended?: boolean }, callerRole?: string) {
   return apiFetch(`/api/users/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
