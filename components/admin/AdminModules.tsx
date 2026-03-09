@@ -1,9 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-
-const ALL_MODULES = [
-  { id: "canvas_lms", label: "Canvas LMS", icon: "🎓", desc: "Canvas grade management, AI grading agent, at-risk dashboard" },
-];
+import { ALL_MODULES } from "@/lib/modules";
 
 type UserRow = {
   id: string;
@@ -55,7 +52,7 @@ export default function AdminModules() {
               <span>{m.icon}</span>
               <span className="font-semibold text-amber-400">{m.label}</span>
             </div>
-            <p className="text-xs text-gray-400">{m.desc}</p>
+            <p className="text-xs text-gray-400">{m.description}</p>
           </div>
         ))}
       </div>
@@ -67,6 +64,7 @@ export default function AdminModules() {
             <tr className="border-b border-gray-800 bg-gray-900/50">
               <th className="text-left px-4 py-3 text-gray-400 font-medium">User</th>
               <th className="text-left px-4 py-3 text-gray-400 font-medium">Role</th>
+              <th className="text-left px-4 py-3 text-gray-400 font-medium">Description</th>
               {ALL_MODULES.map((m) => (
                 <th key={m.id} className="text-center px-4 py-3 text-gray-400 font-medium">
                   {m.icon} {m.label}
@@ -96,6 +94,10 @@ export default function AdminModules() {
                   <span className={`text-xs font-medium px-2 py-0.5 rounded ${user.role === "ADMIN" ? "bg-amber-500/20 text-amber-400" : "bg-gray-700 text-gray-300"}`}>
                     {user.role}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-xs text-gray-500 max-w-xs">
+                  {/* role-based description hint */}
+                  {user.role === "ADMIN" ? "Full access to all modules" : "User account"}
                 </td>
                 {ALL_MODULES.map((m) => {
                   const enabled = user.modules[m.id] ?? false;
