@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 export default async function AdminPage() {
   const session = await auth();
   if (!session) redirect("/signin");
+  if ((session.user as { role?: string })?.role !== "ADMIN") redirect("/unauthorized");
 
   return (
     <div className="space-y-6">

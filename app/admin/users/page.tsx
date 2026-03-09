@@ -4,7 +4,8 @@ import AdminUsersList from "@/components/admin/AdminUsersList";
 
 export default async function AdminUsersPage() {
   const session = await auth();
-  if (!session || session.user?.role !== "ADMIN") redirect("/signin");
+  if (!session) redirect("/signin");
+  if ((session.user as { role?: string })?.role !== "ADMIN") redirect("/unauthorized");
 
   return <AdminUsersList />;
 }

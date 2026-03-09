@@ -5,6 +5,7 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session) redirect("/signin");
+  if ((session.user as { role?: string })?.role !== "ADMIN") redirect("/unauthorized");
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
