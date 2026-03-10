@@ -87,6 +87,8 @@ function AssignmentsContent() {
       .then(d => { if (d.grading_cost_per_submission) setGradingCost(d.grading_cost_per_submission); });
   }, []);
 
+  const [cancelling, setCancelling] = useState<number | null>(null);
+
   const submitRequest = async (a: Assignment) => {
     setRequesting(a.id);
     setConfirm(null);
@@ -113,6 +115,31 @@ function AssignmentsContent() {
       showToast("Network error", false);
     }
     setRequesting(null);
+  };
+
+  const cancelRequest = async (a: Assignment) => {
+    setCancelling(a.id);
+    try {
+      const res = await fetch("/api/professor/grade-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel", assignment_id: a.id }),
+      });
+      if (res.ok) {
+        setRequested(prev => { const n = new Set(prev); n.delete(a.id); return n; });
+        showToast("Grade request cancelled", true);
+        // Refresh assignments
+        setLoading(true);
+        fetch(`/api/professor/assignments?${termParam}`)
+          .then(r => r.json())
+          .then(d => { setAssignments(d.assignments ?? []); setLoading(false); });
+      } else {
+        showToast("Failed to cancel", false);
+      }
+    } catch {
+      showToast("Network error", false);
+    }
+    setCancelling(null);
   };
 
   const openStaging = async (a: Assignment) => {
@@ -437,7 +464,7 @@ function AssignmentsContent() {
                           : <span className="text-gray-700">—</span>}
                       </td>
                       <td className="text-center px-3 py-3">
-                        {/* Staging badge (purple) takes priority over ungraded badge */}
+                        {/* Staging badge (purple) > cancel (amber+X) > ungraded (amber) > done (✓) */}
                         {hasStaging ? (
                           <button
                             onClick={() => openStaging(a)}
@@ -446,6 +473,20 @@ function AssignmentsContent() {
                           >
                             {a.staging_count} staged
                           </button>
+                        ) : a.pending_request_id ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs bg-amber-900/30 text-amber-400 border border-amber-700/30 rounded-full px-2 py-0.5">
+                              {a.ungraded_count}
+                            </span>
+                            <button
+                              onClick={() => cancelRequest(a)}
+                              disabled={cancelling === a.id}
+                              title="Cancel grade request"
+                              className="text-xs text-gray-600 hover:text-red-400 transition-colors disabled:opacity-50 leading-none"
+                            >
+                              {cancelling === a.id ? "…" : "✕"}
+                            </button>
+                          </div>
                         ) : Number(a.ungraded_count) > 0 ? (
                           <span className="text-xs bg-amber-900/30 text-amber-400 border border-amber-700/30 rounded-full px-2 py-0.5">
                             {a.ungraded_count}
