@@ -13,11 +13,13 @@ const TYPE_STYLE: Record<string, string> = {
   purchase: "text-green-400",
   usage:    "text-red-400",
   refund:   "text-blue-400",
+  credit:   "text-purple-400",
 };
 const TYPE_LABEL: Record<string, string> = {
   purchase: "➕ Purchase",
   usage:    "➖ Usage",
   refund:   "↩ Refund",
+  credit:   "🎁 Credit",
 };
 
 export default function CreditsPage() {
@@ -122,7 +124,7 @@ export default function CreditsPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-300 max-w-xs truncate">{tx.description ?? "—"}</td>
                     <td className={`px-4 py-3 text-right font-mono font-semibold ${TYPE_STYLE[tx.type]}`}>
-                      {tx.type === "usage" ? "" : "+"}{parseFloat(tx.amount).toFixed(1)}
+                      {tx.type === "usage" ? "−" : "+"}{Math.abs(parseFloat(tx.amount)).toFixed(1)}
                     </td>
                     <td className="px-6 py-3 text-right font-mono text-gray-400 text-xs">
                       {tx.balance_after ? parseFloat(tx.balance_after).toFixed(1) : "—"}
