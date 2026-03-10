@@ -50,10 +50,15 @@ function CreditsContent() {
   const purchase = async () => {
     if (credits < 100) return;
     setBuying(true);
+    const origin = window.location.origin;
     const res = await fetch("/api/user/credits/purchase", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ credits }),
+      body: JSON.stringify({
+        credits,
+        success_url: `${origin}/profile/credits?purchased=${credits}`,
+        cancel_url:  `${origin}/profile/credits`,
+      }),
     });
     const d = await res.json();
     setBuying(false);

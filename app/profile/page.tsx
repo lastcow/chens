@@ -43,9 +43,14 @@ export default function ProfilePage() {
   const purchase = async () => {
     if (buyCredits < 100) return;
     setBuying(true);
+    const origin = window.location.origin;
     const res = await fetch("/api/user/credits/purchase", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ credits: buyCredits }),
+      body: JSON.stringify({
+        credits: buyCredits,
+        success_url: `${origin}/profile/credits?purchased=${buyCredits}`,
+        cancel_url:  `${origin}/profile/credits`,
+      }),
     });
     const d = await res.json();
     setBuying(false);
