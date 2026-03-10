@@ -12,11 +12,20 @@ interface User {
   image?: string | null;
 }
 
+interface ConfirmDialog {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  danger?: boolean;
+  onConfirm: () => void;
+}
+
 export default function AdminUsersList() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [dialog, setDialog] = useState<ConfirmDialog | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -28,30 +37,48 @@ export default function AdminUsersList() {
 
   useEffect(() => { fetchUsers(); }, []);
 
-  const toggleRole = async (user: User) => {
+  const showConfirm = (opts: ConfirmDialog) => setDialog(opts);
+  const closeDialog = () => setDialog(null);
+
+  const toggleRole = (user: User) => {
     const newRole = user.role === "ADMIN" ? "USER" : "ADMIN";
-    if (!confirm(`Change ${user.email} role to ${newRole}?`)) return;
-    setActing(user.id + "-role");
-    await fetch(`/api/admin/users/${user.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role: newRole }),
+    showConfirm({
+      title: "Change Role",
+      message: `Change ${user.email} role to ${newRole}?`,
+      confirmLabel: `→ ${newRole}`,
+      onConfirm: async () => {
+        closeDialog();
+        setActing(user.id + "-role");
+        await fetch(`/api/admin/users/${user.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role: newRole }),
+        });
+        await fetchUsers();
+        setActing(null);
+      },
     });
-    await fetchUsers();
-    setActing(null);
   };
 
-  const toggleSuspend = async (user: User) => {
+  const toggleSuspend = (user: User) => {
     const action = user.suspended ? "unsuspend" : "suspend";
-    if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${user.email}?`)) return;
-    setActing(user.id + "-suspend");
-    await fetch(`/api/admin/users/${user.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ suspended: !user.suspended }),
+    showConfirm({
+      title: action.charAt(0).toUpperCase() + action.slice(1) + " User",
+      message: `${action.charAt(0).toUpperCase() + action.slice(1)} ${user.email}?`,
+      confirmLabel: action.charAt(0).toUpperCase() + action.slice(1),
+      danger: !user.suspended,
+      onConfirm: async () => {
+        closeDialog();
+        setActing(user.id + "-suspend");
+        await fetch(`/api/admin/users/${user.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ suspended: !user.suspended }),
+        });
+        await fetchUsers();
+        setActing(null);
+      },
     });
-    await fetchUsers();
-    setActing(null);
   };
 
   const filtered = users.filter(
@@ -61,6 +88,34 @@ export default function AdminUsersList() {
 
   return (
     <div className="space-y-4">
+      {/* Custom confirm dialog */}
+      {dialog && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-sm space-y-4">
+            <h3 className="font-semibold text-white">{dialog.title}</h3>
+            <p className="text-sm text-gray-400">{dialog.message}</p>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={dialog.onConfirm}
+                className={`flex-1 py-2 text-sm rounded-lg font-medium transition-colors ${
+                  dialog.danger
+                    ? "bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30"
+                    : "btn-primary"
+                }`}
+              >
+                {dialog.confirmLabel}
+              </button>
+              <button
+                onClick={closeDialog}
+                className="flex-1 py-2 text-sm btn-secondary"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search */}
       <div className="flex gap-3 items-center">
         <input
