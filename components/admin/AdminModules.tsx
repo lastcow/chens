@@ -11,15 +11,33 @@ type UserRow = {
   modules: Record<string, boolean>;
 };
 
+type ModuleCatalogRow = {
+  id: string; label: string; icon: string; description: string;
+  is_free: boolean;
+  price_one_time: string | null; price_monthly: string | null; price_annual: string | null;
+  allow_one_time: boolean; allow_monthly: boolean; allow_annual: boolean;
+};
+
 export default function AdminModules() {
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [catalog, setCatalog] = useState<ModuleCatalogRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
+  // Pricing edit state
+  const [editing, setEditing] = useState<ModuleCatalogRow | null>(null);
+  const [priceSaving, setPriceSaving] = useState(false);
+  const [priceSaved, setPriceSaved] = useState(false);
+
   useEffect(() => {
-    fetch("/api/admin/modules")
-      .then((r) => r.json())
-      .then((d) => { setUsers(d.users || []); setLoading(false); });
+    Promise.all([
+      fetch("/api/admin/modules").then((r) => r.json()),
+      fetch("/api/admin/modules-catalog").then((r) => r.json()),
+    ]).then(([usersData, catalogData]) => {
+      setUsers(usersData.users || []);
+      setCatalog(catalogData.modules || []);
+      setLoading(false);
+    });
   }, []);
 
   const toggle = async (userId: string, module: string, current: boolean) => {
@@ -40,91 +58,268 @@ export default function AdminModules() {
     setSaving(null);
   };
 
+  const savePricing = async () => {
+    if (!editing) return;
+    setPriceSaving(true);
+    const annual =
+      !editing.is_free && editing.allow_annual && editing.price_monthly
+        ? (parseFloat(editing.price_monthly) * 12 * 0.9).toFixed(2)
+        : editing.price_annual;
+
+    const res = await fetch("/api/admin/modules-catalog", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...editing, price_annual: annual }),
+    });
+    if (res.ok) {
+      const { module: updated } = await res.json();
+      setCatalog((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+      setPriceSaved(true);
+      setTimeout(() => setPriceSaved(false), 2000);
+    }
+    setPriceSaving(false);
+    setEditing(null);
+  };
+
   if (loading) return <div className="text-gray-500 py-8 text-center">Loading…</div>;
 
-  return (
-    <div className="space-y-4">
-      {/* Module legend */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-        {ALL_MODULES.map((m) => (
-          <div key={m.id} className="card border border-amber-500/20">
-            <div className="flex items-center gap-2 mb-1">
-              <span>{m.icon}</span>
-              <span className="font-semibold text-amber-400">{m.label}</span>
-            </div>
-            <p className="text-xs text-gray-400">{m.description}</p>
-          </div>
-        ))}
-      </div>
+  // Build catalog map for quick lookup
+  const catalogMap = Object.fromEntries(catalog.map((c) => [c.id, c]));
 
-      {/* User × Module matrix */}
-      <div className="card overflow-hidden p-0">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-800 bg-gray-900/50">
-              <th className="text-left px-4 py-3 text-gray-400 font-medium">User</th>
-              <th className="text-left px-4 py-3 text-gray-400 font-medium">Role</th>
-              <th className="text-left px-4 py-3 text-gray-400 font-medium">Description</th>
-              {ALL_MODULES.map((m) => (
-                <th key={m.id} className="text-center px-4 py-3 text-gray-400 font-medium">
-                  {m.icon} {m.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                <td className="px-4 py-3">
+  return (
+    <div className="space-y-8">
+      {/* ── Module Catalog & Pricing ── */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          Module Catalog &amp; Pricing
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {ALL_MODULES.map((m) => {
+            const cat = catalogMap[m.id];
+            return (
+              <div key={m.id} className="card border border-gray-700/50 flex flex-col gap-3">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    {user.image ? (
-                      <img src={user.image} className="w-7 h-7 rounded-full" alt="" />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs">
-                        {(user.name || user.email)[0].toUpperCase()}
-                      </div>
-                    )}
+                    <span className="text-2xl">{m.icon}</span>
                     <div>
-                      <div className="font-medium text-gray-200">{user.name || "—"}</div>
-                      <div className="text-xs text-gray-500">{user.email}</div>
+                      <p className="font-semibold text-white">{m.label}</p>
+                      <p className="text-xs text-gray-500">{m.id}</p>
                     </div>
                   </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded ${user.role === "ADMIN" ? "bg-amber-500/20 text-amber-400" : "bg-gray-700 text-gray-300"}`}>
-                    {user.role}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-xs text-gray-500 max-w-xs">
-                  {/* role-based description hint */}
-                  {user.role === "ADMIN" ? "Full access to all modules" : "User account"}
-                </td>
-                {ALL_MODULES.map((m) => {
-                  const enabled = user.modules[m.id] ?? false;
-                  const key = `${user.id}:${m.id}`;
-                  return (
-                    <td key={m.id} className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => toggle(user.id, m.id, enabled)}
-                        disabled={saving === key}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                          enabled ? "bg-amber-500" : "bg-gray-700"
-                        } ${saving === key ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            enabled ? "translate-x-6" : "translate-x-1"
-                          }`}
-                        />
-                      </button>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  {cat ? (
+                    cat.is_free ? (
+                      <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium shrink-0">Free</span>
+                    ) : (
+                      <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-medium shrink-0">Paid</span>
+                    )
+                  ) : null}
+                </div>
+
+                {/* Description */}
+                <p className="text-xs text-gray-400 leading-relaxed">{m.description}</p>
+
+                {/* Pricing tiers */}
+                {cat && !cat.is_free && (
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {cat.allow_one_time && (
+                      <div className="bg-gray-800 px-2.5 py-1.5 rounded-lg">
+                        <p className="text-gray-500">One-time</p>
+                        <p className="font-bold text-white">${cat.price_one_time}</p>
+                      </div>
+                    )}
+                    {cat.allow_monthly && (
+                      <div className="bg-gray-800 px-2.5 py-1.5 rounded-lg">
+                        <p className="text-gray-500">Monthly</p>
+                        <p className="font-bold text-white">${cat.price_monthly}<span className="text-gray-500 font-normal">/mo</span></p>
+                      </div>
+                    )}
+                    {cat.allow_annual && (
+                      <div className="bg-gray-800 px-2.5 py-1.5 rounded-lg relative">
+                        <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-black px-1.5 rounded-full font-bold" style={{fontSize:"10px"}}>10%</span>
+                        <p className="text-gray-500">Annual</p>
+                        <p className="font-bold text-white">${cat.price_annual}<span className="text-gray-500 font-normal">/yr</span></p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Edit button */}
+                {cat && (
+                  <button
+                    onClick={() => setEditing({ ...cat })}
+                    className="mt-auto text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-500/60 px-3 py-1.5 rounded-lg transition-colors self-start"
+                  >
+                    Edit Pricing
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
+
+      {/* ── User Access Matrix ── */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          User Access
+        </h2>
+        <div className="card overflow-hidden p-0">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-800 bg-gray-900/50">
+                <th className="text-left px-4 py-3 text-gray-400 font-medium">User</th>
+                <th className="text-left px-4 py-3 text-gray-400 font-medium">Role</th>
+                {ALL_MODULES.map((m) => (
+                  <th key={m.id} className="text-center px-4 py-3 text-gray-400 font-medium whitespace-nowrap">
+                    {m.icon} {m.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {user.image ? (
+                        <img src={user.image} className="w-7 h-7 rounded-full" alt="" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs">
+                          {(user.name || user.email)[0].toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium text-gray-200">{user.name || "—"}</div>
+                        <div className="text-xs text-gray-500">{user.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${user.role === "ADMIN" ? "bg-amber-500/20 text-amber-400" : "bg-gray-700 text-gray-300"}`}>
+                      {user.role}
+                    </span>
+                  </td>
+                  {ALL_MODULES.map((m) => {
+                    const enabled = user.modules[m.id] ?? false;
+                    const key = `${user.id}:${m.id}`;
+                    return (
+                      <td key={m.id} className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => toggle(user.id, m.id, enabled)}
+                          disabled={saving === key}
+                          title={enabled ? "Enabled — click to disable" : "Disabled — click to enable"}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                            enabled ? "bg-amber-500" : "bg-gray-700"
+                          } ${saving === key ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              enabled ? "translate-x-6" : "translate-x-1"
+                            }`}
+                          />
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Pricing Edit Modal ── */}
+      {editing && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-md space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-lg">{editing.icon} {editing.label} — Pricing</h3>
+              <button onClick={() => setEditing(null)} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
+            </div>
+
+            {/* Free toggle */}
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <div
+                onClick={() => setEditing((e) => e ? { ...e, is_free: !e.is_free } : e)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${editing.is_free ? "bg-green-500" : "bg-gray-700"}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${editing.is_free ? "translate-x-6" : "translate-x-1"}`} />
+              </div>
+              <span className="text-sm font-medium">{editing.is_free ? "Free module" : "Paid module"}</span>
+            </label>
+
+            {!editing.is_free && (
+              <div className="space-y-4">
+                {/* One-time */}
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input type="checkbox" checked={editing.allow_one_time}
+                      onChange={(e) => setEditing((v) => v ? { ...v, allow_one_time: e.target.checked } : v)}
+                      className="accent-amber-500" />
+                    One-time purchase
+                  </label>
+                  {editing.allow_one_time && (
+                    <div className="flex items-center gap-2 ml-5">
+                      <span className="text-gray-400">$</span>
+                      <input type="number" step="0.01" min="0" value={editing.price_one_time ?? ""}
+                        onChange={(e) => setEditing((v) => v ? { ...v, price_one_time: e.target.value } : v)}
+                        className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm w-28 focus:outline-none focus:border-amber-500"
+                        placeholder="0.00" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Monthly */}
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input type="checkbox" checked={editing.allow_monthly}
+                      onChange={(e) => setEditing((v) => v ? { ...v, allow_monthly: e.target.checked } : v)}
+                      className="accent-amber-500" />
+                    Monthly subscription
+                  </label>
+                  {editing.allow_monthly && (
+                    <div className="flex items-center gap-2 ml-5">
+                      <span className="text-gray-400">$</span>
+                      <input type="number" step="0.01" min="0" value={editing.price_monthly ?? ""}
+                        onChange={(e) => setEditing((v) => v ? { ...v, price_monthly: e.target.value } : v)}
+                        className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm w-28 focus:outline-none focus:border-amber-500"
+                        placeholder="0.00" />
+                      <span className="text-gray-500 text-xs">/month</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Annual */}
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input type="checkbox" checked={editing.allow_annual}
+                      onChange={(e) => setEditing((v) => v ? { ...v, allow_annual: e.target.checked } : v)}
+                      className="accent-amber-500" />
+                    Annual subscription <span className="text-amber-400 text-xs font-medium">10% off auto</span>
+                  </label>
+                  {editing.allow_annual && editing.price_monthly && (
+                    <p className="ml-5 text-xs text-gray-500">
+                      Auto: ${(parseFloat(editing.price_monthly) * 12 * 0.9).toFixed(2)}/yr
+                      {" "}= ${editing.price_monthly} × 12 × 0.9
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button onClick={savePricing} disabled={priceSaving}
+                className="btn-primary flex-1 py-2 text-sm disabled:opacity-50">
+                {priceSaving ? "Saving…" : priceSaved ? "✓ Saved" : "Save"}
+              </button>
+              <button onClick={() => setEditing(null)} className="btn-secondary flex-1 py-2 text-sm">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
