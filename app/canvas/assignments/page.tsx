@@ -293,7 +293,7 @@ function AssignmentsContent() {
       {/* Staging review modal */}
       {stagingAssignment && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-5xl max-h-[85vh] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
               <div>
@@ -348,11 +348,11 @@ function AssignmentsContent() {
                             )}
                           </td>
                           <td className="py-2.5 pl-2">
-                            <input
-                              type="text"
+                            <textarea
                               value={comment}
                               onChange={e => setStagingEdits(prev => ({ ...prev, [sg.id]: { ...prev[sg.id], grader_comment: e.target.value } }))}
-                              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-500"
+                              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-500 resize-none leading-relaxed"
+                              rows={2}
                               placeholder="Add comment…"
                             />
                           </td>
