@@ -8,5 +8,11 @@ export async function GET() {
     headers: { "x-api-key": process.env.CHENS_API_SECRET_KEY!, "x-user-id": session.user.id },
     cache: "no-store",
   });
-  return NextResponse.json(await res.json(), { status: res.status });
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch {
+    return NextResponse.json({ error: "Profile service unavailable" }, { status: 502 });
+  }
+  return NextResponse.json(data, { status: res.status });
 }
