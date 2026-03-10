@@ -107,7 +107,7 @@ export default function AdminUsersList() {
       body: JSON.stringify({
         target_user_id: creditDialog.user.id,
         amount,
-        description: creditNote.trim() || `Admin credit grant`,
+        description: creditNote.trim() || `System credit grant`,
       }),
     });
     const d = await res.json();
@@ -147,7 +147,7 @@ export default function AdminUsersList() {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Amount (tokens)</label>
+                <label className="block text-xs text-gray-500 mb-1">Amount (credits)</label>
                 <input
                   type="number" min="1" step="1"
                   value={creditAmount}
