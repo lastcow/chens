@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 interface Tx {
-  id: number; type: "purchase" | "usage" | "refund";
+  id: number; type: "purchase" | "usage" | "refund" | "credit";
   amount: string; description: string | null;
   ref_id: string | null; balance_after: string | null; created_at: string;
 }
@@ -22,20 +22,27 @@ const TYPE_LABEL: Record<string, string> = {
   credit:   "🎁 Credit",
 };
 
-export default function CreditsPage() {
+function CreditsContent() {
   const params = useSearchParams();
   const purchased = params.get("purchased");
   const [data, setData]   = useState<CreditsData | null>(null);
   const [page, setPage]   = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string | null>(null);
   const [buying, setBuying]   = useState(false);
   const [credits, setCredits] = useState(100);
 
   const load = (p: number) => {
     setLoading(true);
+    setError(null);
     fetch(`/api/user/credits?page=${p}`)
       .then(r => r.json())
-      .then(d => { setData(d); setLoading(false); });
+      .then(d => {
+        if (d.error) { setError(d.error); setLoading(false); return; }
+        setData(d);
+        setLoading(false);
+      })
+      .catch(() => { setError("Failed to load credits"); setLoading(false); });
   };
 
   useEffect(() => { load(page); }, [page]);
@@ -53,9 +60,10 @@ export default function CreditsPage() {
     if (d.url) window.location.href = d.url;
   };
 
-  const balance = data?.balance ?? 0;
-  const total   = data?.total ?? 0;
-  const totalPages = Math.ceil(total / 20);
+  const balance     = data?.balance ?? 0;
+  const transactions = data?.transactions ?? [];
+  const total       = data?.total ?? 0;
+  const totalPages  = Math.ceil(total / 20);
 
   return (
     <div className="space-y-6">
@@ -65,12 +73,20 @@ export default function CreditsPage() {
         </div>
       )}
 
+      {error && (
+        <div className="bg-red-900/20 border border-red-700/30 rounded-xl px-4 py-3 text-red-400 text-sm">
+          ⚠️ {error}
+        </div>
+      )}
+
       {/* Balance + Purchase */}
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Credit Balance</p>
-            <p className="text-4xl font-bold text-amber-400">{balance.toFixed(1)}</p>
+            <p className="text-4xl font-bold text-amber-400">
+              {loading ? <span className="animate-pulse">—</span> : balance.toFixed(1)}
+            </p>
             <p className="text-xs text-gray-500 mt-1">1 credit = $1.00 · 0.1 credit per grading</p>
           </div>
           <div className="flex items-end gap-3">
@@ -99,7 +115,7 @@ export default function CreditsPage() {
         </div>
         {loading ? (
           <div className="text-center py-10 text-gray-500 text-sm animate-pulse">Loading…</div>
-        ) : !data?.transactions.length ? (
+        ) : transactions.length === 0 ? (
           <div className="text-center py-10 text-gray-500 text-sm">No transactions yet.</div>
         ) : (
           <>
@@ -114,20 +130,20 @@ export default function CreditsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800/50">
-                {data.transactions.map(tx => (
+                {transactions.map(tx => (
                   <tr key={tx.id} className="hover:bg-gray-800/30 transition-colors">
                     <td className="px-6 py-3 text-gray-400 text-xs whitespace-nowrap">
                       {new Date(tx.created_at).toLocaleString()}
                     </td>
-                    <td className={`px-4 py-3 font-medium text-xs ${TYPE_STYLE[tx.type]}`}>
-                      {TYPE_LABEL[tx.type]}
+                    <td className={`px-4 py-3 font-medium text-xs ${TYPE_STYLE[tx.type] ?? "text-gray-400"}`}>
+                      {TYPE_LABEL[tx.type] ?? tx.type}
                     </td>
                     <td className="px-4 py-3 text-gray-300 max-w-xs truncate">{tx.description ?? "—"}</td>
-                    <td className={`px-4 py-3 text-right font-mono font-semibold ${TYPE_STYLE[tx.type]}`}>
+                    <td className={`px-4 py-3 text-right font-mono font-semibold ${TYPE_STYLE[tx.type] ?? "text-gray-400"}`}>
                       {tx.type === "usage" ? "−" : "+"}{Math.abs(parseFloat(tx.amount)).toFixed(1)}
                     </td>
                     <td className="px-6 py-3 text-right font-mono text-gray-400 text-xs">
-                      {tx.balance_after ? parseFloat(tx.balance_after).toFixed(1) : "—"}
+                      {tx.balance_after != null ? parseFloat(tx.balance_after).toFixed(1) : "—"}
                     </td>
                   </tr>
                 ))}
@@ -146,5 +162,13 @@ export default function CreditsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CreditsPage() {
+  return (
+    <Suspense fallback={<div className="text-gray-500 text-sm animate-pulse py-10 text-center">Loading…</div>}>
+      <CreditsContent />
+    </Suspense>
   );
 }
