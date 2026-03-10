@@ -10,7 +10,6 @@ interface ProfileData {
     image: string | null; has_password: boolean; created_at: string;
     providers: string[];
   };
-  costs: { total: number; month: number; total_runs: number; month_runs: number };
 }
 
 const PROVIDER_LABELS: Record<string, string> = {
