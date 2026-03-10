@@ -29,12 +29,28 @@ export default function ProfilePage() {
   const [curPw, setCurPw] = useState(""); const [newPw, setNewPw] = useState(""); const [confPw, setConfPw] = useState("");
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pwLoading, setPwLoading] = useState(false);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [buying, setBuying]   = useState(false);
+  const [buyCredits, setBuyCredits] = useState(100);
 
   useEffect(() => {
     if (status === "unauthenticated") { router.push("/signin"); return; }
     if (status !== "authenticated") return;
     fetch("/api/user/profile").then(r => r.json()).then(d => { setData(d); setLoading(false); });
+    fetch("/api/user/credits").then(r => r.json()).then(d => { if (d.balance !== undefined) setBalance(d.balance); });
   }, [status, router]);
+
+  const purchase = async () => {
+    if (buyCredits < 100) return;
+    setBuying(true);
+    const res = await fetch("/api/user/credits/purchase", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credits: buyCredits }),
+    });
+    const d = await res.json();
+    setBuying(false);
+    if (d.url) window.location.href = d.url;
+  };
 
   const handlePasswordChange = async () => {
     if (newPw !== confPw) { setPwMsg({ ok: false, text: "Passwords don't match" }); return; }
@@ -85,6 +101,32 @@ export default function ProfilePage() {
         </div>
         <div className="text-xs text-gray-600 text-right shrink-0">
           Member since<br />{new Date(user.created_at).toLocaleDateString()}
+        </div>
+      </div>
+
+      {/* Credits */}
+      <div className="card">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">AI Grading Credits</h2>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold text-amber-400">{balance !== null ? balance.toFixed(1) : "—"}</span>
+              <span className="text-xs text-gray-500">credits · $1 each · 0.1 per grading</span>
+            </div>
+          </div>
+          <div className="flex items-end gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Amount</label>
+              <input type="number" min={100} step={100} value={buyCredits}
+                onChange={e => setBuyCredits(Math.max(100, Number(e.target.value)))}
+                className="w-24 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+              />
+            </div>
+            <button onClick={purchase} disabled={buying || buyCredits < 100}
+              className="btn-primary px-4 py-2 text-sm disabled:opacity-50">
+              {buying ? "…" : `Buy $${buyCredits}`}
+            </button>
+          </div>
         </div>
       </div>
 

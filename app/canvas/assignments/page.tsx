@@ -55,6 +55,7 @@ function AssignmentsContent() {
   const [requesting, setRequesting] = useState<number | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [gradingCost, setGradingCost] = useState<number>(0.10);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
 
   // Staging review state
   const [stagingAssignment, setStagingAssignment] = useState<Assignment | null>(null);
@@ -85,6 +86,9 @@ function AssignmentsContent() {
     fetch("/api/professor/grade-config")
       .then(r => r.json())
       .then(d => { if (d.grading_cost_per_submission) setGradingCost(d.grading_cost_per_submission); });
+    fetch("/api/user/credits")
+      .then(r => r.json())
+      .then(d => { if (d.balance !== undefined) setCreditBalance(d.balance); });
   }, []);
 
   const [cancelling, setCancelling] = useState<number | null>(null);
@@ -101,11 +105,16 @@ function AssignmentsContent() {
           course_canvas_id: a.course_canvas_id,
           assignment_name: a.name,
           course_name: a.course_name,
+          ungraded_count: a.ungraded_count,
         }),
       });
+      const d = await res.json();
       if (res.status === 201) {
         setRequested(prev => new Set([...prev, a.id]));
-        showToast("Grade request queued ✓", true);
+        if (d.balance_after !== undefined) setCreditBalance(d.balance_after);
+        showToast(`Grade request queued ✓ (${d.credit_cost} credits deducted)`, true);
+      } else if (res.status === 402) {
+        showToast(`Insufficient credits — need ${d.required}, have ${d.balance?.toFixed(1)}`, false);
       } else if (res.status === 409) {
         showToast("Already requested", false);
       } else {
@@ -265,17 +274,34 @@ function AssignmentsContent() {
               <p className="text-gray-300 font-medium truncate">{confirm.name}</p>
               <p className="text-gray-500 text-xs mt-0.5">{confirm.course_name}</p>
             </div>
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 space-y-1">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400">Cost per submission</span>
-                <span className="font-mono text-amber-400">${gradingCost.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400">Estimated total</span>
-                <span className="font-mono font-semibold text-amber-300">${(gradingCost * Number(confirm.ungraded_count)).toFixed(2)}</span>
-              </div>
-              <p className="text-xs text-amber-600/80 mt-1">Charged only for submissions processed.</p>
-            </div>
+            {(() => {
+              const cost = parseFloat((gradingCost * Number(confirm.ungraded_count)).toFixed(2));
+              const after = creditBalance !== null ? creditBalance - cost : null;
+              const insufficient = creditBalance !== null && creditBalance < cost;
+              return (
+                <div className={`border rounded-lg px-4 py-3 space-y-1 ${insufficient ? "bg-red-500/10 border-red-500/30" : "bg-amber-500/10 border-amber-500/20"}`}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Cost ({confirm.ungraded_count} × {gradingCost})</span>
+                    <span className="font-mono text-amber-400 font-semibold">{cost.toFixed(1)} credits</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Your balance</span>
+                    <span className="font-mono text-gray-300">{creditBalance !== null ? creditBalance.toFixed(1) : "—"}</span>
+                  </div>
+                  {after !== null && (
+                    <div className="flex items-center justify-between text-sm border-t border-gray-700/50 pt-1 mt-1">
+                      <span className="text-gray-400">After request</span>
+                      <span className={`font-mono font-semibold ${after < 0 ? "text-red-400" : "text-green-400"}`}>{after.toFixed(1)} credits</span>
+                    </div>
+                  )}
+                  {insufficient && (
+                    <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                      ⚠️ Insufficient credits — <a href="/profile/credits" className="underline hover:text-red-300">Buy more</a>
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
             <div className="bg-gray-800/60 border border-gray-700 rounded-lg px-4 py-3 flex gap-2">
               <span className="text-yellow-500 text-sm mt-0.5 shrink-0">⚠️</span>
               <p className="text-xs text-gray-400 leading-relaxed">
@@ -283,7 +309,11 @@ function AssignmentsContent() {
               </p>
             </div>
             <div className="flex gap-3 pt-1">
-              <button onClick={() => submitRequest(confirm)} className="btn-primary flex-1 py-2 text-sm">Confirm &amp; Queue</button>
+              <button
+                onClick={() => submitRequest(confirm)}
+                disabled={creditBalance !== null && creditBalance < parseFloat((gradingCost * Number(confirm.ungraded_count)).toFixed(2))}
+                className="btn-primary flex-1 py-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              >Confirm &amp; Queue</button>
               <button onClick={() => setConfirm(null)} className="btn-secondary flex-1 py-2 text-sm">Cancel</button>
             </div>
           </div>

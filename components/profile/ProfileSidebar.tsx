@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 const NAV = [
   { href: "/profile",           label: "Overview",       icon: "👤", exact: true },
   { href: "/profile/purchases", label: "Purchases",      icon: "🛒" },
+  { href: "/profile/credits",   label: "Credits",        icon: "💳" },
 ];
 
 export default function ProfileSidebar() {
