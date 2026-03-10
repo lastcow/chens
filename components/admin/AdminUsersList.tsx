@@ -10,6 +10,7 @@ interface User {
   oauth_provider: string | null;
   createdAt: string;
   image?: string | null;
+  credits?: number;
 }
 
 interface ConfirmDialog {
@@ -325,7 +326,10 @@ export default function AdminUsersList() {
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <span className="truncate">{user.email}</span>
+                  <span className="shrink-0 text-amber-500/70">💳 {(user.credits ?? 0).toFixed(1)}</span>
+                </div>
               </div>
 
               {/* Actions */}
