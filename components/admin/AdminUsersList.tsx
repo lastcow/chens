@@ -326,9 +326,9 @@ export default function AdminUsersList() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
+                <div className="text-xs text-gray-500 truncate flex items-center gap-2">
                   <span className="truncate">{user.email}</span>
-                  <span className="shrink-0 text-amber-500/70">⊙ {(user.credits ?? 0).toFixed(1)}</span>
+                  <span className="shrink-0 text-amber-500/60 font-mono">⊙ {(user.credits ?? 0).toFixed(1)}</span>
                 </div>
               </div>
 
