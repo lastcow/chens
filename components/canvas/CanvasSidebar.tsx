@@ -10,7 +10,7 @@ const NAV = [
   { href: "/canvas/assignments", label: "Assignments", icon: "📋", countKey: "ungraded" },
   { href: "/canvas/grades",      label: "Grades",      icon: "📊", countKey: "pending" },
   { href: "/canvas/atrisk",      label: "At-Risk",     icon: "⚠️", countKey: "atrisk" },
-  { href: "/canvas/agent",        label: "AI Agent",    icon: "🤖" },
+  // { href: "/canvas/agent",        label: "AI Agent",    icon: "🤖" },  // temporarily disabled
 ];
 
 export default function CanvasSidebar() {
