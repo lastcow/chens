@@ -3,8 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV = [
-  { href: "/dashboard",         label: "Overview", icon: "⊞", exact: true },
-  { href: "/dashboard/modules", label: "Modules",  icon: "🧩" },
+  { href: "/dashboard/modules", label: "Modules", icon: "🧩" },
 ];
 
 export default function DashboardSidebar() {
