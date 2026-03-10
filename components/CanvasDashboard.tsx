@@ -43,6 +43,17 @@ interface Tool {
 // All models via OpenRouter — one key, all providers
 const MODELS = [
   {
+    id: "openrouter/auto",
+    name: "Auto (Best Model)",
+    provider: "OpenRouter",
+    inputPer1M: 3.00,
+    outputPer1M: 15.00,
+    badge: "🤖 Auto",
+    badgeColor: "text-violet-400 bg-violet-400/10 border-violet-400/20",
+    note: "OpenRouter picks the best model per task",
+    recommended: false,
+  },
+  {
     id: "anthropic/claude-haiku-4-5",
     name: "Claude Haiku 4.5",
     provider: "Anthropic · OpenRouter",
