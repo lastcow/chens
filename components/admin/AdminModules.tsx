@@ -134,13 +134,9 @@ export default function AdminModules() {
                       <p className="text-xs text-gray-500">{m.id}</p>
                     </div>
                   </div>
-                  {cat ? (
-                    cat.is_free ? (
-                      <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium shrink-0">Free</span>
-                    ) : (
-                      <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-medium shrink-0">Paid</span>
-                    )
-                  ) : null}
+                  {cat && !cat.is_free && cat.price_monthly && (
+                    <span className="text-xs text-gray-500 shrink-0">${cat.price_monthly}/mo</span>
+                  )}
                 </div>
 
                 {/* Description */}
