@@ -240,7 +240,6 @@ export default function AdminModules() {
             <thead>
               <tr className="border-b border-gray-800 bg-gray-900/50">
                 <th className="text-left px-4 py-3 text-gray-400 font-medium">User</th>
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">Role</th>
                 {ALL_MODULES.map((m) => (
                   <th key={m.id} className="text-center px-4 py-3 text-gray-400 font-medium whitespace-nowrap">
                     {m.icon} {m.label}
@@ -266,11 +265,7 @@ export default function AdminModules() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${user.role === "ADMIN" ? "bg-amber-500/20 text-amber-400" : "bg-gray-700 text-gray-300"}`}>
-                      {user.role}
-                    </span>
-                  </td>
+
                   {ALL_MODULES.map((m) => {
                     const enabled = user.modules[m.id] ?? false;
                     const key = `${user.id}:${m.id}`;
