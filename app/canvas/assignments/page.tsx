@@ -11,12 +11,39 @@ interface Assignment {
   avg_score: number | null; total_students: number;
 }
 
+// Inline SVG icon — clipboard with a checkmark request indicator
+function GradeRequestIcon({ requested }: { requested: boolean }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      strokeWidth={1.8}
+      stroke="currentColor"
+      className="w-4 h-4"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round"
+        d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+      <rect x="9" y="3" width="6" height="4" rx="1" strokeLinecap="round" strokeLinejoin="round" />
+      {requested
+        ? <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
+        : <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6M9 16h4" />}
+    </svg>
+  );
+}
+
 function AssignmentsContent() {
   const params = useSearchParams();
   const router = useRouter();
   const { termParam, activeTerm } = useTerm();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Grade request state
+  const [requested, setRequested] = useState<Set<number>>(new Set());
+  const [confirm, setConfirm] = useState<Assignment | null>(null);
+  const [requesting, setRequesting] = useState<number | null>(null);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   useEffect(() => {
     if (!activeTerm) return;
@@ -26,10 +53,57 @@ function AssignmentsContent() {
       .then(d => { setAssignments(d.assignments ?? []); setLoading(false); });
   }, [termParam, activeTerm]);
 
+  // Load existing requests on mount
+  useEffect(() => {
+    fetch("/api/professor/grade-request")
+      .then(r => r.json())
+      .then(d => {
+        const pending = new Set<number>(
+          (d.requests ?? [])
+            .filter((r: { status: string }) => r.status === "pending" || r.status === "in_progress")
+            .map((r: { assignment_id: number }) => r.assignment_id)
+        );
+        setRequested(pending);
+      });
+  }, []);
+
+  const submitRequest = async (a: Assignment) => {
+    setRequesting(a.id);
+    setConfirm(null);
+    try {
+      const res = await fetch("/api/professor/grade-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assignment_id: a.id,
+          course_canvas_id: a.course_canvas_id,
+          assignment_name: a.name,
+          course_name: a.course_name,
+        }),
+      });
+      if (res.status === 201) {
+        setRequested(prev => new Set([...prev, a.id]));
+        showToast("Grade request submitted ✓", true);
+      } else if (res.status === 409) {
+        showToast("Already requested", false);
+      } else {
+        showToast("Failed to submit request", false);
+      }
+    } catch {
+      showToast("Network error", false);
+    }
+    setRequesting(null);
+  };
+
+  const showToast = (msg: string, ok: boolean) => {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   // Build course tabs from data
   const courses = Array.from(
     new Map(assignments.map(a => [a.course_canvas_id, a.course_name])).entries()
-  ); // [[canvas_id, name], ...]
+  );
 
   const activeCourse = params.get("course_id")
     ? Number(params.get("course_id"))
@@ -44,17 +118,15 @@ function AssignmentsContent() {
     if (!total) return null;
     const graded  = Math.min(Number(a.graded_count), total);
     const pending = Math.min(Number(a.ungraded_count), total - graded);
-    const missing = Math.max(0, total - graded - pending);
     return (
       <div className="flex h-1.5 rounded-full overflow-hidden bg-gray-800 w-28">
         <div className="bg-green-500 transition-all" style={{ width: `${(graded/total)*100}%` }} />
         <div className="bg-amber-500 transition-all" style={{ width: `${(pending/total)*100}%` }} />
-        <div className="bg-gray-700 transition-all" style={{ width: `${(missing/total)*100}%` }} />
+        <div className="bg-gray-700 transition-all" style={{ width: `${(Math.max(0, total - graded - pending)/total)*100}%` }} />
       </div>
     );
   };
 
-  // Short course label for tab
   const tabLabel = (name: string) => {
     const m = name.match(/^(ITEC|SCIA)\s[\d\-]+/);
     return m ? m[0] : name.split(" ").slice(0,2).join(" ");
@@ -62,6 +134,49 @@ function AssignmentsContent() {
 
   return (
     <div className="space-y-0">
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg transition-all
+          ${toast.ok ? "bg-green-500/20 text-green-300 border border-green-500/30" : "bg-red-500/20 text-red-300 border border-red-500/30"}`}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Confirm dialog */}
+      {confirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-sm space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
+                <GradeRequestIcon requested={false} />
+              </div>
+              <div>
+                <p className="font-semibold text-white text-sm">Request AI Grading?</p>
+                <p className="text-xs text-gray-400 mt-0.5">This will be queued for the AI grading agent.</p>
+              </div>
+            </div>
+            <div className="bg-gray-800 rounded-lg px-4 py-3 text-sm">
+              <p className="text-gray-300 font-medium truncate">{confirm.name}</p>
+              <p className="text-gray-500 text-xs mt-0.5">{confirm.course_name}</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => submitRequest(confirm)}
+                className="btn-primary flex-1 py-2 text-sm"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setConfirm(null)}
+                className="btn-secondary flex-1 py-2 text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tab bar */}
       <div className="flex border-b border-gray-800 gap-0">
         {loading
@@ -111,44 +226,67 @@ function AssignmentsContent() {
                   <th className="text-center px-4 py-3">Progress</th>
                   <th className="text-center px-3 py-3">Avg</th>
                   <th className="text-center px-3 py-3">Ungraded</th>
+                  <th className="text-center px-3 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800/50">
-                {filtered.map(a => (
-                  <tr key={a.id} className="hover:bg-gray-800/30 transition-colors">
-                    <td className="px-5 py-3 text-white">{a.name}</td>
-                    <td className="text-center px-3 py-3 text-xs font-mono">
-                      {a.due_at
-                        ? <span className={isPast(a.due_at) ? "text-gray-500" : "text-blue-400"}>
-                            {new Date(a.due_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                          </span>
-                        : <span className="text-gray-700">—</span>}
-                    </td>
-                    <td className="text-center px-3 py-3 text-gray-400">{a.points_possible}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col items-center gap-1">
-                        {statusBar(a)}
-                        <span className="text-xs text-gray-600">
-                          {a.graded_count}/{a.total_students}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="text-center px-3 py-3 font-mono text-sm">
-                      {a.avg_score !== null
-                        ? <span className={Number(a.avg_score) >= 70 ? "text-green-400" : "text-red-400"}>
-                            {a.avg_score}%
-                          </span>
-                        : <span className="text-gray-700">—</span>}
-                    </td>
-                    <td className="text-center px-3 py-3">
-                      {Number(a.ungraded_count) > 0
-                        ? <span className="text-xs bg-amber-900/30 text-amber-400 border border-amber-700/30 rounded-full px-2 py-0.5">
-                            {a.ungraded_count}
-                          </span>
-                        : <span className="text-xs text-green-600">✓</span>}
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map(a => {
+                  const isRequested = requested.has(a.id);
+                  const isLoading = requesting === a.id;
+                  return (
+                    <tr key={a.id} className="hover:bg-gray-800/30 transition-colors">
+                      <td className="px-5 py-3 text-white">{a.name}</td>
+                      <td className="text-center px-3 py-3 text-xs font-mono">
+                        {a.due_at
+                          ? <span className={isPast(a.due_at) ? "text-gray-500" : "text-blue-400"}>
+                              {new Date(a.due_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                            </span>
+                          : <span className="text-gray-700">—</span>}
+                      </td>
+                      <td className="text-center px-3 py-3 text-gray-400">{a.points_possible}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col items-center gap-1">
+                          {statusBar(a)}
+                          <span className="text-xs text-gray-600">{a.graded_count}/{a.total_students}</span>
+                        </div>
+                      </td>
+                      <td className="text-center px-3 py-3 font-mono text-sm">
+                        {a.avg_score !== null
+                          ? <span className={Number(a.avg_score) >= 70 ? "text-green-400" : "text-red-400"}>
+                              {a.avg_score}%
+                            </span>
+                          : <span className="text-gray-700">—</span>}
+                      </td>
+                      <td className="text-center px-3 py-3">
+                        {Number(a.ungraded_count) > 0
+                          ? <span className="text-xs bg-amber-900/30 text-amber-400 border border-amber-700/30 rounded-full px-2 py-0.5">
+                              {a.ungraded_count}
+                            </span>
+                          : <span className="text-xs text-green-600">✓</span>}
+                      </td>
+                      {/* Grade Request icon */}
+                      <td className="text-center px-3 py-3">
+                        <button
+                          onClick={() => !isRequested && !isLoading && setConfirm(a)}
+                          disabled={isRequested || isLoading}
+                          title={isRequested ? "Grade request submitted" : "Request AI grading"}
+                          className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all
+                            ${isRequested
+                              ? "text-green-400 bg-green-500/10 cursor-default"
+                              : isLoading
+                                ? "text-gray-600 cursor-wait"
+                                : "text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
+                            }`}
+                        >
+                          {isLoading
+                            ? <span className="w-3.5 h-3.5 border-2 border-gray-600 border-t-amber-400 rounded-full animate-spin" />
+                            : <GradeRequestIcon requested={isRequested} />
+                          }
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {/* Legend */}
