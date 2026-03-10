@@ -328,7 +328,7 @@ export default function AdminUsersList() {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <span className="truncate">{user.email}</span>
-                  <span className="shrink-0 text-amber-500/70">💳 {(user.credits ?? 0).toFixed(1)}</span>
+                  <span className="shrink-0 text-amber-500/70">⊙ {(user.credits ?? 0).toFixed(1)}</span>
                 </div>
               </div>
 
@@ -338,7 +338,7 @@ export default function AdminUsersList() {
                   onClick={() => openCreditDialog(user)}
                   className="text-xs px-3 py-1.5 rounded-lg border border-purple-700/40 hover:border-purple-500/60 text-purple-400 hover:text-purple-300 transition-colors"
                 >
-                  💳 Credits
+                  ⊙ Credits
                 </button>
                 <button
                   onClick={() => openRoleDialog(user)}
