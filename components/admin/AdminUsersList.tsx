@@ -24,6 +24,11 @@ interface CreditDialog {
   user: User;
 }
 
+interface RoleDialog {
+  user: User;
+  selectedRole: "USER" | "ADMIN";
+}
+
 export default function AdminUsersList() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +40,7 @@ export default function AdminUsersList() {
   const [creditNote, setCreditNote] = useState("");
   const [creditLoading, setCreditLoading] = useState(false);
   const [creditToast, setCreditToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [roleDialog, setRoleDialog] = useState<RoleDialog | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -49,24 +55,23 @@ export default function AdminUsersList() {
   const showConfirm = (opts: ConfirmDialog) => setDialog(opts);
   const closeDialog = () => setDialog(null);
 
-  const toggleRole = (user: User) => {
-    const newRole = user.role === "ADMIN" ? "USER" : "ADMIN";
-    showConfirm({
-      title: "Change Role",
-      message: `Change ${user.email} role to ${newRole}?`,
-      confirmLabel: `→ ${newRole}`,
-      onConfirm: async () => {
-        closeDialog();
-        setActing(user.id + "-role");
-        await fetch(`/api/admin/users/${user.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ role: newRole }),
-        });
-        await fetchUsers();
-        setActing(null);
-      },
+  const openRoleDialog = (user: User) => {
+    setRoleDialog({ user, selectedRole: user.role });
+  };
+
+  const submitRole = async () => {
+    if (!roleDialog) return;
+    const { user, selectedRole } = roleDialog;
+    if (selectedRole === user.role) { setRoleDialog(null); return; }
+    setRoleDialog(null);
+    setActing(user.id + "-role");
+    await fetch(`/api/admin/users/${user.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role: selectedRole }),
     });
+    await fetchUsers();
+    setActing(null);
   };
 
   const toggleSuspend = (user: User) => {
@@ -192,6 +197,55 @@ export default function AdminUsersList() {
         </div>
       )}
 
+      {/* Role dialog */}
+      {roleDialog && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-sm space-y-4">
+            <div>
+              <h3 className="font-semibold text-white">Change Role</h3>
+              <p className="text-xs text-gray-500 mt-0.5 truncate">{roleDialog.user.email}</p>
+            </div>
+            <div className="space-y-2">
+              {(["USER", "ADMIN"] as const).map(role => (
+                <label key={role} className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
+                  roleDialog.selectedRole === role
+                    ? role === "ADMIN" ? "border-amber-500/50 bg-amber-500/10" : "border-gray-600 bg-gray-800"
+                    : "border-gray-800 hover:border-gray-700"
+                }`}>
+                  <input
+                    type="radio"
+                    name="role"
+                    value={role}
+                    checked={roleDialog.selectedRole === role}
+                    onChange={() => setRoleDialog(prev => prev ? { ...prev, selectedRole: role } : null)}
+                    className="accent-amber-500"
+                  />
+                  <div>
+                    <p className={`text-sm font-medium ${role === "ADMIN" ? "text-amber-400" : "text-gray-300"}`}>{role}</p>
+                    <p className="text-xs text-gray-500">{role === "ADMIN" ? "Full admin access" : "Standard user access"}</p>
+                  </div>
+                  {roleDialog.user.role === role && (
+                    <span className="ml-auto text-xs text-gray-500">current</span>
+                  )}
+                </label>
+              ))}
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={submitRole}
+                disabled={roleDialog.selectedRole === roleDialog.user.role}
+                className="btn-primary flex-1 py-2 text-sm disabled:opacity-40"
+              >
+                Confirm
+              </button>
+              <button onClick={() => setRoleDialog(null)} className="btn-secondary flex-1 py-2 text-sm">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Custom confirm dialog */}
       {dialog && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -255,6 +309,13 @@ export default function AdminUsersList() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-sm truncate">{user.name ?? "—"}</span>
+                  <span className={`text-xs font-mono px-2 py-0.5 rounded border ${
+                    user.role === "ADMIN"
+                      ? "bg-amber-900/30 text-amber-400 border-amber-700/30"
+                      : "bg-gray-800 text-gray-400 border-gray-700"
+                  }`}>
+                    {user.role}
+                  </span>
                   {user.suspended && (
                     <span className="text-xs bg-red-900/40 text-red-400 border border-red-700/30 rounded px-1.5 py-0.5">Suspended</span>
                   )}
@@ -267,15 +328,6 @@ export default function AdminUsersList() {
                 <div className="text-xs text-gray-500 truncate">{user.email}</div>
               </div>
 
-              {/* Role badge */}
-              <span className={`text-xs font-mono px-2 py-1 rounded border shrink-0 ${
-                user.role === "ADMIN"
-                  ? "bg-amber-900/30 text-amber-400 border-amber-700/30"
-                  : "bg-gray-800 text-gray-400 border-gray-700"
-              }`}>
-                {user.role}
-              </span>
-
               {/* Actions */}
               <div className="flex gap-2 shrink-0">
                 <button
@@ -285,11 +337,11 @@ export default function AdminUsersList() {
                   💳 Credits
                 </button>
                 <button
-                  onClick={() => toggleRole(user)}
+                  onClick={() => openRoleDialog(user)}
                   disabled={!!acting}
                   className="text-xs px-3 py-1.5 rounded-lg border border-gray-700 hover:border-amber-500/50 hover:text-amber-400 text-gray-400 transition-colors disabled:opacity-40"
                 >
-                  {acting === user.id + "-role" ? "…" : user.role === "ADMIN" ? "→ USER" : "→ ADMIN"}
+                  {acting === user.id + "-role" ? "…" : user.role === "ADMIN" ? "Demote" : "Promote"}
                 </button>
                 <button
                   onClick={() => toggleSuspend(user)}
