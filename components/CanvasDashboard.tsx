@@ -40,22 +40,23 @@ interface Tool {
   createdBy: string;
 }
 
+// All models via OpenRouter — one key, all providers
 const MODELS = [
   {
-    id: "claude-haiku-4-5-20251001",
+    id: "anthropic/claude-haiku-4-5",
     name: "Claude Haiku 4.5",
-    provider: "Anthropic",
+    provider: "Anthropic · OpenRouter",
     inputPer1M: 0.80,
     outputPer1M: 4.00,
     badge: "⚡ Fast",
     badgeColor: "text-green-400 bg-green-400/10 border-green-400/20",
-    note: "Best for simple tasks",
+    note: "Best for simple tasks & progress reports",
     recommended: true,
   },
   {
-    id: "claude-sonnet-4-5-20250929",
+    id: "anthropic/claude-sonnet-4-5",
     name: "Claude Sonnet 4.5",
-    provider: "Anthropic",
+    provider: "Anthropic · OpenRouter",
     inputPer1M: 3.00,
     outputPer1M: 15.00,
     badge: "🧠 Smart",
@@ -64,70 +65,69 @@ const MODELS = [
     recommended: false,
   },
   {
-    id: "gemini-2.5-flash",
-    name: "Gemini 2.5 Flash",
-    provider: "Google",
+    id: "anthropic/claude-opus-4",
+    name: "Claude Opus 4",
+    provider: "Anthropic · OpenRouter",
+    inputPer1M: 15.00,
+    outputPer1M: 75.00,
+    badge: "👑 Best",
+    badgeColor: "text-purple-400 bg-purple-400/10 border-purple-400/20",
+    note: "Most capable — technical & image grading",
+    recommended: false,
+  },
+  {
+    id: "openai/gpt-4o",
+    name: "GPT-4o",
+    provider: "OpenAI · OpenRouter",
+    inputPer1M: 2.50,
+    outputPer1M: 10.00,
+    badge: "🟢 Balanced",
+    badgeColor: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
+    note: "Strong vision + text, great for PDFs",
+    recommended: false,
+  },
+  {
+    id: "openai/gpt-4o-mini",
+    name: "GPT-4o Mini",
+    provider: "OpenAI · OpenRouter",
     inputPer1M: 0.15,
     outputPer1M: 0.60,
     badge: "💰 Cheapest",
     badgeColor: "text-amber-400 bg-amber-400/10 border-amber-400/20",
-    note: "~8K token task ≈ $0.005",
-    recommended: false,
-  },
-  // ── NVIDIA NIM ──────────────────────────────────────────────
-  {
-    id: "meta/llama-3.3-70b-instruct",
-    name: "Llama 3.3 70B",
-    provider: "NVIDIA · Meta",
-    inputPer1M: 0.77,
-    outputPer1M: 0.77,
-    badge: "🟢 Balanced",
-    badgeColor: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
-    note: "Fast & affordable open model",
+    note: "Ultra cheap for simple grading",
     recommended: false,
   },
   {
-    id: "nvidia/llama-3.1-nemotron-70b-instruct",
-    name: "Nemotron 70B",
-    provider: "NVIDIA",
-    inputPer1M: 0.35,
+    id: "google/gemini-2.0-flash-001",
+    name: "Gemini 2.0 Flash",
+    provider: "Google · OpenRouter",
+    inputPer1M: 0.10,
     outputPer1M: 0.40,
-    badge: "🔥 NVIDIA",
-    badgeColor: "text-green-300 bg-green-300/10 border-green-300/20",
-    note: "NVIDIA-tuned, very cheap",
-    recommended: false,
-  },
-  {
-    id: "deepseek-ai/deepseek-r1-distill-qwen-32b",
-    name: "DeepSeek R1 32B",
-    provider: "NVIDIA · DeepSeek",
-    inputPer1M: 0.60,
-    outputPer1M: 2.19,
-    badge: "💡 Reasoning",
+    badge: "⚡ Ultra Fast",
     badgeColor: "text-cyan-400 bg-cyan-400/10 border-cyan-400/20",
-    note: "Strong reasoning & analysis",
+    note: "Google's fastest, very affordable",
     recommended: false,
   },
   {
-    id: "deepseek-ai/deepseek-v3.2",
-    name: "DeepSeek V3.2",
-    provider: "NVIDIA · DeepSeek",
-    inputPer1M: 0.20,
-    outputPer1M: 0.60,
-    badge: "💰 Ultra Cheap",
-    badgeColor: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
-    note: "Excellent value for money",
+    id: "meta-llama/llama-3.3-70b-instruct",
+    name: "Llama 3.3 70B",
+    provider: "Meta · OpenRouter",
+    inputPer1M: 0.12,
+    outputPer1M: 0.30,
+    badge: "🦙 Open",
+    badgeColor: "text-orange-400 bg-orange-400/10 border-orange-400/20",
+    note: "Best open model, very cheap",
     recommended: false,
   },
   {
-    id: "meta/llama-3.1-405b-instruct",
-    name: "Llama 3.1 405B",
-    provider: "NVIDIA · Meta",
-    inputPer1M: 5.00,
-    outputPer1M: 16.00,
-    badge: "🦾 Powerful",
-    badgeColor: "text-purple-400 bg-purple-400/10 border-purple-400/20",
-    note: "Largest open model available",
+    id: "deepseek/deepseek-chat-v3-0324",
+    name: "DeepSeek V3",
+    provider: "DeepSeek · OpenRouter",
+    inputPer1M: 0.27,
+    outputPer1M: 1.10,
+    badge: "💡 Reasoning",
+    badgeColor: "text-sky-400 bg-sky-400/10 border-sky-400/20",
+    note: "Strong coding & reasoning tasks",
     recommended: false,
   },
 ];
@@ -180,7 +180,7 @@ function UsageBadge({ usage }: { usage: TaskUsage }) {
         className="text-xs bg-blue-900/30 border border-blue-700/30 text-blue-300 rounded px-2 py-0.5 cursor-help">
         ✈️ Fly {durS}s · ${usage.flyio.costUsd.toFixed(6)}
       </span>
-      {usage.gemini.embeddingCalls > 0 && (
+      {(usage.gemini?.embeddingCalls ?? 0) > 0 && (
         <span className="text-xs bg-green-900/30 border border-green-700/30 text-green-300 rounded px-2 py-0.5">
           🔮 Gemini {usage.gemini.embeddingCalls} embed · free
         </span>
@@ -256,7 +256,7 @@ function CanvasTokenSetup({ onSaved }: { onSaved: (masked: string) => void }) {
 export default function CanvasDashboard({ userId, userRole }: { userId: string; userRole: string }) {
   const [instruction, setInstruction] = useState("");
   const [courseId, setCourseId] = useState("");
-  const [selectedModel, setSelectedModel] = useState("claude-haiku-4-5-20251001");
+  const [selectedModel, setSelectedModel] = useState("anthropic/claude-haiku-4-5");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
   const [reseedingTool, setReseedingTool] = useState<string | null>(null);
