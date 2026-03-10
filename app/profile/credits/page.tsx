@@ -29,8 +29,7 @@ function CreditsContent() {
   const [page, setPage]   = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
-  const [buying, setBuying]   = useState(false);
-  const [credits, setCredits] = useState(100);
+  const [buying, setBuying] = useState(false);
 
   const load = (p: number) => {
     setLoading(true);
@@ -65,15 +64,14 @@ function CreditsContent() {
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const purchase = async () => {
-    if (credits < 100) return;
     setBuying(true);
     const origin = window.location.origin;
     const res = await fetch("/api/user/credits/purchase", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        credits,
-        success_url: `${origin}/profile/credits?session_id={CHECKOUT_SESSION_ID}&purchased=${credits}`,
+        credits: 100,
+        success_url: `${origin}/profile/credits?session_id={CHECKOUT_SESSION_ID}&purchased=100`,
         cancel_url:  `${origin}/profile/credits`,
       }),
     });
@@ -111,22 +109,12 @@ function CreditsContent() {
             </p>
             <p className="text-xs text-gray-500 mt-1">1 credit = $1.00 · 0.1 credit per grading</p>
           </div>
-          <div className="flex items-end gap-3">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Credits to buy</label>
-              <input
-                type="number" min={100} step={100} value={credits}
-                onChange={e => setCredits(Math.max(100, Number(e.target.value)))}
-                className="w-28 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
-              />
-            </div>
-            <button
-              onClick={purchase} disabled={buying || credits < 100}
-              className="btn-primary px-5 py-2 text-sm disabled:opacity-50"
-            >
-              {buying ? "Redirecting…" : `Buy ${credits} credits ($${credits})`}
-            </button>
-          </div>
+          <button
+            onClick={purchase} disabled={buying}
+            className="btn-primary px-5 py-2 text-sm disabled:opacity-50"
+          >
+            {buying ? "Redirecting…" : "Buy 100 credits ($100)"}
+          </button>
         </div>
       </div>
 
