@@ -96,6 +96,20 @@ export default function ModulesCatalog({
     setLoading(null);
   };
 
+  const resumeSubscription = async (moduleId: string) => {
+    setLoading(`resume-${moduleId}`); setError(null);
+    try {
+      const res = await fetch("/api/user/subscription/resume", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moduleId }),
+      });
+      const data = await res.json();
+      if (res.ok) { router.refresh(); }
+      else { setError(data.error ?? "Failed to resume subscription."); }
+    } catch { setError("Network error. Please try again."); }
+    setLoading(null);
+  };
+
   const isSubscription = (pt: string | null) => pt === "monthly" || pt === "annual";
 
   return (
@@ -120,6 +134,7 @@ export default function ModulesCatalog({
           const expired = exp && exp < new Date();
           const cancelled = userMod?.cancelled ?? false;
           const canCancel = enabled && !cancelled && !expired && isSubscription(userMod?.payment_type ?? null);
+          const canResume = enabled && cancelled && !expired && isSubscription(userMod?.payment_type ?? null);
           const plan = getPlan(mod.id, mod);
           const annualPrice = mod.price_monthly
             ? (parseFloat(mod.price_monthly) * 12 * 0.9).toFixed(2)
@@ -148,11 +163,17 @@ export default function ModulesCatalog({
                     </div>
                     <p className="text-sm text-gray-400 mb-3">{mod.description}</p>
 
-                    {/* Cancelled warning */}
+                    {/* Cancelled warning + Resume */}
                     {cancelled && !expired && exp && (
-                      <div className="mb-3 bg-orange-500/10 border border-orange-500/20 text-orange-300 text-xs px-3 py-2 rounded-lg">
-                        ⚠ Subscription cancelled. You can continue using this module until{" "}
-                        <strong>{exp.toLocaleDateString()}</strong>. After that date, access will be revoked.
+                      <div className="mb-3 bg-orange-500/10 border border-orange-500/20 text-orange-300 text-xs px-3 py-2 rounded-lg flex items-center justify-between gap-3">
+                        <span>⚠ Cancelled · active until <strong>{exp.toLocaleDateString()}</strong></span>
+                        <button
+                          onClick={() => resumeSubscription(mod.id)}
+                          disabled={loading === `resume-${mod.id}`}
+                          className="shrink-0 text-xs px-3 py-1 rounded-lg bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                        >
+                          {loading === `resume-${mod.id}` ? "Resuming…" : "Resume"}
+                        </button>
                       </div>
                     )}
 
@@ -211,7 +232,7 @@ export default function ModulesCatalog({
                         {loading === mod.id ? "Processing…" : mod.is_free ? "Activate Free" : expired ? "Renew" : "Purchase"}
                       </button>
                     </>
-                  ) : canCancel ? (
+                  ) : canResume ? null : canCancel ? (
                     /* Cancel subscription */
                     cancelConfirm === mod.id ? (
                       <div className="space-y-2">
