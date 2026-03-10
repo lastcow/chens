@@ -1,6 +1,5 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -14,10 +13,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           Welcome back, {session.user?.name || session.user?.email}
         </p>
       </div>
-      <div className="flex gap-6">
-        <DashboardSidebar />
-        <main className="flex-1 min-w-0">{children}</main>
-      </div>
+      <main>{children}</main>
     </div>
   );
 }

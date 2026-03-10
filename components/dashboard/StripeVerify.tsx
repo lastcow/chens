@@ -17,11 +17,11 @@ export default function StripeVerify({ sid }: { sid: string }) {
       .then(data => {
         if (data.error) console.error("[StripeVerify] API error:", data.error);
         // Hard navigation — forces fresh server render with updated DB state
-        window.location.replace("/dashboard/modules?activated=1");
+        window.location.replace("/dashboard?activated=1");
       })
       .catch(err => {
         console.error("[StripeVerify] fetch error:", err);
-        window.location.replace("/dashboard/modules?activated=1");
+        window.location.replace("/dashboard?activated=1");
       });
   }, [sid]);
 
