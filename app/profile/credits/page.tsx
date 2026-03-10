@@ -45,7 +45,24 @@ function CreditsContent() {
       .catch(() => { setError("Failed to load credits"); setLoading(false); });
   };
 
-  useEffect(() => { load(page); }, [page]);
+  // Verify Stripe session on return from checkout
+  useEffect(() => {
+    const sessionId = params.get("session_id");
+    if (!sessionId) { load(page); return; }
+    fetch("/api/user/credits/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.balance !== undefined) {
+          setData(prev => prev ? { ...prev, balance: d.balance } : null);
+        }
+        load(1); // reload transactions
+      })
+      .catch(() => load(page));
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const purchase = async () => {
     if (credits < 100) return;
@@ -56,7 +73,7 @@ function CreditsContent() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         credits,
-        success_url: `${origin}/profile/credits?purchased=${credits}`,
+        success_url: `${origin}/profile/credits?session_id={CHECKOUT_SESSION_ID}&purchased=${credits}`,
         cancel_url:  `${origin}/profile/credits`,
       }),
     });

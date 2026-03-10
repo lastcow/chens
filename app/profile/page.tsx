@@ -48,7 +48,7 @@ export default function ProfilePage() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         credits: buyCredits,
-        success_url: `${origin}/profile/credits?purchased=${buyCredits}`,
+        success_url: `${origin}/profile/credits?session_id={CHECKOUT_SESSION_ID}&purchased=${buyCredits}`,
         cancel_url:  `${origin}/profile/credits`,
       }),
     });
