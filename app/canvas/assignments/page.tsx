@@ -48,6 +48,7 @@ function AssignmentsContent() {
   const [confirm, setConfirm] = useState<Assignment | null>(null);
   const [requesting, setRequesting] = useState<number | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [gradingCost, setGradingCost] = useState<number>(0.05);
 
   useEffect(() => {
     if (!activeTerm) return;
@@ -57,7 +58,7 @@ function AssignmentsContent() {
       .then(d => { setAssignments(d.assignments ?? []); setLoading(false); });
   }, [termParam, activeTerm]);
 
-  // Load existing requests on mount
+  // Load existing requests + grading cost on mount
   useEffect(() => {
     fetch("/api/professor/grade-request")
       .then(r => r.json())
@@ -69,6 +70,9 @@ function AssignmentsContent() {
         );
         setRequested(pending);
       });
+    fetch("/api/professor/grade-config")
+      .then(r => r.json())
+      .then(d => { if (d.grading_cost_per_submission) setGradingCost(d.grading_cost_per_submission); });
   }, []);
 
   const submitRequest = async (a: Assignment) => {
@@ -156,19 +160,49 @@ function AssignmentsContent() {
               </div>
               <div>
                 <p className="font-semibold text-white text-sm">Request AI Grading?</p>
-                <p className="text-xs text-gray-400 mt-0.5">This will be queued for the AI grading agent.</p>
+                <p className="text-xs text-gray-400 mt-0.5">{confirm.ungraded_count} ungraded submission{Number(confirm.ungraded_count) !== 1 ? "s" : ""}</p>
               </div>
             </div>
+
+            {/* Assignment info */}
             <div className="bg-gray-800 rounded-lg px-4 py-3 text-sm">
               <p className="text-gray-300 font-medium truncate">{confirm.name}</p>
               <p className="text-gray-500 text-xs mt-0.5">{confirm.course_name}</p>
             </div>
-            <div className="flex gap-3">
+
+            {/* Cost estimate */}
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-400">Cost per submission</span>
+                <span className="font-mono text-amber-400">${gradingCost.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-400">Estimated total</span>
+                <span className="font-mono font-semibold text-amber-300">
+                  ${(gradingCost * Number(confirm.ungraded_count)).toFixed(2)}
+                </span>
+              </div>
+              <p className="text-xs text-amber-600/80 mt-1">
+                Charged only for ungraded submissions processed.
+              </p>
+            </div>
+
+            {/* Accuracy disclaimer */}
+            <div className="bg-gray-800/60 border border-gray-700 rounded-lg px-4 py-3 flex gap-2">
+              <span className="text-yellow-500 text-sm mt-0.5 shrink-0">⚠️</span>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                AI grading results are <strong className="text-gray-300">not guaranteed to be 100% accurate</strong>.
+                Grades will be saved to a staging area for your review before being finalized.
+                Only you can approve and submit the final grades.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-1">
               <button
                 onClick={() => submitRequest(confirm)}
                 className="btn-primary flex-1 py-2 text-sm"
               >
-                Confirm
+                Confirm &amp; Queue
               </button>
               <button
                 onClick={() => setConfirm(null)}
@@ -268,25 +302,31 @@ function AssignmentsContent() {
                             </span>
                           : <span className="text-xs text-green-600">✓</span>}
                       </td>
-                      {/* Grade Request icon */}
+                      {/* Grade Request icon — only active when ungraded submissions exist */}
                       <td className="text-center px-3 py-3">
-                        <button
-                          onClick={() => !isRequested && !isLoading && setConfirm(a)}
-                          disabled={isRequested || isLoading}
-                          title={isRequested ? "Grade request submitted" : "Request AI grading"}
-                          className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all
-                            ${isRequested
-                              ? "text-green-400 bg-green-500/10 cursor-default"
-                              : isLoading
-                                ? "text-gray-600 cursor-wait"
-                                : "text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
-                            }`}
-                        >
-                          {isLoading
-                            ? <span className="w-3.5 h-3.5 border-2 border-gray-600 border-t-amber-400 rounded-full animate-spin" />
-                            : <GradeRequestIcon requested={isRequested} />
-                          }
-                        </button>
+                        {Number(a.ungraded_count) === 0 ? (
+                          <span className="inline-flex items-center justify-center w-7 h-7 text-gray-700 cursor-not-allowed" title="No ungraded submissions">
+                            <GradeRequestIcon requested={false} />
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => !isRequested && !isLoading && setConfirm(a)}
+                            disabled={isRequested || isLoading}
+                            title={isRequested ? "AI grading requested" : `Request AI grading (${a.ungraded_count} ungraded)`}
+                            className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all
+                              ${isRequested
+                                ? "text-green-400 bg-green-500/10 cursor-default"
+                                : isLoading
+                                  ? "text-gray-600 cursor-wait"
+                                  : "text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
+                              }`}
+                          >
+                            {isLoading
+                              ? <span className="w-3.5 h-3.5 border-2 border-gray-600 border-t-amber-400 rounded-full animate-spin" />
+                              : <GradeRequestIcon requested={isRequested} />
+                            }
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

@@ -18,6 +18,8 @@ type ModuleCatalogRow = {
   allow_one_time: boolean; allow_monthly: boolean; allow_annual: boolean;
 };
 
+type ProfConfigRow = { key: string; value: string; label: string };
+
 export default function AdminModules() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [catalog, setCatalog] = useState<ModuleCatalogRow[]>([]);
@@ -29,13 +31,21 @@ export default function AdminModules() {
   const [priceSaving, setPriceSaving] = useState(false);
   const [priceSaved, setPriceSaved] = useState(false);
 
+  // Prof config (AI grading cost etc.)
+  const [profConfig, setProfConfig] = useState<ProfConfigRow[]>([]);
+  const [configEdits, setConfigEdits] = useState<Record<string, string>>({});
+  const [configSaving, setConfigSaving] = useState(false);
+  const [configSaved, setConfigSaved] = useState(false);
+
   useEffect(() => {
     Promise.all([
       fetch("/api/admin/modules").then((r) => r.json()),
       fetch("/api/admin/modules-catalog").then((r) => r.json()),
-    ]).then(([usersData, catalogData]) => {
+      fetch("/api/admin/prof-config").then((r) => r.json()),
+    ]).then(([usersData, catalogData, configData]) => {
       setUsers(usersData.users || []);
       setCatalog(catalogData.modules || []);
+      setProfConfig(configData.config || []);
       setLoading(false);
     });
   }, []);
@@ -79,6 +89,23 @@ export default function AdminModules() {
     }
     setPriceSaving(false);
     setEditing(null);
+  };
+
+  const saveConfig = async (key: string) => {
+    const value = configEdits[key];
+    if (value === undefined) return;
+    setConfigSaving(true);
+    const res = await fetch("/api/admin/prof-config", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, value }),
+    });
+    if (res.ok) {
+      setProfConfig((prev) => prev.map((c) => (c.key === key ? { ...c, value } : c)));
+      setConfigEdits((prev) => { const n = { ...prev }; delete n[key]; return n; });
+      setConfigSaved(true); setTimeout(() => setConfigSaved(false), 2000);
+    }
+    setConfigSaving(false);
   };
 
   if (loading) return <div className="text-gray-500 py-8 text-center">Loading…</div>;
@@ -158,6 +185,54 @@ export default function AdminModules() {
           })}
         </div>
       </div>
+
+      {/* ── AI Grading Settings ── */}
+      {profConfig.length > 0 && (
+        <div>
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            🪄 AI Grading Settings
+          </h2>
+          <div className="card border border-gray-700/50 space-y-4">
+            {profConfig.map((cfg) => {
+              const editVal = configEdits[cfg.key] ?? cfg.value;
+              const isDirty = configEdits[cfg.key] !== undefined && configEdits[cfg.key] !== cfg.value;
+              return (
+                <div key={cfg.key} className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-300">{cfg.label || cfg.key}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Key: <code className="text-gray-600">{cfg.key}</code></p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500 text-sm">$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={editVal}
+                      onChange={(e) => setConfigEdits((prev) => ({ ...prev, [cfg.key]: e.target.value }))}
+                      className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm w-24 focus:outline-none focus:border-amber-500 font-mono"
+                    />
+                    <button
+                      onClick={() => saveConfig(cfg.key)}
+                      disabled={!isDirty || configSaving}
+                      className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                        isDirty
+                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30"
+                          : "text-gray-700 border border-gray-800 cursor-not-allowed"
+                      }`}
+                    >
+                      {configSaving ? "…" : configSaved ? "✓" : "Save"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            <p className="text-xs text-gray-600 border-t border-gray-800 pt-3">
+              Cost is charged per ungraded submission processed by the AI grading agent. Users see an estimated total before confirming.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── User Access Matrix ── */}
       <div>
