@@ -168,7 +168,7 @@ function AssignmentsContent() {
       const errs = d.errors?.length ?? 0;
       showToast(errs ? `Posted ${posted}, ${errs} error(s)` : `${posted} grades posted to Canvas ✓`, errs === 0);
     } else {
-      showToast("Request cancelled", true);
+      showToast("Grades rejected — submissions back in ungraded queue", true);
     }
 
     // Refresh assignments
