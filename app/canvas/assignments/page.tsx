@@ -9,7 +9,7 @@ interface Assignment {
   course_name: string; course_canvas_id: number;
   graded_count: number; ungraded_count: number; missing_count: number;
   avg_score: number | null; total_students: number;
-  staging_count: number; pending_request_id: string | null;
+  staging_count: number; pending_request_id: string | null; staging_request_id: string | null;
 }
 
 interface StagingGrade {
@@ -143,11 +143,11 @@ function AssignmentsContent() {
   };
 
   const openStaging = async (a: Assignment) => {
-    if (!a.pending_request_id) return;
+    if (!a.staging_request_id) return;
     setStagingAssignment(a);
     setStagingLoading(true);
     setStagingEdits({});
-    const res = await fetch(`/api/professor/grade-staging?request_id=${a.pending_request_id}`);
+    const res = await fetch(`/api/professor/grade-staging?request_id=${a.staging_request_id}`);
     const d = await res.json();
     setStagingGrades(d.grades ?? []);
     setStagingLoading(false);
@@ -172,7 +172,7 @@ function AssignmentsContent() {
   };
 
   const submitStaging = async (action: "approve" | "reject") => {
-    if (!stagingAssignment?.pending_request_id) return;
+    if (!stagingAssignment?.staging_request_id) return;
     setStagingAction(action);
 
     // Save any unsaved edits first
@@ -183,7 +183,7 @@ function AssignmentsContent() {
     const res = await fetch("/api/professor/grade-staging", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ request_id: stagingAssignment.pending_request_id, action }),
+      body: JSON.stringify({ request_id: stagingAssignment.staging_request_id, action }),
     });
     const d = await res.json();
 
