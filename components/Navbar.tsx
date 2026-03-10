@@ -40,7 +40,7 @@ export default function Navbar() {
             {session ? (
               <div className="flex items-center gap-4">
                 {role === "ADMIN" && navLink("/admin", "Admin")}
-                {navLink("/dashboard", "Dashboard")}
+                {navLink("/dashboard", "Modules")}
                 {navLink("/canvas", "Canvas LMS")}
                 {navLink("/profile", "Profile", true)}
                 <button
