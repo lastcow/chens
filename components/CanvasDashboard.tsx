@@ -40,6 +40,40 @@ interface Tool {
   createdBy: string;
 }
 
+interface Course {
+  canvas_id: number;
+  name: string;
+  course_code: string;
+  ungraded_count: number;
+}
+
+interface AssignmentOption {
+  canvas_id: number;
+  name: string;
+  ungraded_count: number;
+  points_possible: number;
+  course_canvas_id: number;
+}
+
+interface GradeEntry {
+  user_id: string;
+  name: string;
+  raw_score: number | null;
+  comment: string;
+  late: boolean;
+  seconds_late: number;
+  notes: string;
+}
+
+interface GradePreview {
+  assignment_title: string;
+  points_possible: number;
+  grades: GradeEntry[];
+  model_used: string;
+  input_tokens: number;
+  output_tokens: number;
+}
+
 // All models via OpenRouter — one key, all providers
 const MODELS = [
   {
@@ -281,6 +315,18 @@ export default function CanvasDashboard({ userId, userRole }: { userId: string; 
   const [showTokenForm, setShowTokenForm] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // ── Grading tab state ─────────────────────────────────────────────
+  const [mainTab, setMainTab] = useState<"agent" | "grade">("agent");
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<number | null>(null);
+  const [assignments, setAssignments] = useState<AssignmentOption[]>([]);
+  const [selectedAssignment, setSelectedAssignment] = useState<number | null>(null);
+  const [gradePreview, setGradePreview] = useState<GradePreview | null>(null);
+  const [editedGrades, setEditedGrades] = useState<GradeEntry[]>([]);
+  const [gradeLoading, setGradeLoading] = useState(false);
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [applyResult, setApplyResult] = useState<{ applied: number; errors: string[] } | null>(null);
+
   // Check if token is saved
   useEffect(() => {
     fetch("/api/user/canvas-token")
@@ -325,6 +371,85 @@ export default function CanvasDashboard({ userId, userRole }: { userId: string; 
     pollRef.current = setInterval(fetchTasks, 5000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
+
+  // Fetch courses for grading tab
+  useEffect(() => {
+    fetch("/api/professor/courses")
+      .then(r => r.json())
+      .then(d => setCourses(d.courses ?? []))
+      .catch(() => {});
+  }, []);
+
+  // Fetch assignments when course changes
+  useEffect(() => {
+    if (!selectedCourse) return;
+    setAssignments([]);
+    setSelectedAssignment(null);
+    setGradePreview(null);
+    fetch(`/api/professor/assignments?course_id=${selectedCourse}`)
+      .then(r => r.json())
+      .then(d => {
+        const opts: AssignmentOption[] = (d.assignments ?? [])
+          .filter((a: any) => a.ungraded_count > 0)
+          .map((a: any) => ({
+            canvas_id: a.canvas_id,
+            name: a.name,
+            ungraded_count: a.ungraded_count,
+            points_possible: a.points_possible,
+            course_canvas_id: selectedCourse,
+          }));
+        setAssignments(opts);
+      })
+      .catch(() => {});
+  }, [selectedCourse]);
+
+  async function handleGradePreview() {
+    if (!selectedCourse || !selectedAssignment) return;
+    setGradeLoading(true);
+    setGradePreview(null);
+    setApplyResult(null);
+    try {
+      const resp = await fetch("/api/agent/grade/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          course_canvas_id: String(selectedCourse),
+          assignment_canvas_id: String(selectedAssignment),
+          model: selectedModel,
+        }),
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      setGradePreview(data);
+      setEditedGrades(data.grades);
+    } catch (err) {
+      alert("Error: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setGradeLoading(false);
+    }
+  }
+
+  async function handleApplyGrades() {
+    if (!selectedCourse || !selectedAssignment || !editedGrades.length) return;
+    setApplyLoading(true);
+    try {
+      const resp = await fetch("/api/agent/grade/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          course_canvas_id: String(selectedCourse),
+          assignment_canvas_id: String(selectedAssignment),
+          grades: editedGrades,
+        }),
+      });
+      const data = await resp.json();
+      setApplyResult(data);
+    } catch (err) {
+      alert("Error: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setApplyLoading(false);
+    }
+  }
 
   const submitTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -374,6 +499,23 @@ export default function CanvasDashboard({ userId, userRole }: { userId: string; 
         <span>Canvas token is managed from the <a href="/canvas/overview" className="text-amber-400 hover:underline">Overview</a> page.</span>
       </div>
 
+      {/* Main tab switcher */}
+      <div className="flex gap-1 bg-white/5 rounded-lg p-1">
+        <button
+          onClick={() => setMainTab("agent")}
+          className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${mainTab === "agent" ? "bg-white/10 text-white" : "text-white/50 hover:text-white/80"}`}
+        >
+          📝 Free Task
+        </button>
+        <button
+          onClick={() => setMainTab("grade")}
+          className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${mainTab === "grade" ? "bg-white/10 text-white" : "text-white/50 hover:text-white/80"}`}
+        >
+          🎓 Grade Assignment
+        </button>
+      </div>
+
+      {mainTab === "agent" && <>
       {/* Task submission */}
       <div className="card">
         <div className="flex items-center gap-2 mb-4">
@@ -643,6 +785,156 @@ export default function CanvasDashboard({ userId, userRole }: { userId: string; 
           {userRole === "ADMIN" && tools.some((t) => t.tier === "RED") && (
             <div className="card border-red-500/20 bg-red-500/5">
               <p className="text-sm text-red-400">🔴 RED tier tools above require your approval before execution.</p>
+            </div>
+          )}
+        </div>
+      )}
+      </> /* end mainTab === "agent" */}
+
+      {/* Grade Assignment tab */}
+      {mainTab === "grade" && (
+        <div className="card space-y-4">
+          <h2 className="text-lg font-semibold">🎓 Grade Assignment</h2>
+
+          {/* Course selector */}
+          <div>
+            <label className="block text-sm text-white/60 mb-1">Course</label>
+            <select
+              value={selectedCourse ?? ""}
+              onChange={e => setSelectedCourse(Number(e.target.value) || null)}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+            >
+              <option value="">Select a course...</option>
+              {courses.map(c => (
+                <option key={c.canvas_id} value={c.canvas_id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Assignment selector */}
+          {selectedCourse && (
+            <div>
+              <label className="block text-sm text-white/60 mb-1">Assignment (ungraded only)</label>
+              <select
+                value={selectedAssignment ?? ""}
+                onChange={e => setSelectedAssignment(Number(e.target.value) || null)}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+              >
+                <option value="">Select an assignment...</option>
+                {assignments.length === 0 && <option disabled>No ungraded assignments</option>}
+                {assignments.map(a => (
+                  <option key={a.canvas_id} value={a.canvas_id}>{a.name} ({a.ungraded_count} ungraded)</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Model selector */}
+          {selectedAssignment && (
+            <div>
+              <label className="block text-sm text-white/60 mb-1">AI Model</label>
+              <select
+                value={selectedModel}
+                onChange={e => setSelectedModel(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+              >
+                {MODELS.map(m => (
+                  <option key={m.id} value={m.id}>{m.name} — {m.provider}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Preview button */}
+          {selectedAssignment && (
+            <button
+              onClick={handleGradePreview}
+              disabled={gradeLoading}
+              className="w-full py-2.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 hover:bg-blue-500/30 transition-colors font-medium text-sm disabled:opacity-50"
+            >
+              {gradeLoading ? "⏳ Generating grades..." : "🔍 Preview Grades"}
+            </button>
+          )}
+
+          {/* Grade preview table */}
+          {gradePreview && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-white">{gradePreview.assignment_title}</h3>
+                <span className="text-xs text-white/40">{gradePreview.input_tokens + gradePreview.output_tokens} tokens</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-white/40 border-b border-white/10">
+                      <th className="text-left py-2 pr-3">Student</th>
+                      <th className="text-left py-2 pr-3 w-20">Score</th>
+                      <th className="text-left py-2 pr-3">Comment</th>
+                      <th className="text-left py-2">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {editedGrades.map((g, i) => (
+                      <tr key={g.user_id} className="border-b border-white/5">
+                        <td className="py-2 pr-3 text-white/80">
+                          {g.name}
+                          {g.late && <span className="ml-1 text-amber-400">⚠️late</span>}
+                        </td>
+                        <td className="py-2 pr-3">
+                          <input
+                            type="number"
+                            value={g.raw_score ?? ""}
+                            min={0}
+                            max={gradePreview.points_possible}
+                            onChange={e => {
+                              const updated = [...editedGrades];
+                              updated[i] = { ...updated[i], raw_score: e.target.value === "" ? null : Number(e.target.value) };
+                              setEditedGrades(updated);
+                            }}
+                            className="w-16 bg-white/5 border border-white/10 rounded px-2 py-1 text-white text-xs"
+                          />
+                          <span className="text-white/30 ml-1">/{gradePreview.points_possible}</span>
+                        </td>
+                        <td className="py-2 pr-3">
+                          <input
+                            type="text"
+                            value={g.comment}
+                            maxLength={100}
+                            onChange={e => {
+                              const updated = [...editedGrades];
+                              updated[i] = { ...updated[i], comment: e.target.value };
+                              setEditedGrades(updated);
+                            }}
+                            className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-white text-xs"
+                          />
+                        </td>
+                        <td className="py-2 text-white/40 text-xs">{g.notes}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Apply button */}
+              {!applyResult && (
+                <button
+                  onClick={handleApplyGrades}
+                  disabled={applyLoading}
+                  className="w-full py-2.5 rounded-lg bg-green-500/20 border border-green-500/30 text-green-300 hover:bg-green-500/30 transition-colors font-medium text-sm disabled:opacity-50"
+                >
+                  {applyLoading ? "⏳ Posting grades..." : "✅ Apply Grades to Canvas"}
+                </button>
+              )}
+
+              {/* Apply result */}
+              {applyResult && (
+                <div className={`p-3 rounded-lg text-sm ${applyResult.errors.length ? "bg-amber-500/10 border border-amber-500/20 text-amber-300" : "bg-green-500/10 border border-green-500/20 text-green-300"}`}>
+                  ✅ Applied {applyResult.applied} grades
+                  {applyResult.errors.length > 0 && (
+                    <ul className="mt-1 text-xs">{applyResult.errors.map((e, i) => <li key={i}>❌ {e}</li>)}</ul>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
