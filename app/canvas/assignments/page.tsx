@@ -11,23 +11,27 @@ interface Assignment {
   avg_score: number | null; total_students: number;
 }
 
-// Inline SVG icon — clipboard with a checkmark request indicator
+// Wand + sparkles icon for grade request
 function GradeRequestIcon({ requested }: { requested: boolean }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      strokeWidth={1.8}
-      stroke="currentColor"
-      className="w-4 h-4"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round"
-        d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-      <rect x="9" y="3" width="6" height="4" rx="1" strokeLinecap="round" strokeLinejoin="round" />
-      {requested
-        ? <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
-        : <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6M9 16h4" />}
+  return requested ? (
+    // Requested state: solid wand tip + check
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <path d="M4.5 16.5l10-10 3 3-10 10-3-3z" />
+      <path d="M14 5l3 3" />
+      <path d="M9 3v2M3 9h2M11 3l1 1M3 11l1 1" />
+      <path d="M17 8l2-2M19 12l-1-1" strokeWidth={1.4} />
+      {/* small check on wand tip */}
+      <path d="M18.5 5.5l1.5 1.5-3 3" strokeWidth={1.6} />
+    </svg>
+  ) : (
+    // Idle state: wand with sparkles
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      {/* wand shaft */}
+      <path d="M4.5 16.5l10-10 3 3-10 10-3-3z" />
+      <path d="M14 5l3 3" />
+      {/* sparkles around tip */}
+      <path d="M18 2v3M21 5h-3" strokeWidth={1.5} />
+      <path d="M21 2l-1.5 1.5M21 5l-1.5-1.5" strokeWidth={1.2} />
     </svg>
   );
 }
@@ -147,8 +151,8 @@ function AssignmentsContent() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-sm space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
-                <GradeRequestIcon requested={false} />
+              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-lg">
+                🪄
               </div>
               <div>
                 <p className="font-semibold text-white text-sm">Request AI Grading?</p>
