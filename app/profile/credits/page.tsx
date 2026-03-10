@@ -103,11 +103,11 @@ function CreditsContent() {
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Credit Balance</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Token Credits</p>
             <p className="text-4xl font-bold text-amber-400">
               {loading ? <span className="animate-pulse">—</span> : balance.toFixed(1)}
             </p>
-            <p className="text-xs text-gray-500 mt-1">1 credit = $1.00 · 0.1 credit per grading</p>
+            <p className="text-xs text-gray-500 mt-1">1 token = $1.00</p>
           </div>
           <button
             onClick={purchase} disabled={buying}

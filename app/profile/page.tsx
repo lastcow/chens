@@ -111,10 +111,10 @@ export default function ProfilePage() {
       <div className="card">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">AI Grading Credits</h2>
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">Token Credits</h2>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-bold text-amber-400">{balance !== null ? balance.toFixed(1) : "—"}</span>
-              <span className="text-xs text-gray-500">credits · $1 each · 0.1 per grading</span>
+              <span className="text-xs text-gray-500">tokens · $1 each</span>
             </div>
           </div>
           <button onClick={purchase} disabled={buying}
