@@ -20,12 +20,21 @@ interface ConfirmDialog {
   onConfirm: () => void;
 }
 
+interface CreditDialog {
+  user: User;
+}
+
 export default function AdminUsersList() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState<ConfirmDialog | null>(null);
+  const [creditDialog, setCreditDialog] = useState<CreditDialog | null>(null);
+  const [creditAmount, setCreditAmount] = useState("");
+  const [creditNote, setCreditNote] = useState("");
+  const [creditLoading, setCreditLoading] = useState(false);
+  const [creditToast, setCreditToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -81,6 +90,37 @@ export default function AdminUsersList() {
     });
   };
 
+  const openCreditDialog = (user: User) => {
+    setCreditAmount("");
+    setCreditNote("");
+    setCreditDialog({ user });
+  };
+
+  const submitCredit = async () => {
+    if (!creditDialog) return;
+    const amount = parseFloat(creditAmount);
+    if (!amount || amount <= 0) return;
+    setCreditLoading(true);
+    const res = await fetch("/api/admin/credits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        target_user_id: creditDialog.user.id,
+        amount,
+        description: creditNote.trim() || `Admin credit grant`,
+      }),
+    });
+    const d = await res.json();
+    setCreditLoading(false);
+    setCreditDialog(null);
+    if (res.ok) {
+      setCreditToast({ msg: `✅ ${amount} tokens added to ${creditDialog.user.email} (balance: ${d.balance_after?.toFixed(1)})`, ok: true });
+    } else {
+      setCreditToast({ msg: `❌ Failed: ${d.error ?? "Unknown error"}`, ok: false });
+    }
+    setTimeout(() => setCreditToast(null), 4000);
+  };
+
   const filtered = users.filter(
     (u) => u.email.toLowerCase().includes(search.toLowerCase()) ||
            (u.name ?? "").toLowerCase().includes(search.toLowerCase())
@@ -88,6 +128,70 @@ export default function AdminUsersList() {
 
   return (
     <div className="space-y-4">
+      {/* Toast */}
+      {creditToast && (
+        <div className={`fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg
+          ${creditToast.ok ? "bg-green-500/20 text-green-300 border border-green-500/30" : "bg-red-500/20 text-red-300 border border-red-500/30"}`}>
+          {creditToast.msg}
+        </div>
+      )}
+
+      {/* Add Credit dialog */}
+      {creditDialog && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-sm space-y-4">
+            <div>
+              <h3 className="font-semibold text-white">Add Token Credits</h3>
+              <p className="text-xs text-gray-500 mt-0.5 truncate">{creditDialog.user.email}</p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Amount (tokens)</label>
+                <input
+                  type="number" min="1" step="1"
+                  value={creditAmount}
+                  onChange={e => setCreditAmount(e.target.value)}
+                  placeholder="e.g. 100"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Note (optional)</label>
+                <input
+                  type="text"
+                  value={creditNote}
+                  onChange={e => setCreditNote(e.target.value)}
+                  placeholder="Reason for credit…"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 flex gap-2">
+              <span className="text-amber-400 shrink-0">⚠️</span>
+              <p className="text-xs text-amber-300/80 leading-relaxed">
+                Make sure you have the <strong>right amount and right user</strong> before confirming. This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={submitCredit}
+                disabled={creditLoading || !creditAmount || parseFloat(creditAmount) <= 0}
+                className="btn-primary flex-1 py-2 text-sm disabled:opacity-40"
+              >
+                {creditLoading ? "Adding…" : `Add ${creditAmount || "?"} tokens`}
+              </button>
+              <button onClick={() => setCreditDialog(null)} className="btn-secondary flex-1 py-2 text-sm">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Custom confirm dialog */}
       {dialog && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -174,6 +278,12 @@ export default function AdminUsersList() {
 
               {/* Actions */}
               <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => openCreditDialog(user)}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-purple-700/40 hover:border-purple-500/60 text-purple-400 hover:text-purple-300 transition-colors"
+                >
+                  💳 Credits
+                </button>
                 <button
                   onClick={() => toggleRole(user)}
                   disabled={!!acting}
