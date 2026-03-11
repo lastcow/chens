@@ -382,9 +382,9 @@ function AssignmentsContent() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
-                      <th className="text-left py-2">Student</th>
-                      <th className="text-center py-2 w-20">Score</th>
-                      <th className="text-left py-2 w-40">Late</th>
+                      <th className="text-left py-2 w-px whitespace-nowrap pr-4">Student</th>
+                      <th className="text-center py-2 w-24">Score</th>
+                      <th className="text-left py-2 w-36">Late</th>
                       <th className="text-left py-2">Comment</th>
                     </tr>
                   </thead>
@@ -398,7 +398,7 @@ function AssignmentsContent() {
                       const isDirty = Object.keys(edit).length > 0;
                       return (
                         <tr key={sg.id} className={`${isDirty ? "bg-amber-500/5" : ""}`}>
-                          <td className="py-2.5 pr-3 text-gray-300 font-medium">{sg.student_name}</td>
+                          <td className="py-2.5 pr-4 text-gray-300 font-medium whitespace-nowrap w-px">{sg.student_name}</td>
                           <td className="py-2.5 px-1 text-center">
                             <input
                               type="number" step="0.5" min="0" max={stagingAssignment.points_possible}
