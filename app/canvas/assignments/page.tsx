@@ -375,38 +375,43 @@ function AssignmentsContent() {
                             />
                           </td>
                           <td className="py-2.5 px-2">
-                            <div className="flex items-center gap-2">
-                              {/* Waive toggle */}
-                              <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                                <input
-                                  type="checkbox"
-                                  checked={isLate}
-                                  onChange={e => setStagingEdits(prev => ({
-                                    ...prev,
-                                    [sg.id]: { ...prev[sg.id], is_late: e.target.checked, days_late: e.target.checked ? (daysLate || 1) : 0 }
-                                  }))}
-                                  className="accent-amber-500 w-3.5 h-3.5"
-                                />
-                                <span className={`text-xs ${isLate ? "text-amber-400" : "text-gray-600"}`}>
-                                  {isLate ? "Late" : "On time"}
-                                </span>
-                              </label>
-                              {/* Days adjuster */}
-                              {isLate && (
-                                <div className="flex items-center gap-1">
+                            {/* If originally not late, show disabled On time badge */}
+                            {!sg.is_late && (edit.is_late === undefined || edit.is_late === false) ? (
+                              <span className="text-xs text-gray-600 select-none">On time</span>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                {/* Waive toggle — only shown when originally late */}
+                                <label className="flex items-center gap-1.5 cursor-pointer select-none">
                                   <input
-                                    type="number" min="1" max="30"
-                                    value={daysLate}
+                                    type="checkbox"
+                                    checked={isLate}
                                     onChange={e => setStagingEdits(prev => ({
                                       ...prev,
-                                      [sg.id]: { ...prev[sg.id], days_late: Math.max(1, Number(e.target.value)) }
+                                      [sg.id]: { ...prev[sg.id], is_late: e.target.checked, days_late: e.target.checked ? (sg.days_late || 1) : 0 }
                                     }))}
-                                    className="w-10 bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-center text-xs font-mono focus:outline-none focus:border-amber-500"
+                                    className="accent-amber-500 w-3.5 h-3.5"
                                   />
-                                  <span className="text-xs text-gray-500">d</span>
-                                </div>
-                              )}
-                            </div>
+                                  <span className={`text-xs font-medium ${isLate ? "text-amber-400" : "text-gray-500 line-through"}`}>
+                                    {isLate ? "Late" : "Waived"}
+                                  </span>
+                                </label>
+                                {/* Days adjuster — only when still marked late */}
+                                {isLate && (
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="number" min="1" max="30"
+                                      value={daysLate}
+                                      onChange={e => setStagingEdits(prev => ({
+                                        ...prev,
+                                        [sg.id]: { ...prev[sg.id], days_late: Math.max(1, Number(e.target.value)) }
+                                      }))}
+                                      className="w-10 bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-center text-xs font-mono focus:outline-none focus:border-amber-500"
+                                    />
+                                    <span className="text-xs text-gray-500">d</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </td>
                           <td className="py-2.5 pl-2">
                             <textarea
