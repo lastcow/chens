@@ -469,20 +469,27 @@ function AssignmentsContent() {
                 <span className="text-yellow-500">⚠️</span>
                 Edits are saved automatically on approve. Approving will post all grades to Canvas.
               </p>
-              <div className="flex gap-3">
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setStagingAssignment(null)}
+                  disabled={stagingAction !== null}
+                  className="px-3 py-2 rounded-xl border border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-500 text-sm transition-colors disabled:opacity-50 whitespace-nowrap"
+                >
+                  ✕ Close
+                </button>
+                <button
+                  onClick={() => submitStaging("reject")}
+                  disabled={stagingAction !== null}
+                  className="px-3 py-2 rounded-xl btn-secondary text-sm disabled:opacity-50 hover:border-red-500/40 hover:text-red-400 whitespace-nowrap"
+                >
+                  {stagingAction === "reject" ? "Cancelling…" : "✗ Reject"}
+                </button>
                 <button
                   onClick={() => submitStaging("approve")}
                   disabled={stagingAction !== null || stagingGrades.length === 0}
                   className="btn-primary flex-1 py-2 text-sm disabled:opacity-50"
                 >
                   {stagingAction === "approve" ? "Posting to Canvas…" : `✓ Approve & Post to Canvas (${stagingGrades.length})`}
-                </button>
-                <button
-                  onClick={() => submitStaging("reject")}
-                  disabled={stagingAction !== null}
-                  className="btn-secondary flex-1 py-2 text-sm disabled:opacity-50 hover:border-red-500/40 hover:text-red-400"
-                >
-                  {stagingAction === "reject" ? "Cancelling…" : "✗ Reject"}
                 </button>
               </div>
             </div>
