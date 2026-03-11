@@ -94,6 +94,7 @@ function AssignmentsContent() {
   }, []);
 
   const [cancelling, setCancelling] = useState<number | null>(null);
+  const [cancelConfirm, setCancelConfirm] = useState<Assignment | null>(null);
 
   const submitRequest = async (a: Assignment) => {
     setRequesting(a.id);
@@ -129,6 +130,7 @@ function AssignmentsContent() {
   };
 
   const cancelRequest = async (a: Assignment) => {
+    setCancelConfirm(null);
     setCancelling(a.id);
     try {
       const res = await fetch("/api/professor/grade-request", {
@@ -319,6 +321,37 @@ function AssignmentsContent() {
                 className="btn-primary flex-1 py-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >Confirm &amp; Queue</button>
               <button onClick={() => setConfirm(null)} className="btn-secondary flex-1 py-2 text-sm">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel grade request confirmation dialog */}
+      {cancelConfirm && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-md space-y-4">
+            <h2 className="text-white font-semibold text-base">Cancel AI Grading Request?</h2>
+            <div className="text-sm text-gray-400 space-y-2">
+              <p>You are about to cancel the grading request for:</p>
+              <p className="text-gray-200 font-medium truncate">{cancelConfirm.name}</p>
+              <p className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 text-amber-300 text-xs">
+                Any deducted Token Credits will be <strong>credited back</strong> to your balance immediately.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setCancelConfirm(null)}
+                className="flex-1 px-4 py-2 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 text-sm transition-colors"
+              >
+                Keep Request
+              </button>
+              <button
+                onClick={() => cancelRequest(cancelConfirm)}
+                disabled={cancelling === cancelConfirm.id}
+                className="flex-1 px-4 py-2 rounded-xl bg-red-600/80 hover:bg-red-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {cancelling === cancelConfirm.id ? "Cancelling…" : "Yes, Cancel & Refund"}
+              </button>
             </div>
           </div>
         </div>
@@ -567,7 +600,7 @@ function AssignmentsContent() {
                           </button>
                         ) : isRequested && !hasStaging ? (
                           <button
-                            onClick={() => cancelRequest(a)}
+                            onClick={() => setCancelConfirm(a)}
                             disabled={cancelling === a.id}
                             title="Cancel AI grade request"
                             className="inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all text-red-500/60 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-40 cursor-pointer"
