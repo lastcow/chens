@@ -25,6 +25,8 @@ interface StagingGrade {
   grader_comment: string;
   ai_model: string;
   status: string;
+  is_late: boolean;
+  days_late: number;
 }
 
 // Wand icon
@@ -172,6 +174,8 @@ function AssignmentsContent() {
         raw_score: edits.raw_score ?? sg.raw_score,
         final_score: edits.final_score ?? sg.final_score,
         grader_comment: edits.grader_comment ?? sg.grader_comment,
+        is_late: edits.is_late !== undefined ? edits.is_late : sg.is_late,
+        days_late: edits.days_late !== undefined ? edits.days_late : sg.days_late,
       }),
     });
     setStagingGrades(prev => prev.map(g =>
@@ -347,16 +351,17 @@ function AssignmentsContent() {
                     <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
                       <th className="text-left py-2">Student</th>
                       <th className="text-center py-2 w-20">Score</th>
-                      <th className="text-center py-2 w-20">Final</th>
+                      <th className="text-left py-2 w-40">Late</th>
                       <th className="text-left py-2">Comment</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800/50">
                     {stagingGrades.map(sg => {
                       const edit = stagingEdits[sg.id] ?? {};
-                      const score = edit.final_score ?? sg.final_score ?? "";
                       const raw = edit.raw_score ?? sg.raw_score ?? "";
                       const comment = edit.grader_comment ?? sg.grader_comment ?? "";
+                      const isLate = edit.is_late !== undefined ? edit.is_late : sg.is_late;
+                      const daysLate = edit.days_late !== undefined ? edit.days_late : (sg.days_late ?? 0);
                       const isDirty = Object.keys(edit).length > 0;
                       return (
                         <tr key={sg.id} className={`${isDirty ? "bg-amber-500/5" : ""}`}>
@@ -369,13 +374,39 @@ function AssignmentsContent() {
                               className="w-16 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-center text-xs font-mono focus:outline-none focus:border-amber-500"
                             />
                           </td>
-                          <td className="py-2.5 px-1 text-center">
-                            <span className={`text-xs font-mono font-semibold ${Number(score) >= stagingAssignment.points_possible * 0.7 ? "text-green-400" : "text-red-400"}`}>
-                              {score || "—"}
-                            </span>
-                            {Number(sg.late_penalty) > 0 && (
-                              <span className="block text-xs text-gray-600">-{sg.late_penalty}</span>
-                            )}
+                          <td className="py-2.5 px-2">
+                            <div className="flex items-center gap-2">
+                              {/* Waive toggle */}
+                              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={isLate}
+                                  onChange={e => setStagingEdits(prev => ({
+                                    ...prev,
+                                    [sg.id]: { ...prev[sg.id], is_late: e.target.checked, days_late: e.target.checked ? (daysLate || 1) : 0 }
+                                  }))}
+                                  className="accent-amber-500 w-3.5 h-3.5"
+                                />
+                                <span className={`text-xs ${isLate ? "text-amber-400" : "text-gray-600"}`}>
+                                  {isLate ? "Late" : "On time"}
+                                </span>
+                              </label>
+                              {/* Days adjuster */}
+                              {isLate && (
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="number" min="1" max="30"
+                                    value={daysLate}
+                                    onChange={e => setStagingEdits(prev => ({
+                                      ...prev,
+                                      [sg.id]: { ...prev[sg.id], days_late: Math.max(1, Number(e.target.value)) }
+                                    }))}
+                                    className="w-10 bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-center text-xs font-mono focus:outline-none focus:border-amber-500"
+                                  />
+                                  <span className="text-xs text-gray-500">d</span>
+                                </div>
+                              )}
+                            </div>
                           </td>
                           <td className="py-2.5 pl-2">
                             <textarea
