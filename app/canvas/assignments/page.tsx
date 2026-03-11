@@ -383,7 +383,7 @@ function AssignmentsContent() {
                   <thead>
                     <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
                       <th className="text-left py-2 w-px whitespace-nowrap pr-4">Student</th>
-                      <th className="text-center py-2 w-24">Score</th>
+                      <th className="text-center py-2 w-28">Score</th>
                       <th className="text-left py-2 w-36">Late</th>
                       <th className="text-left py-2">Comment</th>
                     </tr>
@@ -401,10 +401,10 @@ function AssignmentsContent() {
                           <td className="py-2.5 pr-4 text-gray-300 font-medium whitespace-nowrap w-px">{sg.student_name}</td>
                           <td className="py-2.5 px-1 text-center">
                             <input
-                              type="number" step="0.5" min="0" max={stagingAssignment.points_possible}
-                              value={raw}
-                              onChange={e => setStagingEdits(prev => ({ ...prev, [sg.id]: { ...prev[sg.id], raw_score: e.target.value, final_score: e.target.value } }))}
-                              className="w-16 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-center text-xs font-mono focus:outline-none focus:border-amber-500"
+                              type="number" step="1" min="0" max={stagingAssignment.points_possible}
+                              value={raw ? String(Math.round(Number(raw))) : ""}
+                              onChange={e => { const v = String(Math.round(Number(e.target.value))); setStagingEdits(prev => ({ ...prev, [sg.id]: { ...prev[sg.id], raw_score: v, final_score: v } })); }}
+                              className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-center text-xs font-mono focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           </td>
                           <td className="py-2.5 px-2">
