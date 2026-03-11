@@ -540,19 +540,9 @@ function AssignmentsContent() {
                             {a.staging_count} staged
                           </button>
                         ) : a.pending_request_id ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs bg-amber-900/30 text-amber-400 border border-amber-700/30 rounded-full px-2 py-0.5">
-                              {a.ungraded_count}
-                            </span>
-                            <button
-                              onClick={() => cancelRequest(a)}
-                              disabled={cancelling === a.id}
-                              title="Cancel grade request"
-                              className="text-xs text-gray-600 hover:text-red-400 transition-colors disabled:opacity-50 leading-none"
-                            >
-                              {cancelling === a.id ? "…" : "✕"}
-                            </button>
-                          </div>
+                          <span className="text-xs bg-amber-900/30 text-amber-400 border border-amber-700/30 rounded-full px-2 py-0.5">
+                            {a.ungraded_count}
+                          </span>
                         ) : Number(a.ungraded_count) > 0 ? (
                           <span className="text-xs bg-amber-900/30 text-amber-400 border border-amber-700/30 rounded-full px-2 py-0.5">
                             {a.ungraded_count}
@@ -562,7 +552,7 @@ function AssignmentsContent() {
                         )}
                       </td>
 
-                      {/* Wand — disabled when staging pending, fully graded, or already requested */}
+                      {/* Wand / Cancel button */}
                       <td className="text-center px-3 py-3">
                         {canRequest ? (
                           <button
@@ -576,9 +566,16 @@ function AssignmentsContent() {
                               : <WandIcon active={true} />}
                           </button>
                         ) : isRequested && !hasStaging ? (
-                          <span className="inline-flex items-center justify-center w-7 h-7 text-green-400" title="AI grading requested">
-                            <WandIcon active={false} />
-                          </span>
+                          <button
+                            onClick={() => cancelRequest(a)}
+                            disabled={cancelling === a.id}
+                            title="Cancel AI grade request"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all text-red-500/60 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-40 cursor-pointer"
+                          >
+                            {cancelling === a.id
+                              ? <span className="w-3.5 h-3.5 border-2 border-gray-600 border-t-red-400 rounded-full animate-spin" />
+                              : <span className="text-xs font-bold">✕</span>}
+                          </button>
                         ) : (
                           <span className="inline-flex items-center justify-center w-7 h-7 text-gray-700 cursor-not-allowed" title={hasStaging ? "Review staged grades first" : "No ungraded submissions"}>
                             <WandIcon active={false} />
