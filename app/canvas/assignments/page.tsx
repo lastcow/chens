@@ -469,25 +469,25 @@ function AssignmentsContent() {
                 <span className="text-yellow-500">⚠️</span>
                 Edits are saved automatically on approve. Approving will post all grades to Canvas.
               </p>
-              <div className="flex gap-3 justify-end">
+              <div className="flex gap-3">
                 <button
                   onClick={() => submitStaging("approve")}
                   disabled={stagingAction !== null || stagingGrades.length === 0}
-                  className="btn-primary py-2 px-4 text-sm disabled:opacity-50"
+                  className="btn-primary flex-1 py-2 text-sm disabled:opacity-50"
                 >
                   {stagingAction === "approve" ? "Posting to Canvas…" : `✓ Approve & Post to Canvas (${stagingGrades.length})`}
                 </button>
                 <button
                   onClick={() => submitStaging("reject")}
                   disabled={stagingAction !== null}
-                  className="px-4 py-2 rounded-xl bg-red-900/30 border border-red-700/40 text-red-400 hover:bg-red-900/50 hover:border-red-600/60 text-sm transition-colors disabled:opacity-50 whitespace-nowrap"
+                  className="px-3 py-2 rounded-xl bg-red-900/30 border border-red-700/40 text-red-400 hover:bg-red-900/50 hover:border-red-600/60 text-sm transition-colors disabled:opacity-50 whitespace-nowrap"
                 >
-                  {stagingAction === "reject" ? "Rejecting…" : "✗ Reject"}
+                  {stagingAction === "reject" ? "Cancelling…" : "✗ Reject"}
                 </button>
                 <button
                   onClick={() => setStagingAssignment(null)}
                   disabled={stagingAction !== null}
-                  className="px-4 py-2 rounded-xl bg-red-900/30 border border-red-700/40 text-red-400 hover:bg-red-900/50 hover:border-red-600/60 text-sm transition-colors disabled:opacity-50 whitespace-nowrap"
+                  className="px-3 py-2 rounded-xl bg-red-900/30 border border-red-700/40 text-red-400 hover:bg-red-900/50 hover:border-red-600/60 text-sm transition-colors disabled:opacity-50 whitespace-nowrap"
                 >
                   ✕ Cancel
                 </button>
