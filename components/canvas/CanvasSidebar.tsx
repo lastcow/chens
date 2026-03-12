@@ -3,14 +3,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTerm } from "./TermProvider";
+import { LayoutDashboard, Users, ClipboardList, BarChart3, AlertTriangle } from "lucide-react";
 
 const NAV = [
-  { href: "/canvas/overview",    label: "Overview",    icon: "⊞" },
-  { href: "/canvas/students",    label: "Students",    icon: "👥", countKey: "students" },
-  { href: "/canvas/assignments", label: "Assignments", icon: "📋", countKey: "ungraded" },
-  { href: "/canvas/grades",      label: "Grades",      icon: "📊", countKey: "pending" },
-  { href: "/canvas/atrisk",      label: "At-Risk",     icon: "⚠️", countKey: "atrisk" },
-  // { href: "/canvas/agent",        label: "AI Agent",    icon: "🤖" },  // temporarily disabled
+  { href: "/canvas/overview",    label: "Overview",    icon: LayoutDashboard },
+  { href: "/canvas/students",    label: "Students",    icon: Users, countKey: "students" },
+  { href: "/canvas/assignments", label: "Assignments", icon: ClipboardList, countKey: "ungraded" },
+  { href: "/canvas/grades",      label: "Grades",      icon: BarChart3, countKey: "pending" },
+  { href: "/canvas/atrisk",      label: "At-Risk",     icon: AlertTriangle, countKey: "atrisk" },
+  // { href: "/canvas/agent",        label: "AI Agent",    icon: Wand2 },  // temporarily disabled
 ];
 
 export default function CanvasSidebar() {
@@ -64,7 +65,7 @@ export default function CanvasSidebar() {
                   : "text-gray-400 hover:text-white hover:bg-gray-800/50"
               }`}
             >
-              <span>{item.icon}</span>
+              <item.icon className="w-4 h-4" />
               <span className="flex-1">{item.label}</span>
               {item.countKey === "students" && studentCount !== null && (
                 <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${

@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { User, ShoppingCart, Zap } from "lucide-react";
 
 const NAV = [
-  { href: "/profile",           label: "Overview",       icon: "👤", exact: true },
-  { href: "/profile/purchases", label: "Purchases",      icon: "🛒" },
-  { href: "/profile/credits",   label: "Credits",        icon: "💳" },
+  { href: "/profile",           label: "Overview",       icon: User, exact: true },
+  { href: "/profile/purchases", label: "Purchases",      icon: ShoppingCart },
+  { href: "/profile/credits",   label: "Credits",        icon: Zap },
 ];
 
 export default function ProfileSidebar() {
@@ -23,7 +24,7 @@ export default function ProfileSidebar() {
                   : "text-gray-400 hover:text-white hover:bg-gray-800/50"
               }`}
             >
-              <span>{item.icon}</span>
+              <item.icon className="w-4 h-4" />
               <span>{item.label}</span>
             </Link>
           );
