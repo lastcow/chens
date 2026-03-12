@@ -10,17 +10,29 @@ interface Course {
   student_count: number; assignment_count: number; avg_grade: number | null; ungraded_count: number;
 }
 
+interface UserProfile {
+  id: string;
+  email: string;
+  credits: number;
+}
+
 export default function OverviewPage() {
   const { termParam, activeTerm } = useTerm();
   const [courses, setCourses] = useState<Course[]>([]);
+  const [credits, setCredits] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!activeTerm) return;
     setLoading(true);
-    fetch(`/api/professor/courses?${termParam}`)
-      .then(r => r.json())
-      .then(d => { setCourses(d.courses ?? []); setLoading(false); });
+    Promise.all([
+      fetch(`/api/professor/courses?${termParam}`).then(r => r.json()),
+      fetch(`/api/user/profile`).then(r => r.json())
+    ]).then(([coursesData, profileData]) => {
+      setCourses(coursesData.courses ?? []);
+      setCredits((profileData as UserProfile)?.credits ?? 0);
+      setLoading(false);
+    });
   }, [termParam, activeTerm]);
 
   const totalStudents = courses.reduce((a, c) => a + Number(c.student_count), 0);
@@ -37,11 +49,12 @@ export default function OverviewPage() {
       </div>
 
       {/* Summary stat cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         {[
           { label: "Courses",        value: courses.length,  color: "text-amber-400" },
           { label: "Total Students", value: totalStudents,   color: "text-blue-400" },
           { label: "Ungraded",       value: totalUngraded,   color: totalUngraded > 0 ? "text-red-400" : "text-green-400" },
+          { label: "Credits",        value: credits ?? 0,    color: "text-purple-400" },
         ].map(s => (
           <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
             <div className={`text-3xl font-bold ${s.color}`}>{loading ? "…" : s.value}</div>
