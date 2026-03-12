@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Check, Clock, AlertCircle, X, Circle } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Submission {
   id: number;
@@ -87,7 +88,7 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        <ScrollArea className="flex-1">
           {loading ? (
             <div className="flex items-center justify-center h-32">
               <div className="text-gray-500">Loading submissions...</div>
@@ -130,7 +131,7 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
               </tbody>
             </table>
           )}
-        </div>
+        </ScrollArea>
       </div>
     </div>
   );
