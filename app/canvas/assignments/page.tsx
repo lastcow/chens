@@ -3,7 +3,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTerm } from "@/components/canvas/TermProvider";
 import SubmissionsDialog from "@/components/canvas/SubmissionsDialog";
-import { Wand2, X, AlertCircle, Check, Clock } from "lucide-react";
+import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar } from "lucide-react";
 
 interface Assignment {
   id: number; canvas_id: number; name: string; points_possible: number;
@@ -260,7 +260,9 @@ function AssignmentsContent() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-lg space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-lg">🪄</div>
+              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
+                <Wand2 className="w-5 h-5" />
+              </div>
               <div>
                 <p className="font-semibold text-white text-sm">Request AI Grading?</p>
                 <p className="text-xs text-gray-400 mt-0.5">{confirm.ungraded_count} ungraded submission{Number(confirm.ungraded_count) !== 1 ? "s" : ""}</p>
@@ -300,13 +302,13 @@ function AssignmentsContent() {
             })()}
             <div className="bg-gray-800/60 border border-gray-700 rounded-lg px-4 py-3 space-y-2">
               <div className="flex gap-2">
-                <span className="text-yellow-500 text-sm mt-0.5 shrink-0">⚠️</span>
+                <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
                 <p className="text-xs text-gray-400 leading-relaxed">
                   AI grading is <strong className="text-gray-300">not 100% accurate</strong>. Results go to a staging area for your review. Only you can approve and post final grades to Canvas.
                 </p>
               </div>
               <div className="flex gap-2 pt-2 border-t border-gray-700/50">
-                <span className="text-blue-400 text-sm mt-0.5 shrink-0">📅</span>
+                <Calendar className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
                 <p className="text-xs text-gray-400 leading-relaxed">
                   Grading will run automatically at <strong className="text-gray-300">3 AM America/New_York</strong> daily. You can also grade manually anytime.
                 </p>
@@ -316,9 +318,18 @@ function AssignmentsContent() {
               <button
                 onClick={() => submitRequest(confirm)}
                 disabled={creditBalance !== null && creditBalance < parseFloat((gradingCost * Number(confirm.ungraded_count)).toFixed(2))}
-                className="btn-primary flex-1 py-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-              >Confirm &amp; Queue</button>
-              <button onClick={() => setConfirm(null)} className="btn-secondary flex-1 py-2 text-sm">Cancel</button>
+                className="btn-primary flex-[2] py-2 text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Check className="w-4 h-4" />
+                <span>Confirm &amp; Queue</span>
+              </button>
+              <button
+                onClick={() => setConfirm(null)}
+                className="flex-1 py-2 text-sm flex items-center justify-center gap-2 bg-red-600/40 hover:bg-red-600/50 border border-red-500/30 rounded-lg text-red-400 hover:text-red-300 transition-colors"
+              >
+                <X className="w-4 h-4" />
+                <span>Cancel</span>
+              </button>
             </div>
           </div>
         </div>
