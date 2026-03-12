@@ -52,6 +52,7 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
     ungraded: "bg-amber-900/30 text-amber-400",
     missing: "bg-red-900/30 text-red-400",
     unsubmitted: "bg-gray-900/30 text-gray-400",
+    resubmitted: "bg-blue-900/30 text-blue-400",
   };
 
   const getStatusIcon = (status: string) => {
@@ -64,6 +65,8 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
         return <AlertCircle className="w-3.5 h-3.5" />;
       case "unsubmitted":
         return <Circle className="w-3.5 h-3.5" />;
+      case "resubmitted":
+        return <Clock className="w-3.5 h-3.5" />;
       default:
         return null;
     }
@@ -112,7 +115,11 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
                     <td className="text-left px-4 py-3 text-gray-300">{sub.student_name}</td>
                     <td className="text-center px-4 py-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs capitalize ${statusColors[sub.status] || "bg-gray-800 text-gray-500"}`}>
-                        {getStatusIcon(sub.status)} {sub.status === "unsubmitted" ? "Not yet submitted" : sub.status}
+                        {getStatusIcon(sub.status)} {
+                          sub.status === "unsubmitted" ? "Not yet submitted" :
+                          sub.status === "resubmitted" ? "Resubmitted (needs regrading)" :
+                          sub.status
+                        }
                       </span>
                     </td>
                     <td className="text-center px-4 py-3 font-mono text-gray-400">
