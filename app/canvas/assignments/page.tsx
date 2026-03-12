@@ -2,6 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTerm } from "@/components/canvas/TermProvider";
+import SubmissionsDialog from "@/components/canvas/SubmissionsDialog";
 
 interface Assignment {
   id: number; canvas_id: number; name: string; points_possible: number;
@@ -65,6 +66,9 @@ function AssignmentsContent() {
   const [stagingLoading, setStagingLoading] = useState(false);
   const [stagingEdits, setStagingEdits] = useState<Record<number, Partial<StagingGrade>>>({});
   const [stagingAction, setStagingAction] = useState<"approve" | "reject" | null>(null);
+
+  // Submissions dialog state
+  const [submissionsAssignment, setSubmissionsAssignment] = useState<Assignment | null>(null);
 
   useEffect(() => {
     if (!activeTerm) return;
@@ -565,7 +569,14 @@ function AssignmentsContent() {
 
                   return (
                     <tr key={a.id} className="hover:bg-gray-800/30 transition-colors">
-                      <td className="px-5 py-3 text-white">{a.name}</td>
+                      <td className="px-5 py-3 text-white">
+                        <button
+                          onClick={() => setSubmissionsAssignment(a)}
+                          className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                        >
+                          {a.name}
+                        </button>
+                      </td>
                       <td className="text-center px-3 py-3 text-xs font-mono">
                         {a.due_at
                           ? <span className={isPast(a.due_at) ? "text-gray-500" : "text-blue-400"}>
@@ -651,6 +662,12 @@ function AssignmentsContent() {
             </div>
           </>
         )}
+
+      {/* Submissions dialog */}
+      <SubmissionsDialog
+        assignment={submissionsAssignment}
+        onClose={() => setSubmissionsAssignment(null)}
+      />
       </div>
     </div>
   );
