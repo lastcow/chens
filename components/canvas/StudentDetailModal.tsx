@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { Check, AlertCircle, Circle } from "lucide-react";
 
 interface StudentDetail {
   student: { id: number; name: string; canvas_uid: number; email: string };
@@ -119,11 +120,11 @@ export default function StudentDetailModal({ data, onClose }: Props) {
                       <td className="px-2 py-2 text-gray-300">{a.name}</td>
                       <td className="text-center px-2 py-2">
                         {a.submitted ? (
-                          <span className="text-green-400">✅</span>
+                          <Check className="w-4 h-4 text-green-400 inline" />
                         ) : a.status === "unsubmitted" ? (
-                          <span className="text-gray-500">—</span>
+                          <Circle className="w-4 h-4 text-gray-500 inline" />
                         ) : (
-                          <span className="text-red-400">❌</span>
+                          <AlertCircle className="w-4 h-4 text-red-400 inline" />
                         )}
                       </td>
                       <td className="text-center px-2 py-2 font-mono text-gray-400">

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { Check, Clock, AlertCircle, X, Circle } from "lucide-react";
 
 interface Submission {
   id: number;
@@ -53,11 +54,19 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
     unsubmitted: "bg-gray-900/30 text-gray-400",
   };
 
-  const statusIcons: Record<string, string> = {
-    graded: "✅",
-    ungraded: "⏳",
-    missing: "❌",
-    unsubmitted: "—",
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "graded":
+        return <Check className="w-3.5 h-3.5" />;
+      case "ungraded":
+        return <Clock className="w-3.5 h-3.5" />;
+      case "missing":
+        return <AlertCircle className="w-3.5 h-3.5" />;
+      case "unsubmitted":
+        return <Circle className="w-3.5 h-3.5" />;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -67,13 +76,13 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
         <div className="border-b border-gray-800 px-6 py-4 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-lg font-bold text-white">{assignment.name}</h2>
-            <p className="text-sm text-gray-500 mt-0.5">{assignment.course_name}</p>
+            <p className="text-sm text-gray-500 mt-0.5">{assignment.course_name} • {assignment.points_possible} pts</p>
           </div>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-lg hover:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-300 transition-colors"
           >
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -103,7 +112,7 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
                     <td className="px-4 py-3 text-gray-300">{sub.student_name}</td>
                     <td className="text-center px-4 py-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs capitalize ${statusColors[sub.status] || "bg-gray-800 text-gray-500"}`}>
-                        {statusIcons[sub.status] || "❓"} {sub.status === "unsubmitted" ? "Not yet submitted" : sub.status}
+                        {getStatusIcon(sub.status)} {sub.status === "unsubmitted" ? "Not yet submitted" : sub.status}
                       </span>
                     </td>
                     <td className="text-center px-4 py-3 font-mono text-gray-400">

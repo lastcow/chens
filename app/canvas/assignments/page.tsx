@@ -3,6 +3,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTerm } from "@/components/canvas/TermProvider";
 import SubmissionsDialog from "@/components/canvas/SubmissionsDialog";
+import { Wand2, X, AlertCircle, Check, Clock } from "lucide-react";
 
 interface Assignment {
   id: number; canvas_id: number; name: string; points_possible: number;
@@ -28,21 +29,6 @@ interface StagingGrade {
   status: string;
   is_late: boolean;
   days_late: number;
-}
-
-// Wand icon
-function WandIcon({ active }: { active: boolean }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-      <path d="M4.5 16.5l10-10 3 3-10 10-3-3z" />
-      <path d="M14 5l3 3" />
-      {active && <>
-        <path d="M18 2v3M21 5h-3" strokeWidth={1.5} />
-        <path d="M21 2l-1.5 1.5M21 5l-1.5-1.5" strokeWidth={1.2} />
-      </>}
-    </svg>
-  );
 }
 
 function AssignmentsContent() {
@@ -381,7 +367,9 @@ function AssignmentsContent() {
                 </h3>
                 <p className="text-xs text-gray-400 mt-0.5 truncate">{stagingAssignment.name}</p>
               </div>
-              <button onClick={() => setStagingAssignment(null)} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
+              <button onClick={() => setStagingAssignment(null)} className="text-gray-400 hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Body */}
@@ -572,7 +560,7 @@ function AssignmentsContent() {
                       <td className="px-5 py-3 text-white">
                         <button
                           onClick={() => setSubmissionsAssignment(a)}
-                          className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                          className="text-white hover:text-amber-400 cursor-pointer transition-colors font-medium"
                         >
                           {a.name}
                         </button>
@@ -630,7 +618,7 @@ function AssignmentsContent() {
                           >
                             {isLoading
                               ? <span className="w-3.5 h-3.5 border-2 border-gray-600 border-t-amber-400 rounded-full animate-spin" />
-                              : <WandIcon active={true} />}
+                              : <Wand2 className="w-4 h-4" />}
                           </button>
                         ) : isRequested && !hasStaging ? (
                           <button
@@ -641,11 +629,11 @@ function AssignmentsContent() {
                           >
                             {cancelling === a.id
                               ? <span className="w-3.5 h-3.5 border-2 border-gray-600 border-t-red-400 rounded-full animate-spin" />
-                              : <span className="text-xs font-bold">✕</span>}
+                              : <X className="w-4 h-4" />}
                           </button>
                         ) : (
                           <span className="inline-flex items-center justify-center w-7 h-7 text-gray-700 cursor-not-allowed" title={hasStaging ? "Review staged grades first" : "No ungraded submissions"}>
-                            <WandIcon active={false} />
+                            <Wand2 className="w-4 h-4" />
                           </span>
                         )}
                       </td>
