@@ -3,7 +3,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTerm } from "@/components/canvas/TermProvider";
 import SubmissionsDialog from "@/components/canvas/SubmissionsDialog";
-import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar } from "lucide-react";
+import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar, ClipboardList } from "lucide-react";
 
 interface Assignment {
   id: number; canvas_id: number; name: string; points_possible: number;
@@ -374,7 +374,8 @@ function AssignmentsContent() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
               <div>
                 <h3 className="font-bold text-white flex items-center gap-2">
-                  <span className="text-purple-400">📋</span> Review AI Grades
+                  <ClipboardList className="w-5 h-5 text-purple-400" />
+                  Review AI Grades
                 </h3>
                 <p className="text-xs text-gray-400 mt-0.5 truncate">{stagingAssignment.name}</p>
               </div>
@@ -476,24 +477,26 @@ function AssignmentsContent() {
 
             {/* Footer */}
             <div className="px-6 py-4 border-t border-gray-800 space-y-3">
-              <p className="text-xs text-gray-500 flex gap-1.5">
-                <span className="text-yellow-500">⚠️</span>
+              <p className="text-xs text-gray-500 flex gap-1.5 items-center">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
                 Edits are saved automatically on approve. Approving will post all grades to Canvas.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => submitStaging("approve")}
                   disabled={stagingAction !== null || stagingGrades.length === 0}
-                  className="btn-primary flex-1 py-2 text-sm disabled:opacity-50"
+                  className="btn-primary flex-1 py-2 text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {stagingAction === "approve" ? "Posting to Canvas…" : `✓ Approve & Post to Canvas (${stagingGrades.length})`}
+                  <Check className="w-4 h-4" />
+                  <span>{stagingAction === "approve" ? "Posting to Canvas…" : `Approve & Post to Canvas (${stagingGrades.length})`}</span>
                 </button>
                 <button
                   onClick={() => submitStaging("reject")}
                   disabled={stagingAction !== null}
-                  className="px-3 py-2 rounded-xl bg-red-900/30 border border-red-700/40 text-red-400 hover:bg-red-900/50 hover:border-red-600/60 text-sm transition-colors disabled:opacity-50 whitespace-nowrap"
+                  className="px-3 py-2 rounded-xl bg-red-900/30 border border-red-700/40 text-red-400 hover:bg-red-900/50 hover:border-red-600/60 text-sm transition-colors disabled:opacity-50 whitespace-nowrap flex items-center justify-center gap-1.5"
                 >
-                  {stagingAction === "reject" ? "Cancelling…" : "✗ Reject"}
+                  <X className="w-4 h-4" />
+                  <span>{stagingAction === "reject" ? "Cancelling…" : "Reject"}</span>
                 </button>
                 <button
                   onClick={() => setStagingAssignment(null)}
