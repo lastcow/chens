@@ -49,24 +49,20 @@ export default function AtRiskPage() {
     setSelectedStudent(student);
     setDetailLoading(true);
     try {
-      const url = `/api/professor/atrisk/${student.canvas_uid}?${termParam}`;
-      console.log(`[atrisk-modal] Fetching: ${url}`);
-      const res = await fetch(url);
-      console.log(`[atrisk-modal] Response status: ${res.status}`);
+      const res = await fetch(`/api/professor/atrisk/${student.canvas_uid}?${termParam}`);
       
       if (!res.ok) {
         const errorText = await res.text();
-        console.error(`[atrisk-modal] Error: ${res.status} - ${errorText}`);
-        alert(`Error loading student details: ${res.status} - ${errorText}`);
+        console.error("Error loading student details:", res.status, errorText);
+        alert(`Error loading student details: ${res.status}`);
         setDetailLoading(false);
         return;
       }
       
       const data = await res.json();
-      console.log(`[atrisk-modal] Got data:`, data);
       setStudentDetail(data);
     } catch (err) {
-      console.error("[atrisk-modal] Fetch failed:", err);
+      console.error("Failed to fetch student detail:", err);
       alert(`Error: ${String(err)}`);
     } finally {
       setDetailLoading(false);
