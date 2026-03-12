@@ -89,16 +89,17 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
 
         {/* Content */}
         <ScrollArea className="flex-1">
-          {loading ? (
-            <div className="flex items-center justify-center h-32">
-              <div className="text-gray-500">Loading submissions...</div>
-            </div>
-          ) : submissions.length === 0 ? (
-            <div className="flex items-center justify-center h-32">
-              <div className="text-gray-500">No submissions found</div>
-            </div>
-          ) : (
-            <table className="w-full text-sm">
+          <div className="w-full pr-4">
+            {loading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="text-gray-500">Loading submissions...</div>
+              </div>
+            ) : submissions.length === 0 ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="text-gray-500">No submissions found</div>
+              </div>
+            ) : (
+              <table className="w-full text-sm">
               <thead className="bg-gray-950/50 border-b border-gray-800 sticky top-0">
                 <tr>
                   <th className="text-left px-4 py-3 font-semibold text-gray-300">Student</th>
@@ -129,8 +130,9 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          )}
+              </table>
+            )}
+          </div>
         </ScrollArea>
       </div>
     </div>
