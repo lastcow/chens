@@ -115,7 +115,7 @@ function AssignmentsContent() {
       if (res.status === 201) {
         setRequested(prev => new Set([...prev, a.id]));
         if (d.balance_after !== undefined) setCreditBalance(d.balance_after);
-        showToast(`Grade request queued ✓ (${d.credit_cost} credits deducted)`, true);
+        showToast(`Grade request queued ✓ (${d.credit_cost} credits deducted). Grading scheduled for 3 AM America/New_York.`, true);
       } else if (res.status === 402) {
         showToast(`Insufficient credits — need ${d.required}, have ${d.balance?.toFixed(1)}`, false);
       } else if (res.status === 409) {
@@ -308,11 +308,19 @@ function AssignmentsContent() {
                 </div>
               );
             })()}
-            <div className="bg-gray-800/60 border border-gray-700 rounded-lg px-4 py-3 flex gap-2">
-              <span className="text-yellow-500 text-sm mt-0.5 shrink-0">⚠️</span>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                AI grading is <strong className="text-gray-300">not 100% accurate</strong>. Results go to a staging area for your review. Only you can approve and post final grades to Canvas.
-              </p>
+            <div className="bg-gray-800/60 border border-gray-700 rounded-lg px-4 py-3 space-y-2">
+              <div className="flex gap-2">
+                <span className="text-yellow-500 text-sm mt-0.5 shrink-0">⚠️</span>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  AI grading is <strong className="text-gray-300">not 100% accurate</strong>. Results go to a staging area for your review. Only you can approve and post final grades to Canvas.
+                </p>
+              </div>
+              <div className="flex gap-2 pt-2 border-t border-gray-700/50">
+                <span className="text-blue-400 text-sm mt-0.5 shrink-0">📅</span>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Grading will run automatically at <strong className="text-gray-300">3 AM America/New_York</strong> daily. You can also grade manually anytime.
+                </p>
+              </div>
             </div>
             <div className="flex gap-3 pt-1">
               <button
