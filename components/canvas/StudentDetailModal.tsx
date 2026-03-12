@@ -120,6 +120,8 @@ export default function StudentDetailModal({ data, onClose }: Props) {
                       <td className="text-center px-2 py-2">
                         {a.submitted ? (
                           <span className="text-green-400">✅</span>
+                        ) : a.status === "unsubmitted" ? (
+                          <span className="text-gray-500">—</span>
                         ) : (
                           <span className="text-red-400">❌</span>
                         )}
