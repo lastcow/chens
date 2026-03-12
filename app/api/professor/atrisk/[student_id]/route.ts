@@ -1,8 +1,6 @@
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE = process.env.CHENS_API_URL!;
-
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ student_id: string }> }
@@ -13,22 +11,40 @@ export async function GET(
   const { student_id } = await params;
   const searchParams = req.nextUrl.searchParams;
   
-  try {
-    const res = await fetch(
-      `${API_BASE}/api/professor/atrisk/${student_id}?${searchParams.toString()}`,
-      {
-        headers: {
-          "x-api-key": process.env.CHENS_API_SECRET_KEY!,
-          "x-user-id": session.user.id,
-        },
-        cache: "no-store",
-      }
+  const API_BASE = process.env.CHENS_API_URL;
+  const API_KEY = process.env.CHENS_API_SECRET_KEY;
+  
+  console.log(`[atrisk-proxy] Fetching from: ${API_BASE}/api/professor/atrisk/${student_id}`);
+  
+  if (!API_BASE || !API_KEY) {
+    console.error("[atrisk-proxy] Missing env vars:", { API_BASE: !!API_BASE, API_KEY: !!API_KEY });
+    return NextResponse.json(
+      { error: "API configuration missing", debug: { has_api_base: !!API_BASE, has_api_key: !!API_KEY } },
+      { status: 500 }
     );
+  }
+  
+  try {
+    const url = `${API_BASE}/api/professor/atrisk/${student_id}?${searchParams.toString()}`;
+    console.log(`[atrisk-proxy] URL: ${url}, User: ${session.user.id}`);
+    
+    const res = await fetch(url, {
+      headers: {
+        "x-api-key": API_KEY,
+        "x-user-id": session.user.id,
+      },
+      cache: "no-store",
+    });
+    
+    console.log(`[atrisk-proxy] Response status: ${res.status}`);
     
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (err) {
-    console.error("[atrisk-detail-proxy]", err);
-    return NextResponse.json({ error: "Failed to fetch student details" }, { status: 500 });
+    console.error("[atrisk-proxy] Error:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch student details", details: String(err) },
+      { status: 500 }
+    );
   }
 }
