@@ -157,7 +157,9 @@ export default function StudentDetailModal({ data, onClose }: Props) {
               <div className="bg-gray-800 rounded-lg p-6 text-center">
                 <div className="text-5xl font-bold text-gray-300 mb-2">{attendance.percentage}%</div>
                 <div className="text-sm text-gray-500">
-                  {attendance.attended} / {attendance.total_sessions} sessions attended
+                  {attendance.total_sessions > 0
+                    ? `${attendance.attended} / ${attendance.total_sessions} sessions attended`
+                    : "Attendance percentage"}
                 </div>
               </div>
 
