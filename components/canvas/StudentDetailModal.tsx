@@ -117,7 +117,7 @@ export default function StudentDetailModal({ data, onClose }: Props) {
                 <tbody className="divide-y divide-gray-800">
                   {assignments.map(a => (
                     <tr key={a.id} className="hover:bg-gray-800/30 transition-colors">
-                      <td className="px-2 py-2 text-gray-300">{a.name}</td>
+                      <td className="text-left px-2 py-2 text-gray-300">{a.name}</td>
                       <td className="text-center px-2 py-2">
                         {a.submitted ? (
                           <Check className="w-4 h-4 text-green-400 inline" />

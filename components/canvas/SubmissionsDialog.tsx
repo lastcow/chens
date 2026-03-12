@@ -109,7 +109,7 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
               <tbody className="divide-y divide-gray-800">
                 {submissions.map(sub => (
                   <tr key={sub.id} className="hover:bg-gray-800/30 transition-colors">
-                    <td className="px-4 py-3 text-gray-300">{sub.student_name}</td>
+                    <td className="text-left px-4 py-3 text-gray-300">{sub.student_name}</td>
                     <td className="text-center px-4 py-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs capitalize ${statusColors[sub.status] || "bg-gray-800 text-gray-500"}`}>
                         {getStatusIcon(sub.status)} {sub.status === "unsubmitted" ? "Not yet submitted" : sub.status}

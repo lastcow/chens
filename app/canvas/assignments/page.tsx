@@ -557,10 +557,10 @@ function AssignmentsContent() {
 
                   return (
                     <tr key={a.id} className="hover:bg-gray-800/30 transition-colors">
-                      <td className="px-5 py-3 text-white">
+                      <td className="text-left px-5 py-3 text-white">
                         <button
                           onClick={() => setSubmissionsAssignment(a)}
-                          className="text-white hover:text-amber-400 cursor-pointer transition-colors font-medium"
+                          className="text-white hover:text-amber-400 cursor-pointer transition-colors font-medium text-left"
                         >
                           {a.name}
                         </button>
