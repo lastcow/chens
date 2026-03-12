@@ -497,45 +497,8 @@ function AssignmentsContent() {
         </div>
       )}
 
-      {/* Left sidebar + tab bar */}
-      <div className="flex">
-        {/* Left sidebar - course menu */}
-        <div className="w-48 border-r border-gray-800 bg-gray-950 p-3 space-y-1">
-          {loading ? (
-            <div className="text-xs text-gray-600 p-2 animate-pulse">Loading courses...</div>
-          ) : courses.length === 0 ? (
-            <div className="text-xs text-gray-600 p-2">No courses</div>
-          ) : (
-            courses.map(([cid, name]) => {
-              const isActive = cid === activeCourse;
-              const courseAssignments = assignments.filter(a => a.course_canvas_id === cid);
-              const ungraded = courseAssignments.reduce((s, a) => s + Number(a.ungraded_count), 0);
-              const staging = courseAssignments.reduce((s, a) => s + Number(a.staging_count), 0);
-              return (
-                <button
-                  key={cid}
-                  onClick={() => router.replace(`/canvas/assignments?course_id=${cid}`)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
-                    isActive
-                      ? "bg-amber-900/30 border border-amber-700/40 text-amber-300"
-                      : "text-gray-400 hover:bg-gray-800/50 hover:text-gray-300"
-                  }`}
-                  title={name}
-                >
-                  <div className="truncate font-medium text-xs mb-1">{tabLabel(name)}</div>
-                  <div className="flex gap-1 text-xs text-gray-500">
-                    {staging > 0 && <span className="text-purple-400">{staging}</span>}
-                    <span className="text-gray-600">/</span>
-                    <span className={staging > 0 ? "text-amber-400" : "text-gray-500"}>{ungraded}</span>
-                  </div>
-                </button>
-              );
-            })
-          )}
-        </div>
-
-        {/* Tab bar */}
-        <div className="flex-1 flex border-b border-gray-800 gap-0">
+      {/* Tab bar */}
+      <div className="flex border-b border-gray-800 gap-0">
             {loading
               ? [...Array(4)].map((_, i) => <div key={i} className="h-10 w-28 bg-gray-800/40 animate-pulse rounded-t-lg mr-1" />)
               : courses.map(([cid, name]) => {
@@ -563,7 +526,6 @@ function AssignmentsContent() {
                   </button>
                 );
               })}
-        </div>
       </div>
 
       {/* Table */}

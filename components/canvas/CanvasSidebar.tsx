@@ -18,6 +18,7 @@ export default function CanvasSidebar() {
   const { termParam, activeTerm } = useTerm();
   const [studentCount, setStudentCount]   = useState<number | null>(null);
   const [ungradedCount, setUngradedCount] = useState<number | null>(null);
+  const [stagingCount, setStagingCount]   = useState<number | null>(null);
   const [pendingCount, setPendingCount]   = useState<number | null>(null);
   const [atRiskCount, setAtRiskCount]     = useState<number | null>(null);
 
@@ -30,12 +31,15 @@ export default function CanvasSidebar() {
       .then(d => setStudentCount(d.count ?? null))
       .catch(() => {});
 
-    fetch(`/api/professor/courses${q}`)
+    fetch(`/api/professor/assignments${q}`)
       .then(r => r.json())
       .then(d => {
-        const total = (d.courses ?? []).reduce((s: number, c: { ungraded_count: number }) => s + Number(c.ungraded_count), 0);
-        setUngradedCount(total);
-        setPendingCount(total);
+        const assignments = d.assignments ?? [];
+        const totalUngraded = assignments.reduce((s: number, a: { ungraded_count: number }) => s + Number(a.ungraded_count), 0);
+        const totalStaging = assignments.reduce((s: number, a: { staging_count: number }) => s + Number(a.staging_count), 0);
+        setUngradedCount(totalUngraded);
+        setStagingCount(totalStaging);
+        setPendingCount(totalUngraded);
       })
       .catch(() => {});
 
@@ -69,10 +73,19 @@ export default function CanvasSidebar() {
                   {studentCount}
                 </span>
               )}
-              {item.countKey === "ungraded" && ungradedCount !== null && ungradedCount > 0 && (
-                <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${
-                  active ? "bg-red-500/20 text-red-400" : "bg-red-900/30 text-red-500"
-                }`}>{ungradedCount}</span>
+              {item.countKey === "ungraded" && (stagingCount !== null || ungradedCount !== null) && (stagingCount ?? 0) + (ungradedCount ?? 0) > 0 && (
+                <div className="flex gap-1 items-center">
+                  {stagingCount !== null && stagingCount > 0 && (
+                    <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${
+                      active ? "bg-purple-500/30 text-purple-300" : "bg-purple-900/30 text-purple-400"
+                    }`}>{stagingCount}s</span>
+                  )}
+                  {ungradedCount !== null && ungradedCount > 0 && (
+                    <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${
+                      active ? "bg-red-500/20 text-red-400" : "bg-red-900/30 text-red-500"
+                    }`}>{ungradedCount}</span>
+                  )}
+                </div>
               )}
               {item.countKey === "pending" && pendingCount !== null && pendingCount > 0 && (
                 <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${
