@@ -38,8 +38,18 @@ export async function GET(
     
     console.log(`[atrisk-proxy] Response status: ${res.status}`);
     
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`[atrisk-proxy] Error response: ${errorText}`);
+      return NextResponse.json(
+        { error: "ChensAPI returned error", status: res.status, body: errorText },
+        { status: res.status }
+      );
+    }
+    
     const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    console.log(`[atrisk-proxy] Success, returning data for student`);
+    return NextResponse.json(data);
   } catch (err) {
     console.error("[atrisk-proxy] Error:", err);
     return NextResponse.json(
