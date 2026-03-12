@@ -14,6 +14,15 @@ interface Assignment {
   staging_count: number; pending_request_id: string | null; staging_request_id: string | null;
 }
 
+interface QuestionGrade {
+  question_id: number;
+  question_name: string;
+  question_text: string;
+  points_possible: number;
+  score: number;
+  comment: string;
+}
+
 interface StagingGrade {
   id: number;
   submission_id: number | null;
@@ -29,6 +38,8 @@ interface StagingGrade {
   status: string;
   is_late: boolean;
   days_late: number;
+  question_grades: QuestionGrade[] | null;
+  quiz_submission_id: number | null;
 }
 
 function AssignmentsContent() {
@@ -158,17 +169,22 @@ function AssignmentsContent() {
 
   const saveEdit = async (sg: StagingGrade) => {
     const edits = stagingEdits[sg.id] ?? {};
+    const payload: Record<string, unknown> = {
+      staging_id: sg.id,
+      raw_score: edits.raw_score ?? sg.raw_score,
+      final_score: edits.final_score ?? sg.final_score,
+      grader_comment: edits.grader_comment ?? sg.grader_comment,
+      is_late: edits.is_late !== undefined ? edits.is_late : sg.is_late,
+      days_late: edits.days_late !== undefined ? edits.days_late : sg.days_late,
+    };
+    // Include question_grades for quiz submissions
+    if (edits.question_grades) {
+      payload.question_grades = edits.question_grades;
+    }
     await fetch("/api/professor/grade-staging", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        staging_id: sg.id,
-        raw_score: edits.raw_score ?? sg.raw_score,
-        final_score: edits.final_score ?? sg.final_score,
-        grader_comment: edits.grader_comment ?? sg.grader_comment,
-        is_late: edits.is_late !== undefined ? edits.is_late : sg.is_late,
-        days_late: edits.days_late !== undefined ? edits.days_late : sg.days_late,
-      }),
+      body: JSON.stringify(payload),
     });
     setStagingGrades(prev => prev.map(g =>
       g.id === sg.id ? { ...g, ...edits } : g
@@ -403,29 +419,38 @@ function AssignmentsContent() {
                   <tbody className="divide-y divide-gray-800/50">
                     {stagingGrades.map(sg => {
                       const edit = stagingEdits[sg.id] ?? {};
-                      const raw = edit.raw_score ?? sg.raw_score ?? "";
+                      const isQuiz = sg.question_grades && sg.question_grades.length > 0;
+                      const qGrades: QuestionGrade[] = edit.question_grades ?? sg.question_grades ?? [];
+                      const raw = isQuiz
+                        ? String(qGrades.reduce((sum, q) => sum + (q.score || 0), 0))
+                        : (edit.raw_score ?? sg.raw_score ?? "");
                       const comment = edit.grader_comment ?? sg.grader_comment ?? "";
                       const isLate = edit.is_late !== undefined ? edit.is_late : sg.is_late;
                       const daysLate = edit.days_late !== undefined ? edit.days_late : (sg.days_late ?? 0);
                       const isDirty = Object.keys(edit).length > 0;
                       return (
                         <tr key={sg.id} className={`${isDirty ? "bg-amber-500/5" : ""}`}>
-                          <td className="py-2.5 pr-4 text-gray-300 font-medium whitespace-nowrap w-px">{sg.student_name}</td>
+                          <td className="py-2.5 pr-4 text-gray-300 font-medium whitespace-nowrap w-px">
+                            {sg.student_name}
+                            {isQuiz && <span className="ml-1.5 text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">Quiz</span>}
+                          </td>
                           <td className="py-2.5 px-1 text-center">
-                            <input
-                              type="number" step="1" min="0" max={stagingAssignment.points_possible}
-                              value={raw ? String(Math.round(Number(raw))) : ""}
-                              onChange={e => { const v = String(Math.round(Number(e.target.value))); setStagingEdits(prev => ({ ...prev, [sg.id]: { ...prev[sg.id], raw_score: v, final_score: v } })); }}
-                              className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-center text-xs font-mono focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
+                            {isQuiz ? (
+                              <span className="text-xs font-mono text-gray-300">{raw}</span>
+                            ) : (
+                              <input
+                                type="number" step="1" min="0" max={stagingAssignment.points_possible}
+                                value={raw ? String(Math.round(Number(raw))) : ""}
+                                onChange={e => { const v = String(Math.round(Number(e.target.value))); setStagingEdits(prev => ({ ...prev, [sg.id]: { ...prev[sg.id], raw_score: v, final_score: v } })); }}
+                                className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-center text-xs font-mono focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                            )}
                           </td>
                           <td className="py-2.5 px-2">
-                            {/* If originally not late, show disabled On time badge */}
                             {!sg.is_late && (edit.is_late === undefined || edit.is_late === false) ? (
                               <span className="text-xs text-gray-600 select-none">On time</span>
                             ) : (
                               <div className="flex items-center gap-2">
-                                {/* Waive toggle — only shown when originally late */}
                                 <label className="flex items-center gap-1.5 cursor-pointer select-none">
                                   <input
                                     type="checkbox"
@@ -440,7 +465,6 @@ function AssignmentsContent() {
                                     {isLate ? "Late" : "Waived"}
                                   </span>
                                 </label>
-                                {/* Days adjuster — only when still marked late */}
                                 {isLate && (
                                   <div className="flex items-center gap-1">
                                     <input
@@ -459,13 +483,56 @@ function AssignmentsContent() {
                             )}
                           </td>
                           <td className="py-2.5 pl-2">
-                            <textarea
-                              value={comment}
-                              onChange={e => setStagingEdits(prev => ({ ...prev, [sg.id]: { ...prev[sg.id], grader_comment: e.target.value } }))}
-                              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-500 resize-none leading-relaxed"
-                              rows={2}
-                              placeholder="Add comment…"
-                            />
+                            {isQuiz ? (
+                              /* ── Quiz: per-question editors ── */
+                              <div className="space-y-2">
+                                {qGrades.map((q, qi) => (
+                                  <div key={q.question_id} className="bg-gray-800/50 border border-gray-700/50 rounded p-2">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-[10px] text-gray-500 font-medium uppercase">{q.question_name}</span>
+                                      <span className="text-[10px] text-gray-600">({q.points_possible}pts)</span>
+                                      <input
+                                        type="number" step="1" min="0" max={q.points_possible}
+                                        value={q.score}
+                                        onChange={e => {
+                                          const newQ = [...qGrades];
+                                          newQ[qi] = { ...newQ[qi], score: Math.round(Number(e.target.value)) };
+                                          const newTotal = newQ.reduce((s, qq) => s + (qq.score || 0), 0);
+                                          setStagingEdits(prev => ({
+                                            ...prev,
+                                            [sg.id]: { ...prev[sg.id], question_grades: newQ, raw_score: String(newTotal), final_score: String(newTotal) }
+                                          }));
+                                        }}
+                                        className="w-14 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-center text-xs font-mono focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      />
+                                    </div>
+                                    <textarea
+                                      value={q.comment}
+                                      onChange={e => {
+                                        const newQ = [...qGrades];
+                                        newQ[qi] = { ...newQ[qi], comment: e.target.value };
+                                        setStagingEdits(prev => ({
+                                          ...prev,
+                                          [sg.id]: { ...prev[sg.id], question_grades: newQ }
+                                        }));
+                                      }}
+                                      className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-500 resize-none leading-relaxed"
+                                      rows={1}
+                                      placeholder="Question comment…"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              /* ── Regular: single comment ── */
+                              <textarea
+                                value={comment}
+                                onChange={e => setStagingEdits(prev => ({ ...prev, [sg.id]: { ...prev[sg.id], grader_comment: e.target.value } }))}
+                                className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-500 resize-none leading-relaxed"
+                                rows={2}
+                                placeholder="Add comment…"
+                              />
+                            )}
                           </td>
                         </tr>
                       );
