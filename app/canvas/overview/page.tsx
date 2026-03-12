@@ -30,7 +30,7 @@ export default function OverviewPage() {
       fetch(`/api/user/profile`).then(r => r.json())
     ]).then(([coursesData, profileData]) => {
       setCourses(coursesData.courses ?? []);
-      setCredits((profileData as UserProfile)?.credits ?? 0);
+      setCredits((profileData?.user as UserProfile)?.credits ?? 0);
       setLoading(false);
     });
   }, [termParam, activeTerm]);
