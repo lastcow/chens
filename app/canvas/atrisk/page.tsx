@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useTerm } from "@/components/canvas/TermProvider";
+import StudentDetailModal from "@/components/canvas/StudentDetailModal";
 
 interface AtRiskStudent {
   name: string; canvas_uid: number;
@@ -8,16 +9,55 @@ interface AtRiskStudent {
   attendance: number; missing_count: number; avg_grade: number | null;
 }
 
+interface StudentDetail {
+  student: { id: number; name: string; canvas_uid: number; email: string };
+  at_risk: { status: boolean; reasons: string[] };
+  grade: { current: number; out_of: number; percentage: number };
+  assignments: Array<{
+    id: number;
+    name: string;
+    submitted: boolean;
+    grade: number | null;
+    points_possible: number;
+    status: string;
+    days_late: number | null;
+    submitted_at: string | null;
+  }>;
+  attendance: {
+    total_sessions: number;
+    attended: number;
+    percentage: number;
+    recent_absences: Array<{ date: string; session: string }>;
+  };
+}
+
 export default function AtRiskPage() {
   const { termParam, activeTerm } = useTerm();
   const [students, setStudents] = useState<AtRiskStudent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedStudent, setSelectedStudent] = useState<AtRiskStudent | null>(null);
+  const [studentDetail, setStudentDetail] = useState<StudentDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     if (!activeTerm) return;
     setLoading(true);
     fetch(`/api/professor/atrisk?${termParam}`).then(r => r.json()).then(d => { setStudents(d.students ?? []); setLoading(false); });
   }, [termParam, activeTerm]);
+
+  const openStudentDetail = async (student: AtRiskStudent) => {
+    setSelectedStudent(student);
+    setDetailLoading(true);
+    try {
+      const res = await fetch(`/api/professor/atrisk/${student.canvas_uid}?${termParam}`);
+      const data = await res.json();
+      setStudentDetail(data);
+    } catch (err) {
+      console.error("Failed to fetch student detail:", err);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   const level = (s: AtRiskStudent) => {
     if (Number(s.missing_count) >= 4 || Number(s.attendance) < 30) return "critical";
@@ -76,8 +116,9 @@ export default function AtRiskPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {grouped[l].map(s => (
-                  <div key={`${s.canvas_uid}-${s.course_canvas_id}`}
-                    className={`border rounded-xl p-4 ${levelStyle[l]}`}>
+                  <button key={`${s.canvas_uid}-${s.course_canvas_id}`}
+                    onClick={() => openStudentDetail(s)}
+                    className={`border rounded-xl p-4 ${levelStyle[l]} text-left hover:opacity-80 transition-opacity cursor-pointer w-full`}>
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <div className="text-white font-medium text-sm">{s.name}</div>
@@ -107,13 +148,22 @@ export default function AtRiskPage() {
                         <div className="text-xs text-gray-600">Avg Grade</div>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
           );
         })
       )}
+
+      {/* Student Detail Modal */}
+      <StudentDetailModal
+        data={studentDetail}
+        onClose={() => {
+          setSelectedStudent(null);
+          setStudentDetail(null);
+        }}
+      />
     </div>
   );
 }
