@@ -5,7 +5,7 @@ import StudentDetailModal from "@/components/canvas/StudentDetailModal";
 
 interface AtRiskStudent {
   name: string; canvas_uid: number;
-  course_name: string; course_canvas_id: number;
+  course_name: string; course_canvas_id: number; course_id: number;
   attendance: number; missing_count: number; avg_grade: number | null;
 }
 
@@ -49,7 +49,8 @@ export default function AtRiskPage() {
     setSelectedStudent(student);
     setDetailLoading(true);
     try {
-      const res = await fetch(`/api/professor/atrisk/${student.canvas_uid}?${termParam}`);
+      const url = `/api/professor/atrisk/${student.canvas_uid}?${termParam}&course_id=${student.course_id}`;
+      const res = await fetch(url);
       
       if (!res.ok) {
         const errorText = await res.text();
