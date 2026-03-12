@@ -50,12 +50,14 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
     graded: "bg-green-900/30 text-green-400",
     ungraded: "bg-amber-900/30 text-amber-400",
     missing: "bg-red-900/30 text-red-400",
+    unsubmitted: "bg-gray-900/30 text-gray-400",
   };
 
   const statusIcons: Record<string, string> = {
     graded: "✅",
     ungraded: "⏳",
     missing: "❌",
+    unsubmitted: "—",
   };
 
   return (
@@ -100,15 +102,13 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
                   <tr key={sub.id} className="hover:bg-gray-800/30 transition-colors">
                     <td className="px-4 py-3 text-gray-300">{sub.student_name}</td>
                     <td className="text-center px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${statusColors[sub.status] || "bg-gray-800 text-gray-500"}`}>
-                        {statusIcons[sub.status] || "❓"} {sub.status}
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs capitalize ${statusColors[sub.status] || "bg-gray-800 text-gray-500"}`}>
+                        {statusIcons[sub.status] || "❓"} {sub.status === "unsubmitted" ? "Not yet submitted" : sub.status}
                       </span>
                     </td>
                     <td className="text-center px-4 py-3 font-mono text-gray-400">
                       {sub.grade !== null
                         ? `${sub.grade}/${sub.points_possible}`
-                        : sub.status === "missing"
-                        ? "—"
                         : "—"}
                     </td>
                     <td className="text-left px-4 py-3 text-gray-500 text-xs">
