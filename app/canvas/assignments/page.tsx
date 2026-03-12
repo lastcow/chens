@@ -564,6 +564,7 @@ function AssignmentsContent() {
                 );
               })}
         </div>
+      </div>
 
       {/* Table */}
       <div className="bg-gray-900 border border-t-0 border-gray-800 rounded-b-xl overflow-hidden">
