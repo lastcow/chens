@@ -3,11 +3,11 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTerm } from "@/components/canvas/TermProvider";
 import SubmissionsDialog from "@/components/canvas/SubmissionsDialog";
-import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar, ClipboardList } from "lucide-react";
+import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar, ClipboardList, FileText, HelpCircle } from "lucide-react";
 
 interface Assignment {
   id: number; canvas_id: number; name: string; points_possible: number;
-  due_at: string | null; assignment_type: string;
+  due_at: string | null; assignment_type: string; is_quiz: boolean;
   course_name: string; course_canvas_id: number;
   graded_count: number; ungraded_count: number; missing_count: number;
   avg_score: number | null; total_students: number;
@@ -641,8 +641,12 @@ function AssignmentsContent() {
                       <td className="text-left px-5 py-3 text-white">
                         <button
                           onClick={() => setSubmissionsAssignment(a)}
-                          className="text-white hover:text-amber-400 cursor-pointer transition-colors font-medium text-left"
+                          className="text-white hover:text-amber-400 cursor-pointer transition-colors font-medium text-left flex items-center gap-1.5"
                         >
+                          {a.is_quiz
+                            ? <HelpCircle className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                            : <FileText className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                          }
                           {a.name}
                         </button>
                       </td>
