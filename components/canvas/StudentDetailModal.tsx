@@ -132,6 +132,8 @@ export default function StudentDetailModal({ data, onClose }: Props) {
                           className={`text-xs px-2 py-0.5 rounded ${
                             a.status === "missing"
                               ? "bg-red-900/30 text-red-400"
+                              : a.status === "unsubmitted"
+                              ? "bg-amber-900/30 text-amber-400"
                               : a.status === "graded"
                               ? "bg-green-900/30 text-green-400"
                               : "bg-gray-800 text-gray-500"
