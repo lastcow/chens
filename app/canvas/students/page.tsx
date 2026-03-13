@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useTerm } from "@/components/canvas/TermProvider";
-import { X, CheckCircle, AlertTriangle, Clock, Upload, ChevronRight, BookOpen, GraduationCap } from "lucide-react";
+import { X, CheckCircle, AlertTriangle, Clock, Upload, ChevronRight, BookOpen, GraduationCap, Pencil, Save, Loader2 } from "lucide-react";
 
 interface StudentRow {
   name: string; canvas_uid: number; email: string;
@@ -11,30 +11,224 @@ interface StudentRow {
   avg_grade: number | null; total_due: number; course_count: number;
 }
 
+interface QuestionGrade {
+  question_id: number; question_name: string; question_text: string;
+  points_possible: number; score: number; comment: string;
+}
+
+interface DetailAssignment {
+  assignment_id: number; submission_id: number | null;
+  name: string; points_possible: number; due_at: string | null;
+  is_quiz: boolean; quiz_id: number | null; assignment_type: string;
+  score: number | null; final_score: number | null;
+  late_penalty: number | null; grader_comment: string | null;
+  workflow_state: string | null; late: boolean; submitted_at: string | null;
+  course_canvas_id: number;
+  question_grades: QuestionGrade[] | null;
+  quiz_submission_id: number | null;
+}
+
 interface StudentDetailData {
-  student: {
-    name: string;
-    email: string;
-    canvas_uid: number;
-  };
+  student: { name: string; email: string; canvas_uid: number };
   courses: Array<{
-    course_name: string;
-    course_canvas_id: number;
-    enrollment_state: string;
-    attendance_score: number;
-    assignments: Array<{
-      name: string;
-      points_possible: number;
-      due_at: string | null;
-      is_quiz: boolean;
-      score: number | null;
-      final_score: number | null;
-      grader_comment: string;
-      workflow_state: string;
-      late: boolean;
-      submitted_at: string | null;
-    }>;
+    course_name: string; course_canvas_id: number;
+    enrollment_state: string; attendance_score: number;
+    assignments: DetailAssignment[];
   }>;
+}
+
+function AssignmentEditDialog({
+  assignment,
+  canvasUid,
+  onClose,
+  onSaved,
+}: {
+  assignment: DetailAssignment;
+  canvasUid: number;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const isQuiz = assignment.is_quiz && assignment.question_grades && assignment.question_grades.length > 0;
+  const [score, setScore] = useState(assignment.score ?? 0);
+  const [comment, setComment] = useState(assignment.grader_comment ?? "");
+  const [isLate, setIsLate] = useState(assignment.late ?? false);
+  const [daysLate, setDaysLate] = useState(0);
+  const [latePenalty, setLatePenalty] = useState(assignment.late_penalty ?? 0);
+  const [questions, setQuestions] = useState<QuestionGrade[]>(
+    assignment.question_grades ? assignment.question_grades.map(q => ({ ...q })) : []
+  );
+  const [saving, setSaving] = useState(false);
+  const [postToCanvas, setPostToCanvas] = useState(false);
+
+  // For quiz: auto-calc total from questions
+  const quizTotal = questions.reduce((s, q) => s + (q.score ?? 0), 0);
+  const displayScore = isQuiz ? quizTotal : score;
+  const finalScore = Math.max(0, displayScore - latePenalty);
+
+  const updateQuestion = (idx: number, field: keyof QuestionGrade, value: string | number) => {
+    setQuestions(prev => prev.map((q, i) => i === idx ? { ...q, [field]: value } : q));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const body: Record<string, unknown> = {
+        submission_id: assignment.submission_id,
+        assignment_id: assignment.assignment_id,
+        score: displayScore,
+        comment: isQuiz ? "" : comment,
+        is_late: isLate,
+        days_late: isLate ? daysLate : 0,
+        late_penalty: latePenalty,
+        course_canvas_id: assignment.course_canvas_id,
+        post_to_canvas: postToCanvas,
+      };
+      if (isQuiz) {
+        body.question_grades = questions;
+        body.quiz_submission_id = assignment.quiz_submission_id;
+        body.quiz_id = assignment.quiz_id;
+      }
+      const res = await fetch(`/api/professor/students/${canvasUid}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        onSaved();
+      }
+    } catch (e) {
+      console.error("Save failed:", e);
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60]" onClick={onClose}>
+      <div
+        className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-[600px] max-h-[85vh] flex flex-col shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between px-6 py-4 border-b border-gray-800">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-semibold text-white truncate">{assignment.name}</h3>
+            {assignment.due_at && (
+              <p className="text-xs text-gray-500 mt-1">
+                Due {new Date(assignment.due_at).toLocaleDateString()} {new Date(assignment.due_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors p-1 ml-3">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {/* Late info */}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+              <input type="checkbox" checked={isLate} onChange={e => setIsLate(e.target.checked)}
+                className="rounded border-gray-600 bg-gray-800 text-amber-500 focus:ring-amber-500" />
+              Late
+            </label>
+            {isLate && (
+              <>
+                <div className="flex items-center gap-2">
+                  <input type="number" value={daysLate} min={0}
+                    onChange={e => setDaysLate(parseInt(e.target.value) || 0)}
+                    className="w-16 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                  <span className="text-xs text-gray-500">days</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Penalty</span>
+                  <input type="number" value={latePenalty} min={0} step={1}
+                    onChange={e => setLatePenalty(parseFloat(e.target.value) || 0)}
+                    className="w-16 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                </div>
+              </>
+            )}
+          </div>
+
+          {isQuiz ? (
+            <>
+              {/* Quiz total */}
+              <div className="flex items-center justify-between bg-gray-800/40 border border-gray-700/40 rounded-lg px-4 py-3">
+                <span className="text-sm text-gray-400">Total</span>
+                <span className="text-sm font-semibold text-white font-mono">
+                  {quizTotal}/{assignment.points_possible}
+                  {latePenalty > 0 && (
+                    <span className="text-amber-400 ml-2">→ {finalScore}</span>
+                  )}
+                </span>
+              </div>
+
+              {/* Per-question rows */}
+              <div className="space-y-3">
+                {questions.map((q, qi) => (
+                  <div key={qi} className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-white">{q.question_name}</span>
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={q.score} min={0} max={q.points_possible}
+                          onChange={e => updateQuestion(qi, 'score', parseFloat(e.target.value) || 0)}
+                          className="w-14 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                        <span className="text-xs text-gray-500">/ {q.points_possible}</span>
+                      </div>
+                    </div>
+                    <input type="text" value={q.comment} placeholder="Comment…"
+                      onChange={e => updateQuestion(qi, 'comment', e.target.value)}
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-amber-500/50" />
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Regular assignment: score + comment */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-gray-400 w-16">Score</label>
+                  <input type="number" value={score} min={0} max={assignment.points_possible}
+                    onChange={e => setScore(parseFloat(e.target.value) || 0)}
+                    className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                  <span className="text-sm text-gray-500">/ {assignment.points_possible}</span>
+                  {latePenalty > 0 && (
+                    <span className="text-sm text-amber-400 font-mono">→ {finalScore}</span>
+                  )}
+                </div>
+                <div className="flex items-start gap-3">
+                  <label className="text-sm text-gray-400 w-16 pt-2">Comment</label>
+                  <textarea value={comment} placeholder="Grader comment…"
+                    onChange={e => setComment(e.target.value)} rows={2}
+                    className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-amber-500/50 resize-none" />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800">
+          <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+            <input type="checkbox" checked={postToCanvas} onChange={e => setPostToCanvas(e.target.checked)}
+              className="rounded border-gray-600 bg-gray-800 text-amber-500 focus:ring-amber-500" />
+            Post to Canvas
+          </label>
+          <div className="flex items-center gap-3">
+            <button onClick={onClose} className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">
+              Cancel
+            </button>
+            <button onClick={handleSave} disabled={saving || !assignment.submission_id}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function StudentDetailDialog({
@@ -42,13 +236,16 @@ function StudentDetailDialog({
   data,
   loading,
   onClose,
+  onRefresh,
 }: {
   student: StudentRow | null;
   data: StudentDetailData | null;
   loading: boolean;
   onClose: () => void;
+  onRefresh: () => void;
 }) {
   const [courseOpen, setCourseOpen] = useState<Record<number, boolean>>({});
+  const [editAssignment, setEditAssignment] = useState<DetailAssignment | null>(null);
 
   // Auto-open all courses when data loads
   useEffect(() => {
@@ -98,6 +295,15 @@ function StudentDetailDialog({
     : [];
 
   return (
+    <>
+    {editAssignment && student && (
+      <AssignmentEditDialog
+        assignment={editAssignment}
+        canvasUid={student.canvas_uid}
+        onClose={() => setEditAssignment(null)}
+        onSaved={() => { setEditAssignment(null); onRefresh(); }}
+      />
+    )}
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
       <div
         className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-[700px] max-h-[85vh] flex flex-col shadow-2xl"
@@ -157,7 +363,7 @@ function StudentDetailDialog({
                     ) : course.assignments.map((a, ai) => {
                       const status = getStatus(a);
                       return (
-                        <div key={ai} className="px-4 py-2.5 hover:bg-gray-800/20 transition-colors">
+                        <div key={ai} className="group px-4 py-2.5 hover:bg-gray-800/20 transition-colors">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-sm text-white truncate flex-1">{a.name}</p>
                             <div className="flex items-center gap-2 shrink-0">
@@ -172,6 +378,14 @@ function StudentDetailDialog({
                                   <span>—/{a.points_possible}</span>
                                 )}
                               </span>
+                              {a.submission_id && (
+                                <button
+                                  onClick={e => { e.stopPropagation(); setEditAssignment(a); }}
+                                  className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-amber-400 transition-all p-0.5"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </div>
                           {a.due_at && (
@@ -232,6 +446,7 @@ function StudentDetailDialog({
         </div>
       </div>
     </div>
+    </>
   );
 }
 
@@ -304,6 +519,7 @@ function StudentsContent() {
       data={detailData}
       loading={detailLoading}
       onClose={closeStudentDetail}
+      onRefresh={() => { if (detailStudent) openStudentDetail(detailStudent); }}
     />
     <div className="space-y-3">
       {/* Sticky search */}
