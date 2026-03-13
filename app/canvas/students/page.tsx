@@ -198,7 +198,7 @@ function AssignmentEditDialog({
                         <span className="text-gray-600 text-xs">–</span>
                         <input type="number" value={q.score} min={0} max={q.points_possible}
                           onChange={e => updateQuestion(qi, 'score', parseFloat(e.target.value) || 0)}
-                          className="w-12 bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-xs text-white text-center focus:outline-none focus:border-purple-500/50" />
+                          className="w-12 bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-xs text-white text-center focus:outline-none focus:border-purple-500/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                         <span className="text-[10px] text-gray-500">/{q.points_possible}</span>
                       </div>
                     </div>
@@ -260,7 +260,7 @@ function AssignmentEditDialog({
                   <label className="text-sm text-gray-400 w-16">Score</label>
                   <input type="number" value={score} min={0} max={assignment.points_possible}
                     onChange={e => setScore(parseFloat(e.target.value) || 0)}
-                    className="w-20 bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                    className="w-20 bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                   <span className="text-sm text-gray-500">/ {assignment.points_possible}</span>
                 </div>
                 <div className="flex items-start gap-3">
