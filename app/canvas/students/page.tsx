@@ -632,10 +632,10 @@ function StudentsContent() {
         const isOpen = open[cid] ?? true;
 
         return (
-          <div key={cid} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div key={cid} className="bg-gray-900 border border-gray-800 rounded-xl">
             {/* Accordion header */}
             <button onClick={() => toggle(cid)}
-              className="w-full px-5 py-4 flex items-center gap-4 hover:bg-gray-800/30 transition-colors text-left">
+              className="w-full px-5 py-4 flex items-center gap-4 hover:bg-gray-800/30 transition-colors text-left sticky top-[72px] z-[8] bg-gray-900 rounded-t-xl border-b border-transparent">
 
               {/* Chevron */}
               <span className={`text-gray-500 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}>
