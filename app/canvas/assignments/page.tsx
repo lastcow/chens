@@ -3,7 +3,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTerm } from "@/components/canvas/TermProvider";
 import SubmissionsDialog from "@/components/canvas/SubmissionsDialog";
-import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar, ClipboardList, FileText, HelpCircle } from "lucide-react";
+import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar, ClipboardList, FileText, HelpCircle, MessageSquare } from "lucide-react";
 
 interface Assignment {
   id: number; canvas_id: number; name: string; points_possible: number;
@@ -63,6 +63,7 @@ function AssignmentsContent() {
   const [stagingLoading, setStagingLoading] = useState(false);
   const [stagingEdits, setStagingEdits] = useState<Record<number, Partial<StagingGrade>>>({});
   const [stagingAction, setStagingAction] = useState<"approve" | "reject" | null>(null);
+  const [quizCommentSg, setQuizCommentSg] = useState<StagingGrade | null>(null);
 
   // Submissions dialog state
   const [submissionsAssignment, setSubmissionsAssignment] = useState<Assignment | null>(null);
@@ -484,45 +485,14 @@ function AssignmentsContent() {
                           </td>
                           <td className="py-2.5 pl-2">
                             {isQuiz ? (
-                              /* ── Quiz: per-question editors ── */
-                              <div className="space-y-2">
-                                {qGrades.map((q, qi) => (
-                                  <div key={q.question_id} className="bg-gray-800/50 border border-gray-700/50 rounded p-2">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-[10px] text-gray-500 font-medium uppercase">{q.question_name}</span>
-                                      <span className="text-[10px] text-gray-600">({q.points_possible}pts)</span>
-                                      <input
-                                        type="number" step="1" min="0" max={q.points_possible}
-                                        value={q.score}
-                                        onChange={e => {
-                                          const newQ = [...qGrades];
-                                          newQ[qi] = { ...newQ[qi], score: Math.round(Number(e.target.value)) };
-                                          const newTotal = newQ.reduce((s, qq) => s + (qq.score || 0), 0);
-                                          setStagingEdits(prev => ({
-                                            ...prev,
-                                            [sg.id]: { ...prev[sg.id], question_grades: newQ, raw_score: String(newTotal), final_score: String(newTotal) }
-                                          }));
-                                        }}
-                                        className="w-14 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-center text-xs font-mono focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                      />
-                                    </div>
-                                    <textarea
-                                      value={q.comment}
-                                      onChange={e => {
-                                        const newQ = [...qGrades];
-                                        newQ[qi] = { ...newQ[qi], comment: e.target.value };
-                                        setStagingEdits(prev => ({
-                                          ...prev,
-                                          [sg.id]: { ...prev[sg.id], question_grades: newQ }
-                                        }));
-                                      }}
-                                      className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-500 resize-none leading-relaxed"
-                                      rows={1}
-                                      placeholder="Question comment…"
-                                    />
-                                  </div>
-                                ))}
-                              </div>
+                              /* ── Quiz: compact "Comments" link → opens popup ── */
+                              <button
+                                onClick={() => setQuizCommentSg({ ...sg, ...(stagingEdits[sg.id] ?? {}) } as StagingGrade)}
+                                className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs cursor-pointer transition-colors"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                {qGrades.length} questions
+                              </button>
                             ) : (
                               /* ── Regular: single comment ── */
                               <textarea
@@ -577,6 +547,84 @@ function AssignmentsContent() {
           </div>
         </div>
       )}
+
+      {/* ── Quiz Comment Popup ── */}
+      {quizCommentSg && (() => {
+        const sg = quizCommentSg;
+        const edit = stagingEdits[sg.id] ?? {};
+        const qGrades: QuestionGrade[] = edit.question_grades ?? sg.question_grades ?? [];
+        return (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-[600px] max-h-[80vh] flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+                <div>
+                  <h3 className="text-sm font-semibold text-white">{sg.student_name}</h3>
+                  <p className="text-xs text-gray-400">
+                    {qGrades.length} questions · Total: <span className="text-amber-400 font-mono">{qGrades.reduce((s, q) => s + (q.score || 0), 0)}</span>/{stagingAssignment?.points_possible}
+                    {sg.is_late && <span className="text-amber-400 ml-2">⚠️ {sg.days_late}d late</span>}
+                  </p>
+                </div>
+                <button onClick={() => setQuizCommentSg(null)} className="text-gray-400 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              {/* Per-question list */}
+              <div className="flex-1 overflow-y-auto px-5 py-3 space-y-3">
+                {qGrades.map((q, qi) => (
+                  <div key={q.question_id} className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-gray-400 font-medium">{q.question_name}</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number" step="1" min="0" max={q.points_possible}
+                          value={q.score}
+                          onChange={e => {
+                            const newQ = [...qGrades];
+                            newQ[qi] = { ...newQ[qi], score: Math.round(Number(e.target.value)) };
+                            const newTotal = newQ.reduce((s, qq) => s + (qq.score || 0), 0);
+                            setStagingEdits(prev => ({
+                              ...prev,
+                              [sg.id]: { ...prev[sg.id], question_grades: newQ, raw_score: String(newTotal), final_score: String(newTotal) }
+                            }));
+                            setQuizCommentSg(prev => prev ? { ...prev, question_grades: newQ } as StagingGrade : null);
+                          }}
+                          className="w-14 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-center text-xs font-mono focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <span className="text-[10px] text-gray-500">/ {q.points_possible}</span>
+                      </div>
+                    </div>
+                    <textarea
+                      value={q.comment}
+                      onChange={e => {
+                        const newQ = [...qGrades];
+                        newQ[qi] = { ...newQ[qi], comment: e.target.value };
+                        setStagingEdits(prev => ({
+                          ...prev,
+                          [sg.id]: { ...prev[sg.id], question_grades: newQ }
+                        }));
+                        setQuizCommentSg(prev => prev ? { ...prev, question_grades: newQ } as StagingGrade : null);
+                      }}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-amber-500 resize-none leading-relaxed"
+                      rows={2}
+                      placeholder="Question comment…"
+                    />
+                  </div>
+                ))}
+              </div>
+              {/* Footer */}
+              <div className="px-5 py-3 border-t border-gray-800 flex justify-end">
+                <button
+                  onClick={() => setQuizCommentSg(null)}
+                  className="px-4 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-xs transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Tab bar */}
       <div className="flex border-b border-gray-800 gap-0">
