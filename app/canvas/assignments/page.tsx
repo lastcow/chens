@@ -166,7 +166,13 @@ function AssignmentsContent() {
     setStagingExcluded(new Set());
     const res = await fetch(`/api/professor/grade-staging?request_id=${a.staging_request_id}`);
     const d = await res.json();
-    setStagingGrades(d.grades ?? []);
+    const grades = d.grades ?? [];
+    setStagingGrades(grades);
+    // Auto-exclude already-approved rows — they don't need re-posting
+    const alreadyApproved = new Set<number>(
+      grades.filter((g: StagingGrade) => g.status === 'approved').map((g: StagingGrade) => g.id)
+    );
+    setStagingExcluded(alreadyApproved);
     setStagingLoading(false);
   };
 
@@ -465,6 +471,7 @@ function AssignmentsContent() {
                           <td className="py-2.5 pr-4 text-gray-300 font-medium whitespace-nowrap w-px">
                             {sg.student_name}
                             {isQuiz && <span className="ml-1.5 text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">Quiz</span>}
+                            {sg.status === 'approved' && <span className="ml-1.5 text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">Posted</span>}
                           </td>
                           <td className="py-2.5 px-1 text-center">
                             {isQuiz ? (
