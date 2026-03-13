@@ -3,7 +3,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTerm } from "@/components/canvas/TermProvider";
 import SubmissionsDialog from "@/components/canvas/SubmissionsDialog";
-import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar, ClipboardList, FileText, HelpCircle, MessageSquare } from "lucide-react";
+import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar, ClipboardList, FileText, MessageSquare } from "lucide-react";
 
 interface Assignment {
   id: number; canvas_id: number; name: string; points_possible: number;
@@ -744,7 +744,7 @@ function AssignmentsContent() {
                           className="text-white hover:text-amber-400 cursor-pointer transition-colors font-medium text-left flex items-center gap-1.5"
                         >
                           {a.is_quiz
-                            ? <HelpCircle className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                            ? <ClipboardList className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                             : <FileText className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                           }
                           {a.name}
