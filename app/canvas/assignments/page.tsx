@@ -679,7 +679,7 @@ function AssignmentsContent() {
       })()}
 
       {/* Tab bar */}
-      <div className="flex border-b border-gray-800 gap-0">
+      <div className="flex border-b border-gray-800 gap-0 sticky top-16 z-10 bg-gray-950/95 backdrop-blur-md">
             {loading
               ? [...Array(4)].map((_, i) => <div key={i} className="h-10 w-28 bg-gray-800/40 animate-pulse rounded-t-lg mr-1" />)
               : courses.map(([cid, name]) => {
@@ -718,7 +718,7 @@ function AssignmentsContent() {
         ) : (
           <>
             <table className="w-full text-sm">
-              <thead>
+              <thead className="sticky top-[105px] z-[9] bg-gray-900">
                 <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
                   <th className="text-left px-5 py-3">Assignment</th>
                   <th className="text-center px-3 py-3">Due</th>
