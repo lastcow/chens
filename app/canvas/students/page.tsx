@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useTerm } from "@/components/canvas/TermProvider";
-import { X, CheckCircle, AlertTriangle, Clock, Upload, ChevronRight, BookOpen, GraduationCap, Save, Loader2, FileText, ClipboardList } from "lucide-react";
+import { X, CheckCircle, AlertTriangle, Clock, Upload, ChevronRight, BookOpen, GraduationCap, Save, Loader2, FileText, ClipboardList, ExternalLink } from "lucide-react";
 
 interface StudentRow {
   name: string; canvas_uid: number; email: string;
@@ -18,7 +18,7 @@ interface QuestionGrade {
 }
 
 interface DetailAssignment {
-  assignment_id: number; submission_id: number | null;
+  assignment_id: number; assignment_canvas_id: number; submission_id: number | null;
   name: string; points_possible: number; due_at: string | null;
   is_quiz: boolean; quiz_id: number | null; assignment_type: string;
   score: number | null; final_score: number | null;
@@ -274,6 +274,26 @@ function AssignmentEditDialog({
                     onChange={e => setComment(e.target.value)} rows={3}
                     className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-amber-500/50 resize-none" />
                 </div>
+              </div>
+              {/* Quick links */}
+              <div className="flex items-center gap-3">
+                <a
+                  href={`https://frostburg.instructure.com/courses/${assignment.course_canvas_id}/assignments/${assignment.assignment_canvas_id}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Assignment
+                </a>
+                <span className="text-gray-700">·</span>
+                <a
+                  href={`https://frostburg.instructure.com/courses/${assignment.course_canvas_id}/assignments/${assignment.assignment_canvas_id}/submissions/${canvasUid}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Submission
+                </a>
               </div>
             </div>
           )}
