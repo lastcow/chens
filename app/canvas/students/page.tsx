@@ -26,6 +26,7 @@ interface DetailAssignment {
   workflow_state: string | null; late: boolean; submitted_at: string | null;
   course_canvas_id: number;
   canvas_posted: boolean | null;
+  canvas_comment_id: number | null;
   question_grades: QuestionGrade[] | null;
   quiz_submission_id: number | null;
 }
@@ -84,6 +85,7 @@ function AssignmentEditDialog({
         late_penalty: latePenalty,
         course_canvas_id: assignment.course_canvas_id,
         post_to_canvas: postToCanvas,
+        canvas_comment_id: assignment.canvas_comment_id ?? null,
       };
       if (isQuiz) {
         body.question_grades = questions;
