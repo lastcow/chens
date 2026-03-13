@@ -33,9 +33,6 @@ export default function AssignmentEditDialog({ assignment, canvasUid, onClose, o
   const isQuiz = assignment.is_quiz && assignment.question_grades && assignment.question_grades.length > 0;
   const [score, setScore] = useState(assignment.score ?? 0);
   const [comment, setComment] = useState(assignment.grader_comment ?? "");
-  const [isLate, setIsLate] = useState(assignment.late ?? false);
-  const [daysLate, setDaysLate] = useState(assignment.days_late ?? 0);
-  const [latePenalty, setLatePenalty] = useState(assignment.late_penalty ?? 0);
   const [questions, setQuestions] = useState<QuestionGrade[]>(
     assignment.question_grades ? assignment.question_grades.map(q => ({ ...q })) : []
   );
@@ -44,7 +41,7 @@ export default function AssignmentEditDialog({ assignment, canvasUid, onClose, o
 
   const quizTotal = questions.reduce((s, q) => s + (q.score ?? 0), 0);
   const displayScore = isQuiz ? quizTotal : score;
-  const finalScore = Math.max(0, displayScore - latePenalty);
+  const daysLate = assignment.days_late ?? 0;
 
   const updateQuestion = (idx: number, field: keyof QuestionGrade, value: string | number) => {
     setQuestions(prev => prev.map((q, i) => i === idx ? { ...q, [field]: value } : q));
@@ -58,9 +55,6 @@ export default function AssignmentEditDialog({ assignment, canvasUid, onClose, o
         assignment_id: assignment.assignment_id,
         score: displayScore,
         comment: isQuiz ? "" : comment,
-        is_late: isLate,
-        days_late: isLate ? daysLate : 0,
-        late_penalty: latePenalty,
         course_canvas_id: assignment.course_canvas_id,
         post_to_canvas: postToCanvas,
         canvas_comment_id: assignment.canvas_comment_id ?? null,
@@ -109,7 +103,11 @@ export default function AssignmentEditDialog({ assignment, canvasUid, onClose, o
               {isQuiz && (
                 <span className="text-xs font-mono text-gray-400">
                   Total: <span className="text-white font-semibold">{quizTotal}</span>/{assignment.points_possible}
-                  {latePenalty > 0 && <span className="text-amber-400 ml-1">→ {finalScore}</span>}
+                </span>
+              )}
+              {daysLate > 0 && (
+                <span className="flex items-center gap-1 text-xs text-amber-400 font-medium">
+                  <Clock className="w-3 h-3" /> {daysLate}d late
                 </span>
               )}
             </div>
@@ -123,43 +121,6 @@ export default function AssignmentEditDialog({ assignment, canvasUid, onClose, o
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {isQuiz ? (
             <div className="grid grid-cols-2 gap-3">
-              {/* Late card — full width */}
-              <div className="col-span-2 bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-400" />
-                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer font-medium">
-                    <input type="checkbox" checked={isLate} onChange={e => setIsLate(e.target.checked)}
-                      className="rounded border-gray-600 bg-gray-900 text-amber-500 focus:ring-amber-500" />
-                    Late Submission
-                  </label>
-                </div>
-                {isLate && (
-                  <>
-                    <div className="h-5 w-px bg-gray-700" />
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">Days</span>
-                      <input type="number" value={daysLate} min={0}
-                        onChange={e => setDaysLate(parseInt(e.target.value) || 0)}
-                        className={`w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50 ${noSpinner}`} />
-                    </div>
-                    <div className="h-5 w-px bg-gray-700" />
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">Penalty</span>
-                      <input type="number" value={latePenalty} min={0} step={1}
-                        onChange={e => setLatePenalty(parseFloat(e.target.value) || 0)}
-                        className={`w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50 ${noSpinner}`} />
-                      <span className="text-xs text-gray-500">pts</span>
-                    </div>
-                    {latePenalty > 0 && (
-                      <>
-                        <div className="h-5 w-px bg-gray-700" />
-                        <span className="text-xs font-mono text-amber-400">{quizTotal} − {latePenalty} = {finalScore}</span>
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-
               {/* Question cards */}
               {questions.map((q, qi) => {
                 const pct = q.points_possible > 0 ? Math.round((q.score / q.points_possible) * 100) : 0;
@@ -206,43 +167,6 @@ export default function AssignmentEditDialog({ assignment, canvasUid, onClose, o
             </div>
           ) : (
             <div className="space-y-3">
-              {/* Late card */}
-              <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-400" />
-                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer font-medium">
-                    <input type="checkbox" checked={isLate} onChange={e => setIsLate(e.target.checked)}
-                      className="rounded border-gray-600 bg-gray-900 text-amber-500 focus:ring-amber-500" />
-                    Late Submission
-                  </label>
-                </div>
-                {isLate && (
-                  <>
-                    <div className="h-5 w-px bg-gray-700" />
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">Days</span>
-                      <input type="number" value={daysLate} min={0}
-                        onChange={e => setDaysLate(parseInt(e.target.value) || 0)}
-                        className={`w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50 ${noSpinner}`} />
-                    </div>
-                    <div className="h-5 w-px bg-gray-700" />
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">Penalty</span>
-                      <input type="number" value={latePenalty} min={0} step={1}
-                        onChange={e => setLatePenalty(parseFloat(e.target.value) || 0)}
-                        className={`w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50 ${noSpinner}`} />
-                      <span className="text-xs text-gray-500">pts</span>
-                    </div>
-                    {latePenalty > 0 && (
-                      <>
-                        <div className="h-5 w-px bg-gray-700" />
-                        <span className="text-xs font-mono text-amber-400">{score} − {latePenalty} = {finalScore}</span>
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-
               {/* Score + Comment */}
               <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-3">
