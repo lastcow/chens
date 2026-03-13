@@ -27,6 +27,7 @@ interface DetailAssignment {
   course_canvas_id: number;
   canvas_posted: boolean | null;
   canvas_comment_id: number | null;
+  days_late: number | null;
   question_grades: QuestionGrade[] | null;
   quiz_submission_id: number | null;
 }
@@ -55,7 +56,7 @@ function AssignmentEditDialog({
   const [score, setScore] = useState(assignment.score ?? 0);
   const [comment, setComment] = useState(assignment.grader_comment ?? "");
   const [isLate, setIsLate] = useState(assignment.late ?? false);
-  const [daysLate, setDaysLate] = useState(0);
+  const [daysLate, setDaysLate] = useState(assignment.days_late ?? 0);
   const [latePenalty, setLatePenalty] = useState(assignment.late_penalty ?? 0);
   const [questions, setQuestions] = useState<QuestionGrade[]>(
     assignment.question_grades ? assignment.question_grades.map(q => ({ ...q })) : []
@@ -164,14 +165,14 @@ function AssignmentEditDialog({
                       <span className="text-xs text-gray-500">Days</span>
                       <input type="number" value={daysLate} min={0}
                         onChange={e => setDaysLate(parseInt(e.target.value) || 0)}
-                        className="w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                        className="w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                     </div>
                     <div className="h-5 w-px bg-gray-700" />
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-500">Penalty</span>
                       <input type="number" value={latePenalty} min={0} step={1}
                         onChange={e => setLatePenalty(parseFloat(e.target.value) || 0)}
-                        className="w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                        className="w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                       <span className="text-xs text-gray-500">pts</span>
                     </div>
                     {latePenalty > 0 && (
@@ -239,14 +240,14 @@ function AssignmentEditDialog({
                       <span className="text-xs text-gray-500">Days</span>
                       <input type="number" value={daysLate} min={0}
                         onChange={e => setDaysLate(parseInt(e.target.value) || 0)}
-                        className="w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                        className="w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                     </div>
                     <div className="h-5 w-px bg-gray-700" />
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-500">Penalty</span>
                       <input type="number" value={latePenalty} min={0} step={1}
                         onChange={e => setLatePenalty(parseFloat(e.target.value) || 0)}
-                        className="w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                        className="w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                       <span className="text-xs text-gray-500">pts</span>
                     </div>
                     {latePenalty > 0 && (
