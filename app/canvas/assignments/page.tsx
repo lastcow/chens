@@ -605,70 +605,98 @@ function AssignmentsContent() {
         const sg = quizCommentSg;
         const edit = stagingEdits[sg.id] ?? {};
         const qGrades: QuestionGrade[] = edit.question_grades ?? sg.question_grades ?? [];
+        const quizTotal = qGrades.reduce((s, q) => s + (q.score || 0), 0);
+        const noSpinner = "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
         return (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-[600px] max-h-[80vh] flex flex-col">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setQuizCommentSg(null)}>
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-[900px] max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+              <div className="flex items-start justify-between px-6 py-4 border-b border-gray-800">
                 <div>
-                  <h3 className="text-sm font-semibold text-white">{sg.student_name}</h3>
-                  <p className="text-xs text-gray-400">
-                    {qGrades.length} questions · Total: <span className="text-amber-400 font-mono">{qGrades.reduce((s, q) => s + (q.score || 0), 0)}</span>/{stagingAssignment?.points_possible}
-                    {sg.is_late && <span className="text-amber-400 ml-2">⚠️ {sg.days_late}d late</span>}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-purple-400 shrink-0" />
+                    <h3 className="text-base font-semibold text-white">{sg.student_name}</h3>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <span className="text-xs font-mono text-gray-400">
+                      Total: <span className="text-white font-semibold">{quizTotal}</span>/{stagingAssignment?.points_possible}
+                    </span>
+                    {sg.is_late && (
+                      <span className="flex items-center gap-1 text-xs text-amber-400 font-medium">
+                        <Clock className="w-3 h-3" /> {sg.days_late}d late
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <button onClick={() => setQuizCommentSg(null)} className="text-gray-400 hover:text-white transition-colors">
+                <button onClick={() => setQuizCommentSg(null)} className="text-gray-500 hover:text-white transition-colors p-1 ml-3">
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              {/* Per-question list */}
-              <div className="flex-1 overflow-y-auto px-5 py-3 space-y-3">
-                {qGrades.map((q, qi) => (
-                  <div key={q.question_id} className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-gray-400 font-medium">{q.question_name}</span>
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="number" step="1" min="0" max={q.points_possible}
-                          value={q.score}
+              {/* 2-column question cards */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="grid grid-cols-2 gap-3">
+                  {qGrades.map((q, qi) => {
+                    const pct = q.points_possible > 0 ? Math.round((q.score / q.points_possible) * 100) : 0;
+                    const pctColor = pct >= 90 ? 'text-green-400' : pct >= 70 ? 'text-amber-400' : 'text-red-400';
+                    const barColor = pct >= 90 ? 'bg-green-500' : pct >= 70 ? 'bg-amber-500' : 'bg-red-500';
+                    return (
+                      <div key={q.question_id} className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold">
+                              {q.question_name.replace(/^Q/i, '')}
+                            </span>
+                            <span className="text-sm font-medium text-white">{q.question_name}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-xs font-mono font-semibold ${pctColor}`}>{pct}%</span>
+                            <span className="text-gray-600 text-xs">–</span>
+                            <input
+                              type="number" step="1" min="0" max={q.points_possible}
+                              value={q.score}
+                              onChange={e => {
+                                const newQ = [...qGrades];
+                                newQ[qi] = { ...newQ[qi], score: Math.round(Number(e.target.value)) };
+                                const newTotal = newQ.reduce((s, qq) => s + (qq.score || 0), 0);
+                                setStagingEdits(prev => ({
+                                  ...prev,
+                                  [sg.id]: { ...prev[sg.id], question_grades: newQ, raw_score: String(newTotal), final_score: String(newTotal) }
+                                }));
+                                setQuizCommentSg(prev => prev ? { ...prev, question_grades: newQ } as StagingGrade : null);
+                              }}
+                              className={`w-12 bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-xs text-white text-center focus:outline-none focus:border-purple-500/50 ${noSpinner}`}
+                            />
+                            <span className="text-[10px] text-gray-500">/{q.points_possible}</span>
+                          </div>
+                        </div>
+                        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                          <div className={`h-full ${barColor} transition-all rounded-full`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                        </div>
+                        <textarea
+                          value={q.comment}
                           onChange={e => {
                             const newQ = [...qGrades];
-                            newQ[qi] = { ...newQ[qi], score: Math.round(Number(e.target.value)) };
-                            const newTotal = newQ.reduce((s, qq) => s + (qq.score || 0), 0);
+                            newQ[qi] = { ...newQ[qi], comment: e.target.value };
                             setStagingEdits(prev => ({
                               ...prev,
-                              [sg.id]: { ...prev[sg.id], question_grades: newQ, raw_score: String(newTotal), final_score: String(newTotal) }
+                              [sg.id]: { ...prev[sg.id], question_grades: newQ }
                             }));
                             setQuizCommentSg(prev => prev ? { ...prev, question_grades: newQ } as StagingGrade : null);
                           }}
-                          className="w-14 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-center text-xs font-mono focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-purple-500/50 resize-none"
+                          rows={2}
+                          placeholder="Comment…"
                         />
-                        <span className="text-[10px] text-gray-500">/ {q.points_possible}</span>
                       </div>
-                    </div>
-                    <textarea
-                      value={q.comment}
-                      onChange={e => {
-                        const newQ = [...qGrades];
-                        newQ[qi] = { ...newQ[qi], comment: e.target.value };
-                        setStagingEdits(prev => ({
-                          ...prev,
-                          [sg.id]: { ...prev[sg.id], question_grades: newQ }
-                        }));
-                        setQuizCommentSg(prev => prev ? { ...prev, question_grades: newQ } as StagingGrade : null);
-                      }}
-                      className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-amber-500 resize-none leading-relaxed"
-                      rows={2}
-                      placeholder="Question comment…"
-                    />
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
               {/* Footer */}
-              <div className="px-5 py-3 border-t border-gray-800 flex justify-end">
+              <div className="px-6 py-4 border-t border-gray-800 flex justify-end">
                 <button
                   onClick={() => setQuizCommentSg(null)}
-                  className="px-4 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-xs transition-colors"
+                  className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors"
                 >
                   Done
                 </button>
