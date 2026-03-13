@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useTerm } from "@/components/canvas/TermProvider";
-import { X, CheckCircle, AlertTriangle, Clock, Upload, ChevronRight, BookOpen, GraduationCap, Pencil, Save, Loader2 } from "lucide-react";
+import { X, CheckCircle, AlertTriangle, Clock, Upload, ChevronRight, BookOpen, GraduationCap, Pencil, Save, Loader2, FileText, ClipboardList } from "lucide-react";
 
 interface StudentRow {
   name: string; canvas_uid: number; email: string;
@@ -365,7 +365,13 @@ function StudentDetailDialog({
                       return (
                         <div key={ai} className="group px-4 py-2.5 hover:bg-gray-800/20 transition-colors">
                           <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm text-white truncate flex-1">{a.name}</p>
+                            <p className="text-sm text-white truncate flex-1 flex items-center gap-1.5">
+                              {a.is_quiz
+                                ? <ClipboardList className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                                : <FileText className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                              }
+                              {a.name}
+                            </p>
                             <div className="flex items-center gap-2 shrink-0">
                               {a.late && (
                                 <span className="text-[10px] bg-amber-900/30 text-amber-400 px-1.5 py-0.5 rounded">Late</span>
