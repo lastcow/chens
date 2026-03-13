@@ -453,13 +453,13 @@ function StudentDetailDialog({
                               )}
                               <span className={`flex items-center gap-1 text-xs font-medium ${status.color}`}>
                                 {status.icon}
-                                {a.final_score !== null ? (
-                                  <span className="font-mono">{a.final_score}/{a.points_possible}</span>
+                                {a.score !== null ? (
+                                  <span className="font-mono">{a.score}/{a.points_possible}</span>
                                 ) : (
                                   <span>—/{a.points_possible}</span>
                                 )}
                               </span>
-                              {a.canvas_posted === false && a.final_score !== null && (
+                              {a.canvas_posted === false && a.score !== null && (
                                 <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" title="Not pushed to Canvas" />
                               )}
                             </div>
