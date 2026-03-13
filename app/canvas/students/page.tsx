@@ -266,7 +266,7 @@ function AssignmentEditDialog({
                 <div className="flex items-start gap-3">
                   <label className="text-sm text-gray-400 w-16 pt-2">Comment</label>
                   <textarea value={comment} placeholder="Grader comment…"
-                    onChange={e => setComment(e.target.value)} rows={2}
+                    onChange={e => setComment(e.target.value)} rows={3}
                     className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-amber-500/50 resize-none" />
                 </div>
               </div>
