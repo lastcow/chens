@@ -710,7 +710,7 @@ function AssignmentsContent() {
       </div>
 
       {/* Table */}
-      <div className="bg-gray-900 border border-t-0 border-gray-800 rounded-b-xl overflow-hidden">
+      <div className="bg-gray-900 border border-t-0 border-gray-800 rounded-b-xl overflow-clip">
         {loading ? (
           <div className="p-8 text-center text-gray-600 text-sm animate-pulse">Loading…</div>
         ) : filtered.length === 0 ? (
