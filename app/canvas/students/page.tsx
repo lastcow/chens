@@ -220,6 +220,19 @@ function AssignmentEditDialog({
                   </div>
                 );
               })}
+              {/* Quiz submission link */}
+              {assignment.quiz_submission_id && (
+                <div className="col-span-2 flex items-center gap-2 px-1">
+                  <a
+                    href={`https://frostburg.instructure.com/courses/${assignment.course_canvas_id}/quizzes/${assignment.quiz_id}/submissions/${assignment.quiz_submission_id}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Submission
+                  </a>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
