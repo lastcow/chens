@@ -181,10 +181,11 @@ function AssignmentEditDialog({
               </div>
               {questions.map((q, qi) => {
                 const pct = q.points_possible > 0 ? Math.round((q.score / q.points_possible) * 100) : 0;
+                const pctColor = pct >= 90 ? 'text-green-400' : pct >= 70 ? 'text-amber-400' : 'text-red-400';
                 const barColor = pct >= 90 ? 'bg-green-500' : pct >= 70 ? 'bg-amber-500' : 'bg-red-500';
                 return (
                   <div key={qi} className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 flex flex-col gap-3">
-                    {/* Card header */}
+                    {/* Card header: badge + name | pct - score/total */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold">
@@ -192,25 +193,19 @@ function AssignmentEditDialog({
                         </span>
                         <span className="text-sm font-medium text-white">{q.question_name}</span>
                       </div>
-                      <span className="text-[10px] text-gray-600">{q.points_possible} pts</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-xs font-mono font-semibold ${pctColor}`}>{pct}%</span>
+                        <span className="text-gray-600 text-xs">–</span>
+                        <input type="number" value={q.score} min={0} max={q.points_possible}
+                          onChange={e => updateQuestion(qi, 'score', parseFloat(e.target.value) || 0)}
+                          className="w-12 bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-xs text-white text-center focus:outline-none focus:border-purple-500/50" />
+                        <span className="text-[10px] text-gray-500">/{q.points_possible}</span>
+                      </div>
                     </div>
 
                     {/* Score bar */}
-                    <div className="space-y-1.5">
-                      <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                        <div className={`h-full ${barColor} transition-all rounded-full`} style={{ width: `${Math.min(pct, 100)}%` }} />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                          <input type="number" value={q.score} min={0} max={q.points_possible}
-                            onChange={e => updateQuestion(qi, 'score', parseFloat(e.target.value) || 0)}
-                            className="w-12 bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-sm text-white text-center focus:outline-none focus:border-purple-500/50" />
-                          <span className="text-xs text-gray-500">/ {q.points_possible}</span>
-                        </div>
-                        <span className={`text-xs font-mono font-semibold ${pct >= 90 ? 'text-green-400' : pct >= 70 ? 'text-amber-400' : 'text-red-400'}`}>
-                          {pct}%
-                        </span>
-                      </div>
+                    <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                      <div className={`h-full ${barColor} transition-all rounded-full`} style={{ width: `${Math.min(pct, 100)}%` }} />
                     </div>
 
                     {/* Comment */}
