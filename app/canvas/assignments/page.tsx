@@ -401,6 +401,11 @@ function AssignmentsContent() {
                 <h3 className="font-bold text-white flex items-center gap-2">
                   <ClipboardList className="w-5 h-5 text-purple-400" />
                   Review AI Grades
+                  {stagingGrades.length > 0 && (
+                    <span className="text-xs font-normal text-gray-400">
+                      — {stagingGrades.length - stagingExcluded.size}/{stagingGrades.length} included
+                    </span>
+                  )}
                 </h3>
                 <p className="text-xs text-gray-400 mt-0.5 truncate">{stagingAssignment.name}</p>
               </div>
