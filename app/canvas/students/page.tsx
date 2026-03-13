@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useTerm } from "@/components/canvas/TermProvider";
-import { X, CheckCircle, AlertTriangle, Clock, Upload, ChevronRight, BookOpen, GraduationCap, Pencil, Save, Loader2, FileText, ClipboardList } from "lucide-react";
+import { X, CheckCircle, AlertTriangle, Clock, Upload, ChevronRight, BookOpen, GraduationCap, Save, Loader2, FileText, ClipboardList } from "lucide-react";
 
 interface StudentRow {
   name: string; canvas_uid: number; email: string;
@@ -431,9 +431,13 @@ function StudentDetailDialog({
                     ) : course.assignments.map((a, ai) => {
                       const status = getStatus(a);
                       return (
-                        <div key={ai} className="group px-4 py-2.5 hover:bg-gray-800/20 transition-colors">
+                        <div
+                          key={ai}
+                          onClick={() => a.submission_id && setEditAssignment(a)}
+                          className={`px-4 py-2.5 transition-colors ${a.submission_id ? 'cursor-pointer hover:bg-gray-800/40' : 'hover:bg-gray-800/20'}`}
+                        >
                           <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm text-white truncate flex-1 flex items-center gap-1.5">
+                            <p className={`text-sm truncate flex-1 flex items-center gap-1.5 ${a.submission_id ? 'text-white hover:text-amber-400' : 'text-white'}`}>
                               {a.is_quiz
                                 ? <ClipboardList className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                                 : <FileText className="w-3.5 h-3.5 text-gray-500 shrink-0" />
@@ -454,14 +458,6 @@ function StudentDetailDialog({
                               </span>
                               {a.canvas_posted === false && a.final_score !== null && (
                                 <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" title="Not pushed to Canvas" />
-                              )}
-                              {a.submission_id && (
-                                <button
-                                  onClick={e => { e.stopPropagation(); setEditAssignment(a); }}
-                                  className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-amber-400 transition-all p-0.5"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </button>
                               )}
                             </div>
                           </div>
