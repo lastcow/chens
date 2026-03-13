@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useTerm } from "@/components/canvas/TermProvider";
-import { X } from "lucide-react";
+import { X, CheckCircle, AlertTriangle, Clock, Upload, ChevronRight, BookOpen, GraduationCap } from "lucide-react";
 
 interface StudentRow {
   name: string; canvas_uid: number; email: string;
@@ -48,16 +48,22 @@ function StudentDetailDialog({
   loading: boolean;
   onClose: () => void;
 }) {
-  const [tab, setTab] = useState<"assignments" | "attendance">("assignments");
+  const [courseOpen, setCourseOpen] = useState<Record<number, boolean>>({});
+
+  // Auto-open all courses when data loads
+  useEffect(() => {
+    if (data) {
+      setCourseOpen(Object.fromEntries(data.courses.map((c, i) => [i, true])));
+    }
+  }, [data]);
 
   if (!student) return null;
 
-  // Group assignments by course and sort by due_at
-  const courseAssignments = data
+  const courses = data
     ? data.courses.map(course => ({
         ...course,
         assignments: course.assignments
-          .filter(a => a.name) // Only assignments with names
+          .filter(a => a.name)
           .sort((a, b) => {
             if (!a.due_at) return 1;
             if (!b.due_at) return -1;
@@ -66,130 +72,140 @@ function StudentDetailDialog({
       }))
     : [];
 
-  const getAssignmentStatus = (a: StudentDetailData['courses'][0]['assignments'][0]) => {
-    if (a.workflow_state === 'graded') {
-      return { icon: '✅', label: 'Graded', color: 'text-green-400' };
+  const attColor = (v: number) =>
+    v >= 90 ? 'text-green-400' : v >= 75 ? 'text-amber-400' : 'text-red-400';
+
+  const getStatus = (a: StudentDetailData['courses'][0]['assignments'][0]) => {
+    if (a.final_score !== null) {
+      return { icon: <CheckCircle className="w-3.5 h-3.5" />, label: 'Graded', color: 'text-green-400' };
     }
     if (a.workflow_state === 'unsubmitted' || !a.submitted_at) {
-      const now = new Date();
       const due = a.due_at ? new Date(a.due_at) : null;
-      if (due && now > due) {
-        return { icon: '⚠️', label: 'Missing', color: 'text-red-400' };
+      if (due && new Date() > due) {
+        return { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: 'Missing', color: 'text-red-400' };
       }
-      return { icon: '⏳', label: 'Not Submitted', color: 'text-gray-500' };
+      return { icon: <Clock className="w-3.5 h-3.5" />, label: 'Pending', color: 'text-gray-500' };
     }
     if (a.late) {
-      return { icon: '⏰', label: 'Late', color: 'text-amber-400' };
+      return { icon: <Clock className="w-3.5 h-3.5" />, label: 'Late', color: 'text-amber-400' };
     }
-    return { icon: '📤', label: 'Submitted', color: 'text-blue-400' };
+    return { icon: <Upload className="w-3.5 h-3.5" />, label: 'Submitted', color: 'text-blue-400' };
   };
 
+  // Attendance summary for header
+  const attSummary = courses.length > 0
+    ? courses.map(c => ({ name: c.course_name.replace(/^[A-Z]+ \d+-\d+\s*/, ''), score: c.attendance_score }))
+    : [];
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-gray-900 border border-gray-800 rounded-xl w-full max-w-[700px] max-h-[85vh] flex flex-col shadow-2xl"
+        className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-[700px] max-h-[85vh] flex flex-col shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-gray-800">
+        {/* Header with attendance */}
+        <div className="flex items-start justify-between px-6 py-5 border-b border-gray-800">
           <div className="flex-1">
-            <h2 className="text-xl font-semibold text-white">{student.name}</h2>
+            <div className="flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-amber-500" />
+              <h2 className="text-lg font-semibold text-white">{student.name}</h2>
+            </div>
             <p className="text-sm text-gray-500 mt-1">{student.email}</p>
-            <p className="text-xs text-gray-700 mt-2">
-              {data?.courses.length ?? 0} course{(data?.courses.length ?? 0) !== 1 ? 's' : ''} enrolled
-            </p>
+            <div className="flex items-center gap-3 mt-3 flex-wrap">
+              <span className="text-xs text-gray-600">
+                {courses.length} course{courses.length !== 1 ? 's' : ''}
+              </span>
+              {attSummary.map((att, i) => (
+                <span key={i} className="text-xs text-gray-500">
+                  Att: <span className={`font-mono font-semibold ${attColor(att.score)}`}>{att.score}%</span>
+                </span>
+              ))}
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-400 transition-colors p-1"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-6 px-6 pt-4 border-b border-gray-800">
-          <button
-            onClick={() => setTab('assignments')}
-            className={`pb-4 font-medium transition-colors ${
-              tab === 'assignments'
-                ? 'text-white border-b-2 border-amber-500'
-                : 'text-gray-500 border-b-2 border-transparent hover:text-gray-400'
-            }`}
-          >
-            📝 Assignments
-          </button>
-          <button
-            onClick={() => setTab('attendance')}
-            className={`pb-4 font-medium transition-colors ${
-              tab === 'attendance'
-                ? 'text-white border-b-2 border-amber-500'
-                : 'text-gray-500 border-b-2 border-transparent hover:text-gray-400'
-            }`}
-          >
-            📋 Attendance
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors p-1">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
-            <div className="space-y-3">
+            <div className="space-y-3 p-2">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-gray-800 h-12 rounded animate-pulse" />
+                <div key={i} className="bg-gray-800 h-12 rounded-lg animate-pulse" />
               ))}
             </div>
-          ) : tab === 'assignments' ? (
-            <div className="space-y-6">
-              {courseAssignments.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-8">No course data available</p>
-              ) : (
-                courseAssignments.map(course => (
-                  <div key={course.course_canvas_id} className="space-y-3">
-                    <h3 className="font-semibold text-white text-sm">{course.course_name}</h3>
-                    {course.assignments.length === 0 ? (
-                      <p className="text-xs text-gray-600 ml-2">No assignments</p>
-                    ) : (
-                      <div className="space-y-2 ml-2">
-                        {course.assignments.map((a, i) => {
-                          const status = getAssignmentStatus(a);
+          ) : courses.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-8">No course data available</p>
+          ) : (
+            <div className="space-y-2">
+              {courses.map((course, ci) => {
+                const graded = course.assignments.filter(a => a.final_score !== null);
+                const missing = course.assignments.filter(a =>
+                  (a.workflow_state === 'unsubmitted' || !a.submitted_at) && a.due_at && new Date() > new Date(a.due_at)
+                );
+                const avg = graded.length
+                  ? (graded.reduce((s, a) => s + (a.final_score! / a.points_possible) * 100, 0) / graded.length).toFixed(0)
+                  : null;
+                const isOpen = courseOpen[ci] ?? true;
+
+                return (
+                  <div key={ci} className="bg-gray-800/30 border border-gray-800 rounded-xl overflow-hidden">
+                    {/* Course accordion header */}
+                    <button
+                      onClick={() => setCourseOpen(p => ({ ...p, [ci]: !p[ci] }))}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-800/40 transition-colors text-left"
+                    >
+                      <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+                      <BookOpen className="w-4 h-4 text-blue-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{course.course_name}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {avg && (
+                          <span className="text-xs text-gray-500">
+                            Avg <span className="font-mono font-semibold text-white">{avg}%</span>
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-600">{course.assignments.length} asgn</span>
+                        {missing.length > 0 && (
+                          <span className="text-xs bg-red-900/30 text-red-400 border border-red-700/30 rounded-full px-1.5 py-0.5">
+                            {missing.length} missing
+                          </span>
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Assignment list */}
+                    {isOpen && (
+                      <div className="border-t border-gray-800 divide-y divide-gray-800/50">
+                        {course.assignments.length === 0 ? (
+                          <p className="text-xs text-gray-600 px-4 py-3">No assignments</p>
+                        ) : course.assignments.map((a, ai) => {
+                          const status = getStatus(a);
                           return (
-                            <div
-                              key={i}
-                              className="bg-gray-800/40 border border-gray-700/40 rounded-lg p-3 text-sm space-y-2"
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-white font-medium truncate">{a.name}</p>
-                                  {a.due_at && (
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      Due: {new Date(a.due_at).toLocaleDateString()} {new Date(a.due_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </p>
+                            <div key={ai} className="px-4 py-2.5 hover:bg-gray-800/20 transition-colors">
+                              {/* Row 1: name + status with score */}
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm text-white truncate flex-1">{a.name}</p>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {a.late && (
+                                    <span className="text-[10px] bg-amber-900/30 text-amber-400 px-1.5 py-0.5 rounded">Late</span>
                                   )}
+                                  <span className={`flex items-center gap-1 text-xs font-medium ${status.color}`}>
+                                    {status.icon}
+                                    {a.final_score !== null ? (
+                                      <span className="font-mono">{a.final_score}/{a.points_possible}</span>
+                                    ) : (
+                                      <span>—/{a.points_possible}</span>
+                                    )}
+                                  </span>
                                 </div>
-                                <span className={`text-xs font-medium whitespace-nowrap ${status.color}`}>
-                                  {status.icon} {status.label}
-                                </span>
                               </div>
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="text-xs text-gray-400">
-                                  {a.final_score !== null ? (
-                                    <span>
-                                      <span className="font-semibold text-white">{a.final_score}</span>/{a.points_possible}
-                                    </span>
-                                  ) : (
-                                    <span>—/{a.points_possible}</span>
-                                  )}
-                                </div>
-                                {a.late && (
-                                  <div className="text-xs bg-amber-900/30 text-amber-400 px-2 py-1 rounded">
-                                    Late
-                                  </div>
-                                )}
-                              </div>
-                              {a.grader_comment && (
-                                <p className="text-xs text-gray-400 italic border-t border-gray-700/40 pt-2 mt-2">
-                                  "{a.grader_comment}"
+                              {/* Row 2: due date */}
+                              {a.due_at && (
+                                <p className="text-[11px] text-gray-600 mt-0.5">
+                                  Due {new Date(a.due_at).toLocaleDateString()} {new Date(a.due_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                               )}
                             </div>
@@ -198,37 +214,8 @@ function StudentDetailDialog({
                       </div>
                     )}
                   </div>
-                ))
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {courseAssignments.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-8">No course data available</p>
-              ) : (
-                courseAssignments.map(course => (
-                  <div key={course.course_canvas_id} className="space-y-2">
-                    <h3 className="font-semibold text-white text-sm">{course.course_name}</h3>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all ${
-                            course.attendance_score >= 90
-                              ? 'bg-green-500'
-                              : course.attendance_score >= 75
-                                ? 'bg-amber-500'
-                                : 'bg-red-500'
-                          }`}
-                          style={{ width: `${Math.min(course.attendance_score, 100)}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-semibold text-white w-12 text-right">
-                        {course.attendance_score}%
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
+                );
+              })}
             </div>
           )}
         </div>
