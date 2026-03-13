@@ -9,6 +9,7 @@ interface StudentRow {
   enrollment_state: string;
   attendance: number; missing_count: number; ungraded_count: number;
   avg_grade: number | null; total_due: number; course_count: number;
+  unpushed_count: number;
 }
 
 interface QuestionGrade {
@@ -24,6 +25,7 @@ interface DetailAssignment {
   late_penalty: number | null; grader_comment: string | null;
   workflow_state: string | null; late: boolean; submitted_at: string | null;
   course_canvas_id: number;
+  canvas_posted: boolean | null;
   question_grades: QuestionGrade[] | null;
   quiz_submission_id: number | null;
 }
@@ -450,6 +452,9 @@ function StudentDetailDialog({
                                   <span>—/{a.points_possible}</span>
                                 )}
                               </span>
+                              {a.canvas_posted === false && a.final_score !== null && (
+                                <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" title="Not pushed to Canvas" />
+                              )}
                               {a.submission_id && (
                                 <button
                                   onClick={e => { e.stopPropagation(); setEditAssignment(a); }}
@@ -722,6 +727,11 @@ function StudentsContent() {
                             {Number(r.course_count) > 1 && r.enrollment_state !== 'inactive' && (
                               <span className="text-xs bg-blue-900/30 text-blue-400 border border-blue-700/30 rounded-full px-1.5 py-0.5 shrink-0">
                                 {r.course_count} courses
+                              </span>
+                            )}
+                            {Number(r.unpushed_count) > 0 && (
+                              <span className="text-xs bg-orange-900/30 text-orange-400 border border-orange-700/30 rounded-full px-1.5 py-0.5 shrink-0">
+                                {r.unpushed_count} unpushed
                               </span>
                             )}
                           </div>
