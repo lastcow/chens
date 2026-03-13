@@ -141,33 +141,44 @@ function AssignmentEditDialog({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
-          {/* Late info */}
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
-              <input type="checkbox" checked={isLate} onChange={e => setIsLate(e.target.checked)}
-                className="rounded border-gray-600 bg-gray-800 text-amber-500 focus:ring-amber-500" />
-              Late
-            </label>
-            {isLate && (
-              <>
-                <div className="flex items-center gap-2">
-                  <input type="number" value={daysLate} min={0}
-                    onChange={e => setDaysLate(parseInt(e.target.value) || 0)}
-                    className="w-16 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
-                  <span className="text-xs text-gray-500">days</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">Penalty</span>
-                  <input type="number" value={latePenalty} min={0} step={1}
-                    onChange={e => setLatePenalty(parseFloat(e.target.value) || 0)}
-                    className="w-16 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
-                </div>
-              </>
-            )}
-          </div>
-
           {isQuiz ? (
             <div className="grid grid-cols-2 gap-3">
+              {/* Late card spanning full width */}
+              <div className="col-span-2 bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer font-medium">
+                    <input type="checkbox" checked={isLate} onChange={e => setIsLate(e.target.checked)}
+                      className="rounded border-gray-600 bg-gray-900 text-amber-500 focus:ring-amber-500" />
+                    Late Submission
+                  </label>
+                </div>
+                {isLate && (
+                  <>
+                    <div className="h-5 w-px bg-gray-700" />
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">Days</span>
+                      <input type="number" value={daysLate} min={0}
+                        onChange={e => setDaysLate(parseInt(e.target.value) || 0)}
+                        className="w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                    </div>
+                    <div className="h-5 w-px bg-gray-700" />
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">Penalty</span>
+                      <input type="number" value={latePenalty} min={0} step={1}
+                        onChange={e => setLatePenalty(parseFloat(e.target.value) || 0)}
+                        className="w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                      <span className="text-xs text-gray-500">pts</span>
+                    </div>
+                    {latePenalty > 0 && (
+                      <>
+                        <div className="h-5 w-px bg-gray-700" />
+                        <span className="text-xs font-mono text-amber-400">{quizTotal} − {latePenalty} = {finalScore}</span>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
               {questions.map((q, qi) => {
                 const pct = q.points_possible > 0 ? Math.round((q.score / q.points_possible) * 100) : 0;
                 const barColor = pct >= 90 ? 'bg-green-500' : pct >= 70 ? 'bg-amber-500' : 'bg-red-500';
@@ -212,21 +223,57 @@ function AssignmentEditDialog({
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <label className="text-sm text-gray-400 w-16">Score</label>
-                <input type="number" value={score} min={0} max={assignment.points_possible}
-                  onChange={e => setScore(parseFloat(e.target.value) || 0)}
-                  className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
-                <span className="text-sm text-gray-500">/ {assignment.points_possible}</span>
-                {latePenalty > 0 && (
-                  <span className="text-sm text-amber-400 font-mono">→ {finalScore}</span>
+              {/* Late card */}
+              <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer font-medium">
+                    <input type="checkbox" checked={isLate} onChange={e => setIsLate(e.target.checked)}
+                      className="rounded border-gray-600 bg-gray-900 text-amber-500 focus:ring-amber-500" />
+                    Late Submission
+                  </label>
+                </div>
+                {isLate && (
+                  <>
+                    <div className="h-5 w-px bg-gray-700" />
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">Days</span>
+                      <input type="number" value={daysLate} min={0}
+                        onChange={e => setDaysLate(parseInt(e.target.value) || 0)}
+                        className="w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                    </div>
+                    <div className="h-5 w-px bg-gray-700" />
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">Penalty</span>
+                      <input type="number" value={latePenalty} min={0} step={1}
+                        onChange={e => setLatePenalty(parseFloat(e.target.value) || 0)}
+                        className="w-14 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                      <span className="text-xs text-gray-500">pts</span>
+                    </div>
+                    {latePenalty > 0 && (
+                      <>
+                        <div className="h-5 w-px bg-gray-700" />
+                        <span className="text-xs font-mono text-amber-400">{score} − {latePenalty} = {finalScore}</span>
+                      </>
+                    )}
+                  </>
                 )}
               </div>
-              <div className="flex items-start gap-3">
-                <label className="text-sm text-gray-400 w-16 pt-2">Comment</label>
-                <textarea value={comment} placeholder="Grader comment…"
-                  onChange={e => setComment(e.target.value)} rows={2}
-                  className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-amber-500/50 resize-none" />
+              {/* Score + Comment */}
+              <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-gray-400 w-16">Score</label>
+                  <input type="number" value={score} min={0} max={assignment.points_possible}
+                    onChange={e => setScore(parseFloat(e.target.value) || 0)}
+                    className="w-20 bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                  <span className="text-sm text-gray-500">/ {assignment.points_possible}</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <label className="text-sm text-gray-400 w-16 pt-2">Comment</label>
+                  <textarea value={comment} placeholder="Grader comment…"
+                    onChange={e => setComment(e.target.value)} rows={2}
+                    className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-amber-500/50 resize-none" />
+                </div>
               </div>
             </div>
           )}
