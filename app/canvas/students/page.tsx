@@ -148,10 +148,55 @@ function StudentDetailDialog({
                   ? (graded.reduce((s, a) => s + (a.final_score! / a.points_possible) * 100, 0) / graded.length).toFixed(0)
                   : null;
                 const isOpen = courseOpen[ci] ?? true;
+                const isSingle = courses.length === 1;
 
+                const assignmentList = (
+                  <div className={`divide-y divide-gray-800/50 ${!isSingle ? 'border-t border-gray-800' : ''}`}>
+                    {course.assignments.length === 0 ? (
+                      <p className="text-xs text-gray-600 px-4 py-3">No assignments</p>
+                    ) : course.assignments.map((a, ai) => {
+                      const status = getStatus(a);
+                      return (
+                        <div key={ai} className="px-4 py-2.5 hover:bg-gray-800/20 transition-colors">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm text-white truncate flex-1">{a.name}</p>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {a.late && (
+                                <span className="text-[10px] bg-amber-900/30 text-amber-400 px-1.5 py-0.5 rounded">Late</span>
+                              )}
+                              <span className={`flex items-center gap-1 text-xs font-medium ${status.color}`}>
+                                {status.icon}
+                                {a.final_score !== null ? (
+                                  <span className="font-mono">{a.final_score}/{a.points_possible}</span>
+                                ) : (
+                                  <span>—/{a.points_possible}</span>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                          {a.due_at && (
+                            <p className="text-[11px] text-gray-600 mt-0.5">
+                              Due {new Date(a.due_at).toLocaleDateString()} {new Date(a.due_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+
+                if (isSingle) {
+                  // Single course: no accordion, just list assignments directly
+                  return (
+                    <div key={ci} className="bg-gray-800/30 border border-gray-800 rounded-xl overflow-hidden">
+                      {assignmentList}
+                    </div>
+                  );
+                }
+
+                // Multiple courses: accordion with attendance in title
                 return (
                   <div key={ci} className="bg-gray-800/30 border border-gray-800 rounded-xl overflow-hidden">
-                    {/* Course accordion header */}
                     <button
                       onClick={() => setCourseOpen(p => ({ ...p, [ci]: !p[ci] }))}
                       className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-800/40 transition-colors text-left"
@@ -162,6 +207,9 @@ function StudentDetailDialog({
                         <p className="text-sm font-medium text-white truncate">{course.course_name}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-gray-500">
+                          Att <span className={`font-mono font-semibold ${attColor(course.attendance_score)}`}>{course.attendance_score}%</span>
+                        </span>
                         {avg && (
                           <span className="text-xs text-gray-500">
                             Avg <span className="font-mono font-semibold text-white">{avg}%</span>
@@ -175,44 +223,7 @@ function StudentDetailDialog({
                         )}
                       </div>
                     </button>
-
-                    {/* Assignment list */}
-                    {isOpen && (
-                      <div className="border-t border-gray-800 divide-y divide-gray-800/50">
-                        {course.assignments.length === 0 ? (
-                          <p className="text-xs text-gray-600 px-4 py-3">No assignments</p>
-                        ) : course.assignments.map((a, ai) => {
-                          const status = getStatus(a);
-                          return (
-                            <div key={ai} className="px-4 py-2.5 hover:bg-gray-800/20 transition-colors">
-                              {/* Row 1: name + status with score */}
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="text-sm text-white truncate flex-1">{a.name}</p>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  {a.late && (
-                                    <span className="text-[10px] bg-amber-900/30 text-amber-400 px-1.5 py-0.5 rounded">Late</span>
-                                  )}
-                                  <span className={`flex items-center gap-1 text-xs font-medium ${status.color}`}>
-                                    {status.icon}
-                                    {a.final_score !== null ? (
-                                      <span className="font-mono">{a.final_score}/{a.points_possible}</span>
-                                    ) : (
-                                      <span>—/{a.points_possible}</span>
-                                    )}
-                                  </span>
-                                </div>
-                              </div>
-                              {/* Row 2: due date */}
-                              {a.due_at && (
-                                <p className="text-[11px] text-gray-600 mt-0.5">
-                                  Due {new Date(a.due_at).toLocaleDateString()} {new Date(a.due_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                    {isOpen && assignmentList}
                   </div>
                 );
               })}
