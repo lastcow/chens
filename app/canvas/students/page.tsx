@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useTerm } from "@/components/canvas/TermProvider";
+import { X } from "lucide-react";
 
 interface StudentRow {
   name: string; canvas_uid: number; email: string;
@@ -10,12 +11,241 @@ interface StudentRow {
   avg_grade: number | null; total_due: number; course_count: number;
 }
 
+interface StudentDetailData {
+  student: {
+    name: string;
+    email: string;
+    canvas_uid: number;
+  };
+  courses: Array<{
+    course_name: string;
+    course_canvas_id: number;
+    enrollment_state: string;
+    attendance_score: number;
+    assignments: Array<{
+      name: string;
+      points_possible: number;
+      due_at: string | null;
+      is_quiz: boolean;
+      score: number | null;
+      final_score: number | null;
+      grader_comment: string;
+      workflow_state: string;
+      late: boolean;
+      submitted_at: string | null;
+    }>;
+  }>;
+}
+
+function StudentDetailDialog({
+  student,
+  data,
+  loading,
+  onClose,
+}: {
+  student: StudentRow | null;
+  data: StudentDetailData | null;
+  loading: boolean;
+  onClose: () => void;
+}) {
+  const [tab, setTab] = useState<"assignments" | "attendance">("assignments");
+
+  if (!student) return null;
+
+  // Group assignments by course and sort by due_at
+  const courseAssignments = data
+    ? data.courses.map(course => ({
+        ...course,
+        assignments: course.assignments
+          .filter(a => a.name) // Only assignments with names
+          .sort((a, b) => {
+            if (!a.due_at) return 1;
+            if (!b.due_at) return -1;
+            return new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
+          }),
+      }))
+    : [];
+
+  const getAssignmentStatus = (a: StudentDetailData['courses'][0]['assignments'][0]) => {
+    if (a.workflow_state === 'graded') {
+      return { icon: '✅', label: 'Graded', color: 'text-green-400' };
+    }
+    if (a.workflow_state === 'unsubmitted' || !a.submitted_at) {
+      const now = new Date();
+      const due = a.due_at ? new Date(a.due_at) : null;
+      if (due && now > due) {
+        return { icon: '⚠️', label: 'Missing', color: 'text-red-400' };
+      }
+      return { icon: '⏳', label: 'Not Submitted', color: 'text-gray-500' };
+    }
+    if (a.late) {
+      return { icon: '⏰', label: 'Late', color: 'text-amber-400' };
+    }
+    return { icon: '📤', label: 'Submitted', color: 'text-blue-400' };
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div
+        className="bg-gray-900 border border-gray-800 rounded-xl w-full max-w-[700px] max-h-[85vh] flex flex-col shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between p-6 border-b border-gray-800">
+          <div className="flex-1">
+            <h2 className="text-xl font-semibold text-white">{student.name}</h2>
+            <p className="text-sm text-gray-500 mt-1">{student.email}</p>
+            <p className="text-xs text-gray-700 mt-2">
+              {data?.courses.length ?? 0} course{(data?.courses.length ?? 0) !== 1 ? 's' : ''} enrolled
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-400 transition-colors p-1"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-6 px-6 pt-4 border-b border-gray-800">
+          <button
+            onClick={() => setTab('assignments')}
+            className={`pb-4 font-medium transition-colors ${
+              tab === 'assignments'
+                ? 'text-white border-b-2 border-amber-500'
+                : 'text-gray-500 border-b-2 border-transparent hover:text-gray-400'
+            }`}
+          >
+            📝 Assignments
+          </button>
+          <button
+            onClick={() => setTab('attendance')}
+            className={`pb-4 font-medium transition-colors ${
+              tab === 'attendance'
+                ? 'text-white border-b-2 border-amber-500'
+                : 'text-gray-500 border-b-2 border-transparent hover:text-gray-400'
+            }`}
+          >
+            📋 Attendance
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-gray-800 h-12 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : tab === 'assignments' ? (
+            <div className="space-y-6">
+              {courseAssignments.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-8">No course data available</p>
+              ) : (
+                courseAssignments.map(course => (
+                  <div key={course.course_canvas_id} className="space-y-3">
+                    <h3 className="font-semibold text-white text-sm">{course.course_name}</h3>
+                    {course.assignments.length === 0 ? (
+                      <p className="text-xs text-gray-600 ml-2">No assignments</p>
+                    ) : (
+                      <div className="space-y-2 ml-2">
+                        {course.assignments.map((a, i) => {
+                          const status = getAssignmentStatus(a);
+                          return (
+                            <div
+                              key={i}
+                              className="bg-gray-800/40 border border-gray-700/40 rounded-lg p-3 text-sm space-y-2"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-white font-medium truncate">{a.name}</p>
+                                  {a.due_at && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Due: {new Date(a.due_at).toLocaleDateString()} {new Date(a.due_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                  )}
+                                </div>
+                                <span className={`text-xs font-medium whitespace-nowrap ${status.color}`}>
+                                  {status.icon} {status.label}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="text-xs text-gray-400">
+                                  {a.final_score !== null ? (
+                                    <span>
+                                      <span className="font-semibold text-white">{a.final_score}</span>/{a.points_possible}
+                                    </span>
+                                  ) : (
+                                    <span>—/{a.points_possible}</span>
+                                  )}
+                                </div>
+                                {a.late && (
+                                  <div className="text-xs bg-amber-900/30 text-amber-400 px-2 py-1 rounded">
+                                    Late
+                                  </div>
+                                )}
+                              </div>
+                              {a.grader_comment && (
+                                <p className="text-xs text-gray-400 italic border-t border-gray-700/40 pt-2 mt-2">
+                                  "{a.grader_comment}"
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {courseAssignments.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-8">No course data available</p>
+              ) : (
+                courseAssignments.map(course => (
+                  <div key={course.course_canvas_id} className="space-y-2">
+                    <h3 className="font-semibold text-white text-sm">{course.course_name}</h3>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all ${
+                            course.attendance_score >= 90
+                              ? 'bg-green-500'
+                              : course.attendance_score >= 75
+                                ? 'bg-amber-500'
+                                : 'bg-red-500'
+                          }`}
+                          style={{ width: `${Math.min(course.attendance_score, 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-white w-12 text-right">
+                        {course.attendance_score}%
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StudentsContent() {
   const { termParam, activeTerm } = useTerm();
   const [rows, setRows]       = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState("");
   const [open, setOpen]       = useState<Record<number, boolean>>({});
+  const [detailStudent, setDetailStudent] = useState<StudentRow | null>(null);
+  const [detailData, setDetailData] = useState<StudentDetailData | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     if (!activeTerm) return;
@@ -37,6 +267,26 @@ function StudentsContent() {
 
   const toggle = (cid: number) => setOpen(p => ({ ...p, [cid]: !p[cid] }));
 
+  const openStudentDetail = async (student: StudentRow) => {
+    setDetailStudent(student);
+    setDetailLoading(true);
+    try {
+      const res = await fetch(`/api/professor/students/${student.canvas_uid}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDetailData(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch student details:", err);
+    }
+    setDetailLoading(false);
+  };
+
+  const closeStudentDetail = () => {
+    setDetailStudent(null);
+    setDetailData(null);
+  };
+
   const attColor  = (v: number) => v < 50 ? "text-red-400" : v < 75 ? "text-amber-400" : "text-green-400";
   const gradeColor = (v: number | null) =>
     v === null ? "text-gray-600" : v >= 90 ? "text-green-400" : v >= 70 ? "text-amber-400" : "text-red-400";
@@ -50,6 +300,13 @@ function StudentsContent() {
   };
 
   return (
+    <>
+    <StudentDetailDialog
+      student={detailStudent}
+      data={detailData}
+      loading={detailLoading}
+      onClose={closeStudentDetail}
+    />
     <div className="space-y-3">
       {/* Sticky search */}
       <div className="sticky top-16 z-10 -mx-1 px-1 py-2 bg-gray-950/90 backdrop-blur-md">
@@ -165,7 +422,12 @@ function StudentsContent() {
                         }`}>
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-white font-medium">{r.name}</span>
+                            <button
+                              onClick={() => openStudentDetail(r)}
+                              className="text-white font-medium cursor-pointer hover:text-amber-400 transition-colors"
+                            >
+                              {r.name}
+                            </button>
                             {r.enrollment_state === 'inactive' && (
                               <span className="text-xs bg-gray-800 text-gray-500 border border-gray-700 rounded-full px-1.5 py-0.5 shrink-0">
                                 Inactive
@@ -207,6 +469,7 @@ function StudentsContent() {
         );
       })}
     </div>
+    </>
   );
 }
 
