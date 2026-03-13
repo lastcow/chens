@@ -543,25 +543,31 @@ function AssignmentsContent() {
                             )}
                           </td>
                           <td className="py-2.5 px-2 text-right">
-                            <button
-                              onClick={() => setStagingExcluded(prev => {
-                                const next = new Set(prev);
-                                if (next.has(sg.id)) next.delete(sg.id);
-                                else next.add(sg.id);
-                                return next;
-                              })}
-                              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer
-                                ${stagingExcluded.has(sg.id)
-                                  ? "bg-red-900/30 border border-red-700/50 text-red-400 hover:bg-red-900/50"
-                                  : "bg-green-900/30 border border-green-700/50 text-green-400 hover:bg-green-900/50"
-                                }`}
-                            >
-                              {stagingExcluded.has(sg.id) ? (
-                                <><X className="w-3 h-3" /> Exclude</>
-                              ) : (
-                                <><Check className="w-3 h-3" /> Include</>
-                              )}
-                            </button>
+                            {sg.status === 'approved' ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-green-900/20 border border-green-700/30 text-green-500 cursor-not-allowed opacity-60">
+                                <Check className="w-3 h-3" /> Posted
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => setStagingExcluded(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(sg.id)) next.delete(sg.id);
+                                  else next.add(sg.id);
+                                  return next;
+                                })}
+                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer
+                                  ${stagingExcluded.has(sg.id)
+                                    ? "bg-red-900/30 border border-red-700/50 text-red-400 hover:bg-red-900/50"
+                                    : "bg-green-900/30 border border-green-700/50 text-green-400 hover:bg-green-900/50"
+                                  }`}
+                              >
+                                {stagingExcluded.has(sg.id) ? (
+                                  <><X className="w-3 h-3" /> Exclude</>
+                                ) : (
+                                  <><Check className="w-3 h-3" /> Include</>
+                                )}
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );
