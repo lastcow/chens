@@ -419,6 +419,10 @@ function AssignmentsContent() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
+                      <th className="text-left py-2 w-px whitespace-nowrap pr-4">Student</th>
+                      <th className="text-center py-2 w-28">Score</th>
+                      <th className="text-left py-2 w-36">Late</th>
+                      <th className="text-left py-2">Comment</th>
                       <th className="text-center py-2 w-12">
                         <button
                           onClick={() => {
@@ -434,10 +438,6 @@ function AssignmentsContent() {
                           {stagingExcluded.size === 0 ? "✓ All" : "✗ All"}
                         </button>
                       </th>
-                      <th className="text-left py-2 w-px whitespace-nowrap pr-4">Student</th>
-                      <th className="text-center py-2 w-28">Score</th>
-                      <th className="text-left py-2 w-36">Late</th>
-                      <th className="text-left py-2">Comment</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800/50">
@@ -454,24 +454,6 @@ function AssignmentsContent() {
                       const isDirty = Object.keys(edit).length > 0;
                       return (
                         <tr key={sg.id} className={`${isDirty ? "bg-amber-500/5" : ""} ${stagingExcluded.has(sg.id) ? "opacity-40" : ""}`}>
-                          <td className="py-2.5 px-2 text-center">
-                            <button
-                              onClick={() => setStagingExcluded(prev => {
-                                const next = new Set(prev);
-                                if (next.has(sg.id)) next.delete(sg.id);
-                                else next.add(sg.id);
-                                return next;
-                              })}
-                              className={`w-5 h-5 rounded border text-xs flex items-center justify-center transition-colors cursor-pointer
-                                ${stagingExcluded.has(sg.id)
-                                  ? "border-red-700/50 bg-red-900/30 text-red-400 hover:bg-red-900/50"
-                                  : "border-green-700/50 bg-green-900/30 text-green-400 hover:bg-green-900/50"
-                                }`}
-                              title={stagingExcluded.has(sg.id) ? "Click to include" : "Click to exclude"}
-                            >
-                              {stagingExcluded.has(sg.id) ? "✗" : "✓"}
-                            </button>
-                          </td>
                           <td className="py-2.5 pr-4 text-gray-300 font-medium whitespace-nowrap w-px">
                             {sg.student_name}
                             {isQuiz && <span className="ml-1.5 text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">Quiz</span>}
@@ -544,6 +526,24 @@ function AssignmentsContent() {
                                 placeholder="Add comment…"
                               />
                             )}
+                          </td>
+                          <td className="py-2.5 px-2 text-center">
+                            <button
+                              onClick={() => setStagingExcluded(prev => {
+                                const next = new Set(prev);
+                                if (next.has(sg.id)) next.delete(sg.id);
+                                else next.add(sg.id);
+                                return next;
+                              })}
+                              className={`w-5 h-5 rounded border text-xs flex items-center justify-center transition-colors cursor-pointer
+                                ${stagingExcluded.has(sg.id)
+                                  ? "border-red-700/50 bg-red-900/30 text-red-400 hover:bg-red-900/50"
+                                  : "border-green-700/50 bg-green-900/30 text-green-400 hover:bg-green-900/50"
+                                }`}
+                              title={stagingExcluded.has(sg.id) ? "Click to include" : "Click to exclude"}
+                            >
+                              {stagingExcluded.has(sg.id) ? "✗" : "✓"}
+                            </button>
                           </td>
                         </tr>
                       );
