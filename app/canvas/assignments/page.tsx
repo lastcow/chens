@@ -428,7 +428,7 @@ function AssignmentsContent() {
                       <th className="text-center py-2 w-28">Score</th>
                       <th className="text-left py-2 w-36">Late</th>
                       <th className="text-left py-2">Comment</th>
-                      <th className="text-center py-2 w-12">
+                      <th className="text-right py-2 w-24">
                         <button
                           onClick={() => {
                             if (stagingExcluded.size === 0) {
@@ -437,10 +437,13 @@ function AssignmentsContent() {
                               setStagingExcluded(new Set());
                             }
                           }}
-                          className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
-                          title={stagingExcluded.size === 0 ? "Exclude all" : "Include all"}
+                          className="inline-flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
                         >
-                          {stagingExcluded.size === 0 ? "✓ All" : "✗ All"}
+                          {stagingExcluded.size === 0 ? (
+                            <><Check className="w-3 h-3" /> All</>
+                          ) : (
+                            <><X className="w-3 h-3" /> All</>
+                          )}
                         </button>
                       </th>
                     </tr>
@@ -532,7 +535,7 @@ function AssignmentsContent() {
                               />
                             )}
                           </td>
-                          <td className="py-2.5 px-2 text-center">
+                          <td className="py-2.5 px-2 text-right">
                             <button
                               onClick={() => setStagingExcluded(prev => {
                                 const next = new Set(prev);
@@ -540,14 +543,17 @@ function AssignmentsContent() {
                                 else next.add(sg.id);
                                 return next;
                               })}
-                              className={`w-5 h-5 rounded border text-xs flex items-center justify-center transition-colors cursor-pointer
+                              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer
                                 ${stagingExcluded.has(sg.id)
-                                  ? "border-red-700/50 bg-red-900/30 text-red-400 hover:bg-red-900/50"
-                                  : "border-green-700/50 bg-green-900/30 text-green-400 hover:bg-green-900/50"
+                                  ? "bg-red-900/30 border border-red-700/50 text-red-400 hover:bg-red-900/50"
+                                  : "bg-green-900/30 border border-green-700/50 text-green-400 hover:bg-green-900/50"
                                 }`}
-                              title={stagingExcluded.has(sg.id) ? "Click to include" : "Click to exclude"}
                             >
-                              {stagingExcluded.has(sg.id) ? "✗" : "✓"}
+                              {stagingExcluded.has(sg.id) ? (
+                                <><X className="w-3 h-3" /> Exclude</>
+                              ) : (
+                                <><Check className="w-3 h-3" /> Include</>
+                              )}
                             </button>
                           </td>
                         </tr>
