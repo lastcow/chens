@@ -105,18 +105,34 @@ function AssignmentEditDialog({
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60]" onClick={onClose}>
       <div
-        className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-[600px] max-h-[85vh] flex flex-col shadow-2xl"
+        className={`bg-gray-900 border border-gray-800 rounded-2xl w-full max-h-[85vh] flex flex-col shadow-2xl ${
+          isQuiz ? 'max-w-[900px]' : 'max-w-[600px]'
+        }`}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-4 border-b border-gray-800">
           <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold text-white truncate">{assignment.name}</h3>
-            {assignment.due_at && (
-              <p className="text-xs text-gray-500 mt-1">
-                Due {new Date(assignment.due_at).toLocaleDateString()} {new Date(assignment.due_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </p>
-            )}
+            <div className="flex items-center gap-2">
+              {isQuiz
+                ? <ClipboardList className="w-4 h-4 text-purple-400 shrink-0" />
+                : <FileText className="w-4 h-4 text-gray-500 shrink-0" />
+              }
+              <h3 className="text-base font-semibold text-white truncate">{assignment.name}</h3>
+            </div>
+            <div className="flex items-center gap-3 mt-1.5">
+              {assignment.due_at && (
+                <span className="text-xs text-gray-500">
+                  Due {new Date(assignment.due_at).toLocaleDateString()} {new Date(assignment.due_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+              {isQuiz && (
+                <span className="text-xs font-mono text-gray-400">
+                  Total: <span className="text-white font-semibold">{quizTotal}</span>/{assignment.points_possible}
+                  {latePenalty > 0 && <span className="text-amber-400 ml-1">→ {finalScore}</span>}
+                </span>
+              )}
+            </div>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors p-1 ml-3">
             <X className="w-5 h-5" />
@@ -151,60 +167,68 @@ function AssignmentEditDialog({
           </div>
 
           {isQuiz ? (
-            <>
-              {/* Quiz total */}
-              <div className="flex items-center justify-between bg-gray-800/40 border border-gray-700/40 rounded-lg px-4 py-3">
-                <span className="text-sm text-gray-400">Total</span>
-                <span className="text-sm font-semibold text-white font-mono">
-                  {quizTotal}/{assignment.points_possible}
-                  {latePenalty > 0 && (
-                    <span className="text-amber-400 ml-2">→ {finalScore}</span>
-                  )}
-                </span>
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              {questions.map((q, qi) => {
+                const pct = q.points_possible > 0 ? Math.round((q.score / q.points_possible) * 100) : 0;
+                const barColor = pct >= 90 ? 'bg-green-500' : pct >= 70 ? 'bg-amber-500' : 'bg-red-500';
+                return (
+                  <div key={qi} className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 flex flex-col gap-3">
+                    {/* Card header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold">
+                          {q.question_name.replace(/^Q/i, '')}
+                        </span>
+                        <span className="text-sm font-medium text-white">{q.question_name}</span>
+                      </div>
+                      <span className="text-[10px] text-gray-600">{q.points_possible} pts</span>
+                    </div>
 
-              {/* Per-question rows */}
-              <div className="space-y-3">
-                {questions.map((q, qi) => (
-                  <div key={qi} className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-3 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-white">{q.question_name}</span>
-                      <div className="flex items-center gap-1">
-                        <input type="number" value={q.score} min={0} max={q.points_possible}
-                          onChange={e => updateQuestion(qi, 'score', parseFloat(e.target.value) || 0)}
-                          className="w-14 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
-                        <span className="text-xs text-gray-500">/ {q.points_possible}</span>
+                    {/* Score bar */}
+                    <div className="space-y-1.5">
+                      <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                        <div className={`h-full ${barColor} transition-all rounded-full`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <input type="number" value={q.score} min={0} max={q.points_possible}
+                            onChange={e => updateQuestion(qi, 'score', parseFloat(e.target.value) || 0)}
+                            className="w-12 bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-sm text-white text-center focus:outline-none focus:border-purple-500/50" />
+                          <span className="text-xs text-gray-500">/ {q.points_possible}</span>
+                        </div>
+                        <span className={`text-xs font-mono font-semibold ${pct >= 90 ? 'text-green-400' : pct >= 70 ? 'text-amber-400' : 'text-red-400'}`}>
+                          {pct}%
+                        </span>
                       </div>
                     </div>
-                    <input type="text" value={q.comment} placeholder="Comment…"
+
+                    {/* Comment */}
+                    <textarea value={q.comment} placeholder="Comment…" rows={2}
                       onChange={e => updateQuestion(qi, 'comment', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-amber-500/50" />
+                      className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-purple-500/50 resize-none" />
                   </div>
-                ))}
-              </div>
-            </>
+                );
+              })}
+            </div>
           ) : (
-            <>
-              {/* Regular assignment: score + comment */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <label className="text-sm text-gray-400 w-16">Score</label>
-                  <input type="number" value={score} min={0} max={assignment.points_possible}
-                    onChange={e => setScore(parseFloat(e.target.value) || 0)}
-                    className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
-                  <span className="text-sm text-gray-500">/ {assignment.points_possible}</span>
-                  {latePenalty > 0 && (
-                    <span className="text-sm text-amber-400 font-mono">→ {finalScore}</span>
-                  )}
-                </div>
-                <div className="flex items-start gap-3">
-                  <label className="text-sm text-gray-400 w-16 pt-2">Comment</label>
-                  <textarea value={comment} placeholder="Grader comment…"
-                    onChange={e => setComment(e.target.value)} rows={2}
-                    className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-amber-500/50 resize-none" />
-                </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-gray-400 w-16">Score</label>
+                <input type="number" value={score} min={0} max={assignment.points_possible}
+                  onChange={e => setScore(parseFloat(e.target.value) || 0)}
+                  className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white text-center focus:outline-none focus:border-amber-500/50" />
+                <span className="text-sm text-gray-500">/ {assignment.points_possible}</span>
+                {latePenalty > 0 && (
+                  <span className="text-sm text-amber-400 font-mono">→ {finalScore}</span>
+                )}
               </div>
-            </>
+              <div className="flex items-start gap-3">
+                <label className="text-sm text-gray-400 w-16 pt-2">Comment</label>
+                <textarea value={comment} placeholder="Grader comment…"
+                  onChange={e => setComment(e.target.value)} rows={2}
+                  className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-amber-500/50 resize-none" />
+              </div>
+            </div>
           )}
         </div>
 
