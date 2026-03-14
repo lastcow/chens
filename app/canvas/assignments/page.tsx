@@ -470,10 +470,23 @@ function AssignmentsContent() {
                       const isDirty = Object.keys(edit).length > 0;
                       return (
                         <tr key={sg.id} className={`${isDirty ? "bg-amber-500/5" : ""} ${stagingExcluded.has(sg.id) ? "opacity-40" : ""}`}>
-                          <td className="py-2.5 pr-4 text-gray-300 font-medium whitespace-nowrap w-px">
-                            {sg.student_name}
-                            {isQuiz && <span className="ml-1.5 text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">Quiz</span>}
-                            {sg.status === 'approved' && <span className="ml-1.5 text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">Posted</span>}
+                          <td className="py-2.5 pr-4 w-px">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1 whitespace-nowrap">
+                                <span className="text-gray-300 font-medium">{sg.student_name}</span>
+                                {isQuiz && <span className="ml-1.5 text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">Quiz</span>}
+                                {sg.status === 'approved' && <span className="ml-1.5 text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">Posted</span>}
+                              </div>
+                              {!isQuiz && stagingAssignment && (
+                                <a
+                                  href={`https://frostburg.instructure.com/courses/${stagingAssignment.course_canvas_id}/assignments/${stagingAssignment.canvas_id}`}
+                                  target="_blank" rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition-colors whitespace-nowrap"
+                                >
+                                  <ExternalLink className="w-3 h-3" /> Assignment
+                                </a>
+                              )}
+                            </div>
                           </td>
                           <td className="py-2.5 px-1 text-center">
                             {isQuiz ? (
