@@ -477,13 +477,13 @@ function AssignmentsContent() {
                                 {isQuiz && <span className="ml-1.5 text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">Quiz</span>}
                                 {sg.status === 'approved' && <span className="ml-1.5 text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">Posted</span>}
                               </div>
-                              {!isQuiz && stagingAssignment && (
+                              {!isQuiz && stagingAssignment && sg.student_canvas_uid && (
                                 <a
-                                  href={`https://frostburg.instructure.com/courses/${stagingAssignment.course_canvas_id}/assignments/${stagingAssignment.canvas_id}`}
+                                  href={`https://frostburg.instructure.com/courses/${stagingAssignment.course_canvas_id}/assignments/${stagingAssignment.canvas_id}/submissions/${sg.student_canvas_uid}`}
                                   target="_blank" rel="noopener noreferrer"
                                   className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition-colors whitespace-nowrap"
                                 >
-                                  <ExternalLink className="w-3 h-3" /> Assignment
+                                  <ExternalLink className="w-3 h-3" /> Submission
                                 </a>
                               )}
                             </div>
