@@ -153,14 +153,15 @@ function StudentDetailDialog({
                       <p className="text-xs text-gray-600 px-4 py-3">No assignments</p>
                     ) : course.assignments.map((a, ai) => {
                       const status = getStatus(a);
+                      const hasSubmission = a.submitted_at !== null && a.workflow_state !== 'unsubmitted';
                       return (
                         <div
                           key={ai}
-                          onClick={() => a.submission_id ? setEditAssignment(a) : undefined}
-                          className={`px-4 py-2.5 transition-colors ${a.submission_id ? 'cursor-pointer hover:bg-gray-800/40' : 'opacity-50 cursor-not-allowed'}`}
+                          onClick={() => hasSubmission ? setEditAssignment(a) : undefined}
+                          className={`px-4 py-2.5 transition-colors ${hasSubmission ? 'cursor-pointer hover:bg-gray-800/40' : 'opacity-50 cursor-not-allowed'}`}
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <p className={`text-sm truncate flex-1 flex items-center gap-1.5 ${a.submission_id ? 'text-white hover:text-amber-400' : 'text-gray-400'}`}>
+                            <p className={`text-sm truncate flex-1 flex items-center gap-1.5 ${hasSubmission ? 'text-white hover:text-amber-400' : 'text-gray-400'}`}>
                               {a.is_quiz
                                 ? <ClipboardList className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                                 : <FileText className="w-3.5 h-3.5 text-gray-500 shrink-0" />
