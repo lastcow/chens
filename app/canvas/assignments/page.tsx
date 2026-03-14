@@ -3,7 +3,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTerm } from "@/components/canvas/TermProvider";
 import SubmissionsDialog from "@/components/canvas/SubmissionsDialog";
-import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar, ClipboardList, FileText, MessageSquare } from "lucide-react";
+import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar, ClipboardList, FileText, MessageSquare, ExternalLink } from "lucide-react";
 
 interface Assignment {
   id: number; canvas_id: number; name: string; points_possible: number;
@@ -59,6 +59,7 @@ function AssignmentsContent() {
 
   // Staging review state
   const [stagingAssignment, setStagingAssignment] = useState<Assignment | null>(null);
+  const [stagingQuizId, setStagingQuizId] = useState<number | null>(null);
   const [stagingGrades, setStagingGrades] = useState<StagingGrade[]>([]);
   const [stagingLoading, setStagingLoading] = useState(false);
   const [stagingEdits, setStagingEdits] = useState<Record<number, Partial<StagingGrade>>>({});
@@ -168,6 +169,7 @@ function AssignmentsContent() {
     const d = await res.json();
     const grades = d.grades ?? [];
     setStagingGrades(grades);
+    setStagingQuizId(d.quiz_id ?? null);
     // Auto-exclude already-approved rows — they don't need re-posting
     const alreadyApproved = new Set<number>(
       grades.filter((g: StagingGrade) => g.status === 'approved').map((g: StagingGrade) => g.id)
@@ -706,7 +708,18 @@ function AssignmentsContent() {
                 </div>
               </div>
               {/* Footer */}
-              <div className="px-6 py-4 border-t border-gray-800 flex justify-end">
+              <div className="px-6 py-4 border-t border-gray-800 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {stagingQuizId && sg.quiz_submission_id && (
+                    <a
+                      href={`https://frostburg.instructure.com/courses/${stagingAssignment?.course_canvas_id}/quizzes/${stagingQuizId}/submissions/${sg.quiz_submission_id}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> Submission
+                    </a>
+                  )}
+                </div>
                 <button
                   onClick={() => setQuizCommentSg(null)}
                   className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors"
