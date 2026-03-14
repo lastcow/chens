@@ -123,12 +123,14 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {submissions.map(sub => (
+                  {submissions.map(sub => {
+                    const hasSubmission = sub.status !== "unsubmitted" && sub.status !== "missing" && sub.submitted_at !== null;
+                    return (
                     <tr key={sub.id}
-                      onClick={() => openEdit(sub)}
-                      className="hover:bg-gray-800/40 transition-colors cursor-pointer">
+                      onClick={() => hasSubmission ? openEdit(sub) : undefined}
+                      className={`transition-colors ${hasSubmission ? 'hover:bg-gray-800/40 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
                       <td className="text-left px-4 py-3">
-                        <span className="text-gray-200 hover:text-amber-400 transition-colors font-medium">
+                        <span className={`transition-colors font-medium ${hasSubmission ? 'text-gray-200 hover:text-amber-400' : 'text-gray-500'}`}>
                           {sub.student_name}
                         </span>
                         {loadingUid === sub.student_canvas_uid && (
@@ -153,7 +155,8 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
                           : "Not submitted"}
                       </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             )}
