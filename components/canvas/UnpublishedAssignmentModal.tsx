@@ -119,14 +119,12 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
 
             <div className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-4">
               <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Due Date (America/New_York)</label>
-              <div className="flex justify-end">
-                <input
-                  type="datetime-local"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors w-fit"
-                />
-              </div>
+              <input
+                type="datetime-local"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+              />
             </div>
           </div>
 
