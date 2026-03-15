@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { LockOpen, KeyRound } from "lucide-react";
 
 export default function CanvasTokenCard() {
   const [tokenMasked, setTokenMasked] = useState<string | null>(null);
@@ -41,7 +42,11 @@ export default function CanvasTokenCard() {
     <div className={`rounded-xl border p-5 ${tokenMasked ? "border-green-500/20 bg-green-500/5" : "border-amber-500/30 bg-amber-500/5"}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-xl">{tokenMasked ? "🔓" : "🔑"}</span>
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${tokenMasked ? "bg-green-500/10" : "bg-amber-500/10"}`}>
+            {tokenMasked
+              ? <LockOpen className="w-5 h-5 text-green-400" />
+              : <KeyRound className="w-5 h-5 text-amber-400" />}
+          </div>
           <div>
             <div className="text-sm font-semibold text-white">Canvas API Token</div>
             {tokenMasked
