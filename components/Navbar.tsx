@@ -2,11 +2,24 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const role = (session?.user as { role?: string } | undefined)?.role;
+  const [canvasEnabled, setCanvasEnabled] = useState(false);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch("/api/user/modules")
+      .then(r => r.json())
+      .then(d => {
+        const found = (d.modules ?? []).find((m: { module: string; enabled: boolean }) => m.module === "canvas_lms");
+        setCanvasEnabled(found?.enabled ?? false);
+      })
+      .catch(() => {});
+  }, [session]);
 
   const navLink = (href: string, label: string, exact = false) => {
     const active = exact ? pathname === href : pathname.startsWith(href);
@@ -41,7 +54,7 @@ export default function Navbar() {
               <div className="flex items-center gap-4">
                 {role === "ADMIN" && navLink("/admin", "Admin")}
                 {navLink("/dashboard", "Modules")}
-                {navLink("/canvas", "Canvas LMS")}
+                {canvasEnabled && navLink("/canvas", "Canvas LMS")}
                 {navLink("/profile", "Profile", true)}
                 <button
                   onClick={() => signOut()}
