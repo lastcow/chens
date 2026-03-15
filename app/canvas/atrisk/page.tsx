@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useTerm } from "@/components/canvas/TermProvider";
 import StudentDetailModal from "@/components/canvas/StudentDetailModal";
+import { Flame, AlertTriangle, Eye } from "lucide-react";
 
 interface AtRiskStudent {
   name: string; canvas_uid: number;
@@ -101,14 +102,25 @@ export default function AtRiskPage() {
     <div className="space-y-6">
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
-        {ORDER.map(l => (
-          <div key={l} className={`border rounded-xl p-4 text-center ${levelStyle[l]}`}>
-            <div className={`text-2xl font-bold ${l === "critical" ? "text-red-400" : l === "high" ? "text-amber-400" : "text-gray-400"}`}>
-              {loading ? "…" : grouped[l]?.length ?? 0}
+        {ORDER.map(l => {
+          const Icon = l === "critical" ? Flame : l === "high" ? AlertTriangle : Eye;
+          const iconColor = l === "critical" ? "text-red-400" : l === "high" ? "text-amber-400" : "text-gray-400";
+          const iconBg = l === "critical" ? "bg-red-500/10" : l === "high" ? "bg-amber-500/10" : "bg-gray-800";
+          const valueColor = l === "critical" ? "text-red-400" : l === "high" ? "text-amber-400" : "text-gray-400";
+          return (
+            <div key={l} className={`border rounded-xl p-4 ${levelStyle[l]}`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className={`w-9 h-9 rounded-lg ${iconBg} flex items-center justify-center`}>
+                  <Icon className={`w-5 h-5 ${iconColor}`} />
+                </div>
+                <div className={`text-2xl font-bold font-mono ${valueColor}`}>
+                  {loading ? "…" : grouped[l]?.length ?? 0}
+                </div>
+              </div>
+              <div className="text-xs text-gray-500">{levelLabel[l]}</div>
             </div>
-            <div className="text-xs text-gray-500 mt-1">{levelLabel[l]}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {loading ? (
