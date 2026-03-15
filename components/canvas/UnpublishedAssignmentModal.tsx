@@ -34,7 +34,7 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
       const res = await fetch("/api/professor/assignments/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ assignment_id: assignment.id }),
+        body: JSON.stringify({ assignment_id: assignment.id, canvas_id: assignment.canvas_id }),
       });
 
       if (res.ok) {
