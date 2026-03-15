@@ -25,6 +25,17 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Initialize due date from assignment, converting UTC to NY local time for the input
+  const toNYInputValue = (utcStr: string | null | undefined) => {
+    if (!utcStr) return "";
+    const d = new Date(utcStr);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+      .toLocaleString("sv-SE", { timeZone: "America/New_York" })
+      .replace(" ", "T")
+      .slice(0, 16);
+  };
+  const [dueDate, setDueDate] = useState<string>(toNYInputValue(assignment?.due_at));
+
   if (!assignment) return null;
 
   const handlePublish = async () => {
@@ -34,7 +45,11 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
       const res = await fetch("/api/professor/assignments/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ assignment_id: assignment.id, canvas_id: assignment.canvas_id }),
+        body: JSON.stringify({
+          assignment_id: assignment.id,
+          canvas_id: assignment.canvas_id,
+          due_at: dueDate ? new Date(dueDate + ":00-05:00").toISOString() : null,
+        }),
       });
 
       if (res.ok) {
@@ -110,6 +125,18 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
             <div className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Points Possible</p>
               <p className="text-white font-medium">{assignment.points_possible}</p>
+            </div>
+
+            <div className="col-span-2 bg-gray-800/30 border border-gray-700/30 rounded-lg p-4">
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                Due Date <span className="text-gray-600 normal-case">(America/New_York)</span>
+              </label>
+              <input
+                type="datetime-local"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+              />
             </div>
           </div>
 
