@@ -4,6 +4,7 @@ import Link from "next/link";
 import CanvasTokenCard from "@/components/canvas/CanvasTokenCard";
 import TermSwitcher from "@/components/canvas/TermSwitcher";
 import { useTerm } from "@/components/canvas/TermProvider";
+import { BookOpen, Users, ClipboardList, Coins } from "lucide-react";
 
 interface Course {
   id: number; canvas_id: number; name: string; course_code: string; term_name: string;
@@ -51,14 +52,19 @@ export default function OverviewPage() {
       {/* Summary stat cards */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Courses",        value: courses.length,  color: "text-amber-400" },
-          { label: "Total Students", value: totalStudents,   color: "text-blue-400" },
-          { label: "Ungraded",       value: totalUngraded,   color: totalUngraded > 0 ? "text-red-400" : "text-green-400" },
-          { label: "Credits",        value: credits ?? 0,    color: "text-purple-400" },
+          { label: "Courses",        value: courses.length,  color: "text-amber-400",  iconColor: "text-amber-400",  bg: "bg-amber-500/10",  Icon: BookOpen },
+          { label: "Total Students", value: totalStudents,   color: "text-blue-400",   iconColor: "text-blue-400",   bg: "bg-blue-500/10",   Icon: Users },
+          { label: "Ungraded",       value: totalUngraded,   color: totalUngraded > 0 ? "text-red-400" : "text-green-400", iconColor: totalUngraded > 0 ? "text-red-400" : "text-green-400", bg: totalUngraded > 0 ? "bg-red-500/10" : "bg-green-500/10", Icon: ClipboardList },
+          { label: "Credits",        value: credits ?? 0,    color: "text-purple-400", iconColor: "text-purple-400", bg: "bg-purple-500/10", Icon: Coins },
         ].map(s => (
-          <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
-            <div className={`text-3xl font-bold ${s.color}`}>{loading ? "…" : s.value}</div>
-            <div className="text-gray-500 text-sm mt-1">{s.label}</div>
+          <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className={`w-9 h-9 rounded-lg ${s.bg} flex items-center justify-center`}>
+                <s.Icon className={`w-5 h-5 ${s.iconColor}`} />
+              </div>
+              <div className={`text-2xl font-bold font-mono ${s.color}`}>{loading ? "…" : s.value}</div>
+            </div>
+            <div className="text-gray-500 text-sm">{s.label}</div>
           </div>
         ))}
       </div>
@@ -100,11 +106,13 @@ export default function OverviewPage() {
             </div>
             <div className="flex gap-2 mt-4">
               <Link href={`/canvas/students?course_id=${c.canvas_id}&${termParam}`}
-                className="flex-1 text-center text-xs py-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs py-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
+                <Users className="w-3.5 h-3.5" />
                 Students
               </Link>
               <Link href={`/canvas/assignments?course_id=${c.canvas_id}&${termParam}`}
-                className="flex-1 text-center text-xs py-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs py-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
+                <ClipboardList className="w-3.5 h-3.5" />
                 Assignments
               </Link>
             </div>
