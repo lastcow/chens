@@ -102,20 +102,22 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
           )}
 
           {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
-                {assignment.is_quiz ? "Quiz" : "Assignment"} Type
-              </p>
-              <p className="text-white font-medium">{assignment.assignment_type || "—"}</p>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                  {assignment.is_quiz ? "Quiz" : "Assignment"} Type
+                </p>
+                <p className="text-white font-medium">{assignment.assignment_type || "—"}</p>
+              </div>
+
+              <div className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Points Possible</p>
+                <p className="text-white font-medium">{assignment.points_possible}</p>
+              </div>
             </div>
 
             <div className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Points Possible</p>
-              <p className="text-white font-medium">{assignment.points_possible}</p>
-            </div>
-
-            <div className="col-span-2">
               <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Due Date (America/New_York)</label>
               <input
                 type="datetime-local"
