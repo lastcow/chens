@@ -79,7 +79,7 @@ export default function CanvasSidebar() {
                   {stagingCount !== null && stagingCount > 0 && (
                     <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${
                       active ? "bg-purple-500/30 text-purple-300" : "bg-purple-900/30 text-purple-400"
-                    }`}>{stagingCount}s</span>
+                    }`}>{stagingCount}</span>
                   )}
                   {ungradedCount !== null && ungradedCount > 0 && (
                     <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${
