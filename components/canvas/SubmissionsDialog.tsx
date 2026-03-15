@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Check, Clock, AlertCircle, X, Circle, Loader2 } from "lucide-react";
+import { Check, Clock, AlertCircle, X, Circle, Loader2, ExternalLink } from "lucide-react";
 import AssignmentEditDialog, { type DetailAssignment } from "@/components/canvas/AssignmentEditDialog";
 
 interface Submission {
@@ -16,6 +16,7 @@ interface Submission {
 
 interface Assignment {
   id: number;
+  canvas_id: number;
   name: string;
   points_possible: number;
   course_name: string;
@@ -115,6 +116,21 @@ export default function SubmissionsDialog({ assignment, onClose }: Props) {
             ) : (
               <table className="w-full text-sm">
                 <thead className="bg-gray-950/50 border-b border-gray-800 sticky top-0">
+                  {assignment.course_canvas_id && (
+                    <tr className="border-b border-gray-800/50">
+                      <td colSpan={4} className="px-4 py-2">
+                        <a
+                          href={`https://frostburg.instructure.com/courses/${assignment.course_canvas_id}/assignments/${assignment.canvas_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          View assignment in Canvas
+                        </a>
+                      </td>
+                    </tr>
+                  )}
                   <tr>
                     <th className="text-left px-4 py-3 font-semibold text-gray-300">Student</th>
                     <th className="text-center px-4 py-3 font-semibold text-gray-300">Status</th>
