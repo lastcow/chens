@@ -966,27 +966,22 @@ function AssignmentsContent() {
                 <div
                   key={a.id}
                   onClick={() => setUnpublishedAssignment(a)}
-                  className="flex items-center justify-between p-4 bg-gray-800/30 border border-gray-700/30 rounded-lg hover:bg-gray-800/50 hover:border-gray-700/50 transition-all cursor-pointer group"
+                  className="flex items-center justify-between p-2.5 px-3 bg-gray-800/20 border border-gray-700/20 rounded hover:bg-gray-800/40 hover:border-gray-700/40 transition-all cursor-pointer group"
                 >
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="flex items-center gap-3">
-                      {a.is_quiz ? (
-                        <ClipboardList className="w-5 h-5 text-purple-400/60 group-hover:text-purple-400 transition-colors shrink-0" />
-                      ) : (
-                        <FileText className="w-5 h-5 text-gray-500/60 group-hover:text-gray-400 transition-colors shrink-0" />
-                      )}
-                      <div>
-                        <p className="text-gray-300 font-medium">{a.name}</p>
-                        <p className="text-xs text-gray-600 mt-0.5">{a.course_name}</p>
-                      </div>
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    {a.is_quiz ? (
+                      <ClipboardList className="w-4 h-4 text-purple-400/60 group-hover:text-purple-400 transition-colors shrink-0" />
+                    ) : (
+                      <FileText className="w-4 h-4 text-gray-500/60 group-hover:text-gray-400 transition-colors shrink-0" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-gray-300 font-medium text-sm truncate">{a.name}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-xs text-gray-500">Type: {a.assignment_type}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{a.points_possible} pts</p>
-                    </div>
-                    <AlertCircle className="w-5 h-5 text-amber-400/60 group-hover:text-amber-400 transition-colors shrink-0" />
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <span className="text-xs text-gray-500">{a.assignment_type}</span>
+                    <span className="text-xs text-gray-600">{a.points_possible}pt</span>
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-400/60 group-hover:text-amber-400 transition-colors" />
                   </div>
                 </div>
               ))}

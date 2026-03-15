@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { X, ExternalLink, Lock, AlertCircle } from "lucide-react";
+import { X, ExternalLink, Lock, AlertCircle, Send } from "lucide-react";
 
 interface UnpublishedAssignment {
   id: number;
@@ -24,6 +24,9 @@ interface Props {
 export default function UnpublishedAssignmentModal({ assignment, onClose, onPublished }: Props) {
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dueDate, setDueDate] = useState<string>(
+    assignment?.due_at ? new Date(assignment.due_at).toISOString().slice(0, 16) : ""
+  );
 
   if (!assignment) return null;
 
@@ -51,18 +54,6 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
     }
   };
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return "No due date";
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "America/New_York",
-    });
-  };
-
   const canvasUrl = assignment.is_quiz
     ? `https://frostburg.instructure.com/courses/${assignment.course_canvas_id}/quizzes/${assignment.canvas_id}`
     : `https://frostburg.instructure.com/courses/${assignment.course_canvas_id}/assignments/${assignment.canvas_id}`;
@@ -72,18 +63,13 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
       <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="border-b border-gray-800 px-6 py-4 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center">
-              <Lock className="w-5 h-5 text-gray-400" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-white">Unpublished Assignment</h2>
-              <p className="text-sm text-gray-500 mt-0.5">{assignment.course_name}</p>
-            </div>
+          <div>
+            <h2 className="text-lg font-bold text-white">{assignment.name}</h2>
+            <p className="text-sm text-gray-500 mt-0.5">{assignment.course_name}</p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg hover:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-300 transition-colors"
+            className="w-8 h-8 rounded-lg hover:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-300 transition-colors shrink-0 ml-4"
           >
             <X className="w-5 h-5" />
           </button>
@@ -91,20 +77,23 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {/* Assignment Name */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
-              Name
-            </h3>
-            <p className="text-white font-medium text-lg">{assignment.name}</p>
-          </div>
-
-          {/* Description */}
+          {/* Description with View in Canvas link */}
           {assignment.description && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                Description
-              </h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
+                  Description
+                </h3>
+                <a
+                  href={`https://frostburg.instructure.com/courses/${assignment.course_canvas_id}/assignments/${assignment.canvas_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  View in Canvas
+                </a>
+              </div>
               <div
                 className="text-gray-300 text-sm leading-relaxed bg-gray-800/30 border border-gray-700/30 rounded-lg p-4"
                 dangerouslySetInnerHTML={{ __html: assignment.description }}
@@ -127,9 +116,14 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
             </div>
 
             <div className="col-span-2 bg-gray-800/30 border border-gray-700/30 rounded-lg p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Due Date</p>
-              <p className="text-white font-medium text-sm">{formatDate(assignment.due_at)}</p>
-              <p className="text-xs text-gray-500 mt-1">Times shown in America/New_York</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Due Date (America/New_York)</p>
+              <input
+                type="datetime-local"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+              />
+              <p className="text-xs text-gray-600 mt-2">Will be saved when publishing</p>
             </div>
           </div>
 
@@ -155,28 +149,20 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-800 px-6 py-4 flex gap-3 shrink-0">
-          <a
-            href={canvasUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 hover:text-white text-sm font-medium transition-colors"
-          >
-            <ExternalLink className="w-4 h-4" />
-            View in Canvas
-          </a>
+        <div className="border-t border-gray-800 px-6 py-4 flex gap-3 shrink-0 justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 hover:text-white text-sm font-medium transition-colors"
           >
-            Close
+            Cancel
           </button>
           <button
             onClick={handlePublish}
             disabled={publishing}
-            className="flex-1 px-4 py-2 rounded-lg bg-amber-500/90 hover:bg-amber-500 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500/90 hover:bg-amber-500 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {publishing ? "Publishing…" : "Publish Assignment"}
+            <Send className="w-4 h-4" />
+            {publishing ? "Publishing…" : "Publish"}
           </button>
         </div>
       </div>
