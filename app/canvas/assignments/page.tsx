@@ -3,11 +3,12 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTerm } from "@/components/canvas/TermProvider";
 import SubmissionsDialog from "@/components/canvas/SubmissionsDialog";
-import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar, ClipboardList, FileText, MessageSquare, ExternalLink } from "lucide-react";
+import UnpublishedAssignmentModal from "@/components/canvas/UnpublishedAssignmentModal";
+import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar, ClipboardList, FileText, MessageSquare, ExternalLink, Lock } from "lucide-react";
 
 interface Assignment {
-  id: number; canvas_id: number; name: string; points_possible: number;
-  due_at: string | null; assignment_type: string; is_quiz: boolean;
+  id: number; canvas_id: number; name: string; description?: string; points_possible: number;
+  due_at: string | null; assignment_type: string; is_quiz: boolean; published: boolean;
   course_name: string; course_canvas_id: number;
   graded_count: number; ungraded_count: number; missing_count: number;
   avg_score: number | null; total_students: number;
@@ -69,6 +70,9 @@ function AssignmentsContent() {
 
   // Submissions dialog state
   const [submissionsAssignment, setSubmissionsAssignment] = useState<Assignment | null>(null);
+
+  // Unpublished assignment modal state
+  const [unpublishedAssignment, setUnpublishedAssignment] = useState<Assignment | null>(null);
 
   useEffect(() => {
     if (!activeTerm) return;
@@ -257,6 +261,8 @@ function AssignmentsContent() {
     : courses[0]?.[0] ?? null;
 
   const filtered = assignments.filter(a => a.course_canvas_id === activeCourse);
+  const published = filtered.filter(a => a.published);
+  const unpublished = filtered.filter(a => !a.published);
   const isPast = (due: string | null) => due && new Date(due) < new Date();
 
   const statusBar = (a: Assignment) => {
@@ -776,12 +782,44 @@ function AssignmentsContent() {
               })}
       </div>
 
+      {/* Unpublished Assignments Section */}
+      {!loading && unpublished.length > 0 && (
+        <div className="bg-gray-950 border-t border-gray-800 px-5 py-3">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Lock className="w-4 h-4 text-gray-500" />
+            Unpublished Assignments
+          </h3>
+          <div className="space-y-2">
+            {unpublished.map(a => (
+              <div
+                key={a.id}
+                onClick={() => setUnpublishedAssignment(a)}
+                className="flex items-center justify-between p-3 bg-gray-800/30 border border-gray-700/30 rounded-lg hover:bg-gray-800/50 hover:border-gray-700/50 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-3">
+                  {a.is_quiz ? (
+                    <ClipboardList className="w-4 h-4 text-purple-400/60 group-hover:text-purple-400 transition-colors" />
+                  ) : (
+                    <FileText className="w-4 h-4 text-gray-500/60 group-hover:text-gray-400 transition-colors" />
+                  )}
+                  <div>
+                    <p className="text-gray-300 font-medium text-sm">{a.name}</p>
+                    <p className="text-xs text-gray-600">Click for details</p>
+                  </div>
+                </div>
+                <AlertCircle className="w-4 h-4 text-amber-400/60 group-hover:text-amber-400 transition-colors" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-gray-900 border border-t-0 border-gray-800 rounded-b-xl overflow-clip">
         {loading ? (
           <div className="p-8 text-center text-gray-600 text-sm animate-pulse">Loading…</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-gray-600 text-sm">No assignments found.</div>
+        ) : published.length === 0 ? (
+          <div className="p-8 text-center text-gray-600 text-sm">No published assignments found.</div>
         ) : (
           <>
             <table className="w-full text-sm">
@@ -797,7 +835,7 @@ function AssignmentsContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800/50">
-                {filtered.map(a => {
+                {published.map(a => {
                   const isRequested = requested.has(a.id);
                   const isLoading = requesting === a.id;
                   const hasStaging = Number(a.staging_count) > 0;
@@ -907,6 +945,19 @@ function AssignmentsContent() {
       <SubmissionsDialog
         assignment={submissionsAssignment}
         onClose={() => setSubmissionsAssignment(null)}
+      />
+
+      {/* Unpublished assignment modal */}
+      <UnpublishedAssignmentModal
+        assignment={unpublishedAssignment}
+        onClose={() => setUnpublishedAssignment(null)}
+        onPublished={() => {
+          // Refresh assignments after publishing
+          setLoading(true);
+          fetch(`/api/professor/assignments?${termParam}`)
+            .then(r => r.json())
+            .then(d => { setAssignments(d.assignments ?? []); setLoading(false); });
+        }}
       />
       </div>
     </div>
