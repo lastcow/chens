@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useTerm } from "@/components/canvas/TermProvider";
-import { X, CheckCircle, AlertTriangle, Clock, Upload, ChevronRight, BookOpen, GraduationCap, FileText, ClipboardList } from "lucide-react";
+import { X, CheckCircle, AlertTriangle, Clock, Upload, ChevronRight, BookOpen, GraduationCap, FileText, ClipboardList, Check } from "lucide-react";
 import AssignmentEditDialog, { type DetailAssignment, type QuestionGrade } from "@/components/canvas/AssignmentEditDialog";
 
 interface StudentRow {
@@ -306,7 +306,7 @@ function StudentsContent() {
     if (m >= 4 || a < 30) return <span className="text-xs bg-red-900/30 text-red-400 border border-red-700/30 rounded-full px-2 py-0.5">At Risk</span>;
     if (m >= 2 || a < 60) return <span className="text-xs bg-amber-900/30 text-amber-400 border border-amber-700/30 rounded-full px-2 py-0.5">Watch</span>;
     if (m >= 1 || a < 75) return <span className="text-xs bg-yellow-900/20 text-yellow-500 border border-yellow-700/20 rounded-full px-2 py-0.5">Monitor</span>;
-    return <span className="text-xs text-green-700">✓</span>;
+    return <Check className="w-3.5 h-3.5 text-green-700" />;
   };
 
   return (
@@ -358,9 +358,7 @@ function StudentsContent() {
               className="w-full px-5 py-4 flex items-center gap-4 hover:bg-gray-800/30 transition-colors text-left sticky top-[116px] z-[8] bg-gray-900 rounded-t-xl border-b border-transparent">
 
               {/* Chevron */}
-              <span className={`text-gray-500 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}>
-                ▶
-              </span>
+              <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform duration-200 shrink-0 ${isOpen ? "rotate-90" : ""}`} />
 
               {/* Course name */}
               <div className="flex-1 min-w-0">
