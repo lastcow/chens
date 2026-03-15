@@ -74,6 +74,9 @@ function AssignmentsContent() {
   // Unpublished assignment modal state
   const [unpublishedAssignment, setUnpublishedAssignment] = useState<Assignment | null>(null);
 
+  // Assignment view tab state (published vs unpublished)
+  const [assignmentTab, setAssignmentTab] = useState<"published" | "unpublished">("published");
+
   useEffect(() => {
     if (!activeTerm) return;
     setLoading(true);
@@ -782,47 +785,61 @@ function AssignmentsContent() {
               })}
       </div>
 
-      {/* Unpublished Assignments Section */}
-      {!loading && unpublished.length > 0 && (
-        <div className="bg-gray-950 border-t border-gray-800 px-5 py-3">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Lock className="w-4 h-4 text-gray-500" />
-            Unpublished Assignments
-          </h3>
-          <div className="space-y-2">
-            {unpublished.map(a => (
-              <div
-                key={a.id}
-                onClick={() => setUnpublishedAssignment(a)}
-                className="flex items-center justify-between p-3 bg-gray-800/30 border border-gray-700/30 rounded-lg hover:bg-gray-800/50 hover:border-gray-700/50 transition-all cursor-pointer group"
-              >
-                <div className="flex items-center gap-3">
-                  {a.is_quiz ? (
-                    <ClipboardList className="w-4 h-4 text-purple-400/60 group-hover:text-purple-400 transition-colors" />
-                  ) : (
-                    <FileText className="w-4 h-4 text-gray-500/60 group-hover:text-gray-400 transition-colors" />
-                  )}
-                  <div>
-                    <p className="text-gray-300 font-medium text-sm">{a.name}</p>
-                    <p className="text-xs text-gray-600">Click for details</p>
-                  </div>
-                </div>
-                <AlertCircle className="w-4 h-4 text-amber-400/60 group-hover:text-amber-400 transition-colors" />
-              </div>
-            ))}
-          </div>
+      {/* Assignment View Tabs (Published / Unpublished) */}
+      {!loading && (published.length > 0 || unpublished.length > 0) && (
+        <div className="flex border-b border-gray-800 gap-0 bg-gray-950/95 px-5">
+          <button
+            onClick={() => setAssignmentTab("published")}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              assignmentTab === "published"
+                ? "text-amber-400 border-amber-400 -mb-px"
+                : "text-gray-500 hover:text-gray-300 border-transparent"
+            }`}
+          >
+            Published
+            {published.length > 0 && (
+              <span className={`text-xs rounded-full px-1.5 py-0.5 font-mono ${
+                assignmentTab === "published"
+                  ? "bg-amber-500/20 text-amber-400"
+                  : "bg-gray-800 text-gray-500"
+              }`}>
+                {published.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setAssignmentTab("unpublished")}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              assignmentTab === "unpublished"
+                ? "text-amber-400 border-amber-400 -mb-px"
+                : "text-gray-500 hover:text-gray-300 border-transparent"
+            }`}
+          >
+            <Lock className="w-4 h-4" />
+            Unpublished
+            {unpublished.length > 0 && (
+              <span className={`text-xs rounded-full px-1.5 py-0.5 font-mono ${
+                assignmentTab === "unpublished"
+                  ? "bg-amber-500/20 text-amber-400"
+                  : "bg-gray-800 text-gray-500"
+              }`}>
+                {unpublished.length}
+              </span>
+            )}
+          </button>
         </div>
       )}
 
-      {/* Table */}
+      {/* Table / Content */}
       <div className="bg-gray-900 border border-t-0 border-gray-800 rounded-b-xl overflow-clip">
         {loading ? (
           <div className="p-8 text-center text-gray-600 text-sm animate-pulse">Loading…</div>
-        ) : published.length === 0 ? (
-          <div className="p-8 text-center text-gray-600 text-sm">No published assignments found.</div>
-        ) : (
-          <>
-            <table className="w-full text-sm">
+        ) : assignmentTab === "published" ? (
+          published.length === 0 ? (
+            <div className="p-8 text-center text-gray-600 text-sm">No published assignments found.</div>
+          ) : (
+            <>
+              <table className="w-full text-sm">
               <thead className="sticky top-[105px] z-[9] bg-gray-900">
                 <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
                   <th className="text-left px-5 py-3">Assignment</th>
@@ -938,8 +955,45 @@ function AssignmentsContent() {
               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gray-700 inline-block" />Not submitted</span>
               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-purple-500 inline-block" />AI staged (pending review)</span>
             </div>
-          </>
-        )}
+            </>
+          )
+        ) : assignmentTab === "unpublished" ? (
+          unpublished.length === 0 ? (
+            <div className="p-8 text-center text-gray-600 text-sm">No unpublished assignments.</div>
+          ) : (
+            <div className="p-5 space-y-2">
+              {unpublished.map(a => (
+                <div
+                  key={a.id}
+                  onClick={() => setUnpublishedAssignment(a)}
+                  className="flex items-center justify-between p-4 bg-gray-800/30 border border-gray-700/30 rounded-lg hover:bg-gray-800/50 hover:border-gray-700/50 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="flex items-center gap-3">
+                      {a.is_quiz ? (
+                        <ClipboardList className="w-5 h-5 text-purple-400/60 group-hover:text-purple-400 transition-colors shrink-0" />
+                      ) : (
+                        <FileText className="w-5 h-5 text-gray-500/60 group-hover:text-gray-400 transition-colors shrink-0" />
+                      )}
+                      <div>
+                        <p className="text-gray-300 font-medium">{a.name}</p>
+                        <p className="text-xs text-gray-600 mt-0.5">{a.course_name}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">Type: {a.assignment_type}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{a.points_possible} pts</p>
+                    </div>
+                    <AlertCircle className="w-5 h-5 text-amber-400/60 group-hover:text-amber-400 transition-colors shrink-0" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : null}
+      </div>
 
       {/* Submissions dialog */}
       <SubmissionsDialog
@@ -959,7 +1013,6 @@ function AssignmentsContent() {
             .then(d => { setAssignments(d.assignments ?? []); setLoading(false); });
         }}
       />
-      </div>
     </div>
   );
 }
