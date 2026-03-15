@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { X, ExternalLink, Lock, AlertCircle, Send } from "lucide-react";
+import { X, ExternalLink, Lock, AlertCircle, Send, X as XIcon } from "lucide-react";
 
 interface UnpublishedAssignment {
   id: number;
@@ -115,8 +115,8 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
               <p className="text-white font-medium">{assignment.points_possible}</p>
             </div>
 
-            <div className="col-span-2 bg-gray-800/30 border border-gray-700/30 rounded-lg p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Due Date (America/New_York)</p>
+            <div className="col-span-2">
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Due Date (America/New_York)</label>
               <input
                 type="datetime-local"
                 value={dueDate}
@@ -149,17 +149,18 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-800 px-6 py-4 flex gap-3 shrink-0 justify-end">
+        <div className="border-t border-gray-800 px-6 py-4 flex gap-3 shrink-0">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 hover:text-white text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 hover:text-red-300 text-sm font-medium transition-colors shrink-0"
           >
+            <XIcon className="w-4 h-4" />
             Cancel
           </button>
           <button
             onClick={handlePublish}
             disabled={publishing}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500/90 hover:bg-amber-500 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-amber-500/90 hover:bg-amber-500 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="w-4 h-4" />
             {publishing ? "Publishing…" : "Publish"}
