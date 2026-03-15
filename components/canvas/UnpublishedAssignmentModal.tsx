@@ -24,9 +24,6 @@ interface Props {
 export default function UnpublishedAssignmentModal({ assignment, onClose, onPublished }: Props) {
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dueDate, setDueDate] = useState<string>(
-    assignment?.due_at ? new Date(assignment.due_at).toISOString().slice(0, 16) : ""
-  );
 
   if (!assignment) return null;
 
@@ -102,29 +99,17 @@ export default function UnpublishedAssignmentModal({ assignment, onClose, onPubl
           )}
 
           {/* Details Grid */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-4">
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
-                  {assignment.is_quiz ? "Quiz" : "Assignment"} Type
-                </p>
-                <p className="text-white font-medium">{assignment.assignment_type || "—"}</p>
-              </div>
-
-              <div className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-4">
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Points Possible</p>
-                <p className="text-white font-medium">{assignment.points_possible}</p>
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                {assignment.is_quiz ? "Quiz" : "Assignment"} Type
+              </p>
+              <p className="text-white font-medium">{assignment.assignment_type || "—"}</p>
             </div>
 
             <div className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-4">
-              <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Due Date (America/New_York)</label>
-              <input
-                type="datetime-local"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors box-border"
-              />
+              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Points Possible</p>
+              <p className="text-white font-medium">{assignment.points_possible}</p>
             </div>
           </div>
 
