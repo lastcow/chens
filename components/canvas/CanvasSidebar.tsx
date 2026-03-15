@@ -65,17 +65,17 @@ export default function CanvasSidebar() {
                   : "text-gray-400 hover:text-white hover:bg-gray-800/50"
               }`}
             >
-              <item.icon className="w-4 h-4" />
-              <span className="flex-1">{item.label}</span>
+              <item.icon className="w-4 h-4 shrink-0" />
+              <span className="flex-1 truncate">{item.label}</span>
               {item.countKey === "students" && studentCount !== null && (
-                <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${
+                <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 shrink-0 ${
                   active ? "bg-amber-500/20 text-amber-400" : "bg-gray-800 text-gray-500"
                 }`}>
                   {studentCount}
                 </span>
               )}
               {item.countKey === "ungraded" && (stagingCount !== null || ungradedCount !== null) && (stagingCount ?? 0) + (ungradedCount ?? 0) > 0 && (
-                <div className="flex gap-1 items-center">
+                <div className="flex gap-1 items-center shrink-0">
                   {stagingCount !== null && stagingCount > 0 && (
                     <span className={`text-xs font-mono rounded-full px-1.5 py-0.5 ${
                       active ? "bg-purple-500/30 text-purple-300" : "bg-purple-900/30 text-purple-400"
