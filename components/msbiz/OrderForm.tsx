@@ -38,12 +38,17 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
   }, [orderId]);
 
   // Address autocomplete
+  const [googleError, setGoogleError] = useState("");
+
   useEffect(() => {
     if (addrSearch.length < 3) { setAddrSuggestions([]); return; }
     const t = setTimeout(async () => {
-      const res = await fetch(`/api/msbiz/addresses/lookup?q=${encodeURIComponent(addrSearch)}`);
-      const d = await res.json();
-      setAddrSuggestions(d.predictions ?? []);
+      try {
+        const res = await fetch(`/api/msbiz/addresses/lookup?q=${encodeURIComponent(addrSearch)}`);
+        const d = await res.json();
+        if (d.google_error || d.error) { setGoogleError(d.google_error || d.error); setAddrSuggestions([]); }
+        else { setGoogleError(""); setAddrSuggestions(d.predictions ?? []); }
+      } catch { setGoogleError("Search unavailable"); }
     }, 300);
     return () => clearTimeout(t);
   }, [addrSearch]);
@@ -153,9 +158,10 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Shipping Address</label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2"><Search className="w-4 h-4 text-gray-500" /></div>
-              <input value={addrSearch} onChange={e => setAddrSearch(e.target.value)}
-                placeholder="Search address or select below…"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
+              <input value={addrSearch} onChange={e => { setAddrSearch(e.target.value); setGoogleError(""); }}
+                placeholder="Start typing to search (Google Places)…"
+                className={`w-full bg-gray-800 border rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none transition-colors ${googleError ? "border-red-700" : "border-gray-700 focus:border-amber-500"}`} />
+              {googleError && <p className="absolute -bottom-5 left-0 text-[10px] text-red-400">⚠ {googleError}</p>}
               {addrSuggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-10 max-h-48 overflow-y-auto">
                   {addrSuggestions.map(s => (

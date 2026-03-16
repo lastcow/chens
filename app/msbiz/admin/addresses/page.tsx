@@ -128,12 +128,22 @@ function AddressForm({ address, onClose, onSaved }: { address: Address | null; o
     country: address?.country ?? "US",
   });
 
+  const [googleError, setGoogleError] = useState("");
+
   useEffect(() => {
     if (searchQ.length < 3) { setSuggestions([]); return; }
     const t = setTimeout(async () => {
-      const res = await fetch(`/api/msbiz/addresses/lookup?q=${encodeURIComponent(searchQ)}`);
-      const d = await res.json();
-      setSuggestions(d.predictions ?? []);
+      try {
+        const res = await fetch(`/api/msbiz/addresses/lookup?q=${encodeURIComponent(searchQ)}`);
+        const d = await res.json();
+        if (d.google_error || d.error) {
+          setGoogleError(d.google_error || d.error);
+          setSuggestions([]);
+        } else {
+          setGoogleError("");
+          setSuggestions(d.predictions ?? []);
+        }
+      } catch { setGoogleError("Search unavailable"); }
     }, 300);
     return () => clearTimeout(t);
   }, [searchQ]);
@@ -182,10 +192,16 @@ function AddressForm({ address, onClose, onSaved }: { address: Address | null; o
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
           </div>
           <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Search Address (Google)</label>
+            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">
+              Search Address
+              <span className="text-gray-600 normal-case font-normal ml-1">(Google Places)</span>
+            </label>
             <div className="relative">
-              <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Type to search…"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
+              <input value={searchQ} onChange={e => { setSearchQ(e.target.value); setGoogleError(""); }}
+                placeholder="Start typing to search…"
+                className={`w-full bg-gray-800 border rounded-lg px-3 py-2 text-sm text-white focus:outline-none transition-colors ${
+                  googleError ? "border-red-700 focus:border-red-500" : "border-gray-700 focus:border-amber-500"
+                }`} />
               {suggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-10 max-h-48 overflow-y-auto">
                   {suggestions.map(s => (
@@ -197,6 +213,11 @@ function AddressForm({ address, onClose, onSaved }: { address: Address | null; o
                 </div>
               )}
             </div>
+            {googleError ? (
+              <p className="text-[10px] text-red-400 mt-1">⚠ {googleError} — fill in the fields manually below.</p>
+            ) : (
+              <p className="text-[10px] text-gray-600 mt-1">Type 3+ characters to search. Select a result to auto-fill fields below.</p>
+            )}
           </div>
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Full Address *</label>
