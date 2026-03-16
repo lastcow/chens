@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useTerm } from "@/components/canvas/TermProvider";
 import SubmissionsDialog from "@/components/canvas/SubmissionsDialog";
 import UnpublishedAssignmentModal from "@/components/canvas/UnpublishedAssignmentModal";
-import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar, ClipboardList, FileText, MessageSquare, ExternalLink, Lock } from "lucide-react";
+import { Wand2, X, AlertCircle, Check, Clock, AlertTriangle, Calendar, ClipboardList, FileText, MessageSquare, ExternalLink, Lock, Trash2, ThumbsDown } from "lucide-react";
 
 interface Assignment {
   id: number; canvas_id: number; name: string; description?: string; points_possible: number;
@@ -70,6 +70,9 @@ function AssignmentsContent() {
 
   // Submissions dialog state
   const [submissionsAssignment, setSubmissionsAssignment] = useState<Assignment | null>(null);
+
+  // Delete staging record state
+  const [deleteStaging, setDeleteStaging] = useState<StagingGrade | null>(null);
 
   // Unpublished assignment modal state
   const [unpublishedAssignment, setUnpublishedAssignment] = useState<Assignment | null>(null);
@@ -289,6 +292,50 @@ function AssignmentsContent() {
 
   return (
     <div className="space-y-0">
+      {/* Delete staging record confirm */}
+      {deleteStaging && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-sm space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <p className="font-semibold text-white text-sm">Delete Staged Grade?</p>
+                <p className="text-xs text-gray-400 mt-0.5">{deleteStaging.student_name}</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              This will permanently remove this student&apos;s staged grade from the review queue. This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteStaging(null)}
+                className="flex-1 py-2 text-sm rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const sg = deleteStaging;
+                  setDeleteStaging(null);
+                  await fetch("/api/professor/grade-staging", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ staging_id: sg.id, _delete: true }),
+                  });
+                  setStagingGrades(prev => prev.filter(g => g.id !== sg.id));
+                  showToast(`Deleted ${sg.student_name}'s staged grade`, true);
+                }}
+                className="flex-1 py-2 text-sm rounded-lg bg-red-600/80 hover:bg-red-600 text-white font-medium transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast */}
       {toast && (
         <div className={`fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg transition-all
@@ -742,12 +789,35 @@ function AssignmentsContent() {
                     </a>
                   )}
                 </div>
-                <button
-                  onClick={() => setQuizCommentSg(null)}
-                  className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors"
-                >
-                  Done
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Reject — exclude this record from staging approval */}
+                  <button
+                    onClick={() => {
+                      setStagingExcluded(prev => { const next = new Set(prev); next.add(sg.id); return next; });
+                      setQuizCommentSg(null);
+                    }}
+                    title="Exclude this student from batch approval"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 hover:text-amber-300 text-sm transition-colors"
+                  >
+                    <ThumbsDown className="w-3.5 h-3.5" />
+                    Reject
+                  </button>
+                  {/* Delete — remove staged record entirely */}
+                  <button
+                    onClick={() => { setDeleteStaging(sg); setQuizCommentSg(null); }}
+                    title="Delete this staged record permanently"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 text-sm transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => setQuizCommentSg(null)}
+                    className="px-4 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
               </div>
             </div>
           </div>
