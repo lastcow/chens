@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LockKeyhole } from "lucide-react";
 
 type ModuleDef = {
   id: string; label: string; icon: string; description: string;
@@ -192,7 +193,9 @@ export default function ModulesCatalog({
                   {/* Invite-only modules: show locked state if not already enabled */}
                   {mod.id === "msbiz" && (!enabled || expired) ? (
                     <div className="flex flex-col items-center gap-3 text-center py-2">
-                      <div className="w-10 h-10 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-xl">🔒</div>
+                      <div className="w-10 h-10 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center">
+                        <LockKeyhole className="w-5 h-5 text-gray-500" />
+                      </div>
                       <div>
                         <p className="text-sm font-medium text-gray-300">Invite Only</p>
                         <p className="text-xs text-gray-500 mt-1">Contact your administrator to request access to this module.</p>

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { ALL_MODULES } from "@/lib/modules";
+import { Lock } from "lucide-react";
 
 type UserRow = {
   id: string;
@@ -135,7 +136,9 @@ export default function AdminModules() {
                     </div>
                   </div>
                   {m.id === "msbiz" ? (
-                    <span className="text-xs bg-gray-800 text-gray-400 border border-gray-700 px-2 py-0.5 rounded-full shrink-0">🔒 Invite Only</span>
+                    <span className="flex items-center gap-1 text-xs bg-gray-800 text-gray-400 border border-gray-700 px-2 py-0.5 rounded-full shrink-0">
+                      <Lock className="w-3 h-3" /> Invite Only
+                    </span>
                   ) : cat && !cat.is_free && cat.price_monthly ? (
                     <span className="text-xs text-gray-500 shrink-0">${cat.price_monthly}/mo</span>
                   ) : null}
