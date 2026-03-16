@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 // Map module id → nav label + route
 const MODULE_NAV: Record<string, { label: string; href: string }> = {
   canvas_lms: { label: "Canvas LMS", href: "/canvas" },
+  msbiz:      { label: "MS Business", href: "/msbiz" },
 };
 
 export default function Navbar() {
