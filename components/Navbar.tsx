@@ -81,7 +81,7 @@ export default function Navbar() {
 
         {/* Row 2: purchased module links */}
         {session && enabledModules.length > 0 && (
-          <div className="flex items-center gap-1 border-t border-gray-800/60 h-9">
+          <div className="flex items-center gap-1 justify-end border-t border-gray-800/60 h-9">
             {enabledModules.map(mod => {
               const { label, href } = MODULE_NAV[mod];
               const active = pathname.startsWith(href);
