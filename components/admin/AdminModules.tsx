@@ -134,16 +134,18 @@ export default function AdminModules() {
                       <p className="text-xs text-gray-500">{m.id}</p>
                     </div>
                   </div>
-                  {cat && !cat.is_free && cat.price_monthly && (
+                  {m.id === "msbiz" ? (
+                    <span className="text-xs bg-gray-800 text-gray-400 border border-gray-700 px-2 py-0.5 rounded-full shrink-0">🔒 Invite Only</span>
+                  ) : cat && !cat.is_free && cat.price_monthly ? (
                     <span className="text-xs text-gray-500 shrink-0">${cat.price_monthly}/mo</span>
-                  )}
+                  ) : null}
                 </div>
 
                 {/* Description */}
                 <p className="text-xs text-gray-400 leading-relaxed">{m.description}</p>
 
-                {/* Pricing tiers */}
-                {cat && !cat.is_free && (
+                {/* Pricing tiers — hidden for invite-only modules */}
+                {m.id !== "msbiz" && cat && !cat.is_free && (
                   <div className="flex flex-wrap gap-2 text-xs">
                     {cat.allow_one_time && (
                       <div className="bg-gray-800 px-2.5 py-1.5 rounded-lg">
@@ -167,8 +169,8 @@ export default function AdminModules() {
                   </div>
                 )}
 
-                {/* Edit button */}
-                {cat && (
+                {/* Edit pricing button — hidden for invite-only modules */}
+                {m.id !== "msbiz" && cat && (
                   <button
                     onClick={() => setEditing({ ...cat })}
                     className="mt-auto text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-500/60 px-3 py-1.5 rounded-lg transition-colors self-start"
