@@ -619,25 +619,37 @@ function AssignmentsContent() {
                                 <Check className="w-3 h-3" /> Posted
                               </span>
                             ) : (
-                              <button
-                                onClick={() => setStagingExcluded(prev => {
-                                  const next = new Set(prev);
-                                  if (next.has(sg.id)) next.delete(sg.id);
-                                  else next.add(sg.id);
-                                  return next;
-                                })}
-                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer
-                                  ${stagingExcluded.has(sg.id)
-                                    ? "bg-red-900/30 border border-red-700/50 text-red-400 hover:bg-red-900/50"
-                                    : "bg-green-900/30 border border-green-700/50 text-green-400 hover:bg-green-900/50"
-                                  }`}
-                              >
-                                {stagingExcluded.has(sg.id) ? (
-                                  <><X className="w-3 h-3" /> Exclude</>
-                                ) : (
-                                  <><Check className="w-3 h-3" /> Include</>
-                                )}
-                              </button>
+                              <div className="flex items-center justify-end gap-1">
+                                {/* Reject (exclude) */}
+                                <button
+                                  onClick={() => setStagingExcluded(prev => {
+                                    const next = new Set(prev);
+                                    if (next.has(sg.id)) next.delete(sg.id);
+                                    else next.add(sg.id);
+                                    return next;
+                                  })}
+                                  title={stagingExcluded.has(sg.id) ? "Re-include" : "Reject / Exclude"}
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer
+                                    ${stagingExcluded.has(sg.id)
+                                      ? "bg-red-900/30 border border-red-700/50 text-red-400 hover:bg-red-900/50"
+                                      : "bg-green-900/30 border border-green-700/50 text-green-400 hover:bg-green-900/50"
+                                    }`}
+                                >
+                                  {stagingExcluded.has(sg.id) ? (
+                                    <><X className="w-3 h-3" /> Exclude</>
+                                  ) : (
+                                    <><Check className="w-3 h-3" /> Include</>
+                                  )}
+                                </button>
+                                {/* Delete permanently */}
+                                <button
+                                  onClick={() => setDeleteStaging(sg)}
+                                  title="Delete this staged record permanently"
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded text-red-500/60 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
