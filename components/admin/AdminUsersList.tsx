@@ -1,5 +1,37 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Building2, Check, Shield } from "lucide-react";
+
+const MSBIZ_PERMISSION_GROUPS: Record<string, string[]> = {
+  Orders:        ["orders.view","orders.create","orders.edit","orders.delete"],
+  "Price Match": ["pm.view","pm.manage","pm.approve"],
+  Warehouse:     ["warehouse.view","warehouse.manage"],
+  Inbound:       ["inbound.view","inbound.create","inbound.receive"],
+  Outbound:      ["outbound.view","outbound.create"],
+  Invoices:      ["invoices.view","invoices.manage","invoices.qb_sync"],
+  Tracking:      ["tracking.view"],
+  Exceptions:    ["exceptions.view","exceptions.create","exceptions.resolve"],
+  Costs:         ["costs.view","costs.manage"],
+  Accounts:      ["accounts.view","accounts.manage"],
+  Addresses:     ["addresses.view","addresses.manage"],
+  Admin:         ["admin.users","admin.invites","admin.addresses"],
+};
+
+const ALL_MSBIZ_PERMS = Object.values(MSBIZ_PERMISSION_GROUPS).flat();
+
+const MSBIZ_PRESETS: Record<string, Set<string>> = {
+  viewer:   new Set(ALL_MSBIZ_PERMS.filter(p => p.endsWith(".view"))),
+  operator: new Set(["orders.view","orders.create","orders.edit","pm.view","pm.manage","warehouse.view","inbound.view","inbound.create","inbound.receive","outbound.view","outbound.create","exceptions.view","exceptions.create","tracking.view","costs.view","accounts.view","addresses.view","invoices.view"]),
+  admin:    new Set(ALL_MSBIZ_PERMS),
+};
+
+interface MsbizDialog {
+  user: User;
+  perms: Record<string, boolean>;
+  role: string;
+  enabled: boolean;
+  saving: boolean;
+}
 
 interface User {
   id: string;
@@ -42,6 +74,39 @@ export default function AdminUsersList() {
   const [creditLoading, setCreditLoading] = useState(false);
   const [creditToast, setCreditToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [roleDialog, setRoleDialog] = useState<RoleDialog | null>(null);
+  const [msbizDialog, setMsbizDialog] = useState<MsbizDialog | null>(null);
+
+  const openMsbizDialog = async (user: User) => {
+    // Fetch current msbiz state for this user
+    const [modRes, permRes] = await Promise.all([
+      fetch(`/api/admin/modules`).then(r => r.json()),
+      fetch(`/api/msbiz/admin/users`).then(r => r.json()),
+    ]);
+    const userMod = (modRes.users ?? []).find((u: { id: string; modules: Record<string, boolean> }) => u.id === user.id);
+    const msbizEnabled = userMod?.modules?.msbiz ?? false;
+    const msbizUser = (permRes.users ?? []).find((u: { id: string }) => u.id === user.id);
+    const perms = msbizUser?.permissions ?? Object.fromEntries(ALL_MSBIZ_PERMS.map(p => [p, false]));
+    setMsbizDialog({ user, perms, role: msbizUser?.role ?? "operator", enabled: msbizEnabled, saving: false });
+  };
+
+  const saveMsbizPerms = async () => {
+    if (!msbizDialog) return;
+    setMsbizDialog(d => d ? { ...d, saving: true } : null);
+    // Toggle module enable/disable if changed
+    await fetch("/api/admin/modules", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: msbizDialog.user.id, module: "msbiz", enabled: msbizDialog.enabled }),
+    });
+    // Save permissions
+    if (msbizDialog.enabled) {
+      await fetch(`/api/msbiz/admin/users/${msbizDialog.user.id}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permissions: msbizDialog.perms }),
+      });
+    }
+    setMsbizDialog(null);
+    await fetchUsers();
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -275,6 +340,94 @@ export default function AdminUsersList() {
         </div>
       )}
 
+      {/* MS Business permissions dialog */}
+      {msbizDialog && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+            <div className="border-b border-gray-800 px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                  <Building2 className="w-4 h-4 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm">MS Business Access</h3>
+                  <p className="text-xs text-gray-500 truncate">{msbizDialog.user.name ?? msbizDialog.user.email}</p>
+                </div>
+              </div>
+              <button onClick={() => setMsbizDialog(null)} className="w-8 h-8 rounded-lg hover:bg-gray-800 text-gray-500 flex items-center justify-center text-lg">✕</button>
+            </div>
+
+            {/* Enable toggle */}
+            <div className="px-6 py-3 border-b border-gray-800 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-300">Module Access</p>
+                <p className="text-xs text-gray-500">Enable or disable the MS Business module for this user</p>
+              </div>
+              <button onClick={() => setMsbizDialog(d => d ? { ...d, enabled: !d.enabled } : null)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${msbizDialog.enabled ? "bg-amber-500" : "bg-gray-700"}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${msbizDialog.enabled ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+
+            {msbizDialog.enabled && (
+              <>
+                {/* Role presets */}
+                <div className="px-6 py-3 border-b border-gray-800 flex items-center gap-3">
+                  <Shield className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                  <span className="text-xs text-gray-500 mr-1">Preset:</span>
+                  {["viewer","operator","admin"].map(preset => (
+                    <button key={preset} onClick={() => setMsbizDialog(d => d ? {
+                      ...d,
+                      role: preset,
+                      perms: Object.fromEntries(ALL_MSBIZ_PERMS.map(p => [p, MSBIZ_PRESETS[preset].has(p)])),
+                    } : null)}
+                      className={`px-3 py-1 rounded-lg text-xs capitalize transition-colors border ${
+                        msbizDialog.role === preset
+                          ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                          : "bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700"
+                      }`}>
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Permission flags */}
+                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                  {Object.entries(MSBIZ_PERMISSION_GROUPS).map(([group, flags]) => (
+                    <div key={group}>
+                      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">{group}</p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {flags.map(flag => (
+                          <label key={flag} className="flex items-center gap-2.5 cursor-pointer group">
+                            <button onClick={() => setMsbizDialog(d => d ? { ...d, perms: { ...d.perms, [flag]: !d.perms[flag] } } : null)}
+                              className={`w-4.5 h-4.5 w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${
+                                msbizDialog.perms[flag]
+                                  ? "bg-amber-500 border-amber-500"
+                                  : "bg-gray-800 border-gray-600 group-hover:border-gray-500"
+                              }`}>
+                              {msbizDialog.perms[flag] && <Check className="w-3 h-3 text-white" />}
+                            </button>
+                            <span className="text-xs text-gray-400 font-mono group-hover:text-gray-300">{flag}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div className="border-t border-gray-800 px-6 py-4 flex gap-3 shrink-0">
+              <button onClick={() => setMsbizDialog(null)} className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm">Cancel</button>
+              <button onClick={saveMsbizPerms} disabled={msbizDialog.saving}
+                className="flex-1 py-2 rounded-lg bg-amber-500/90 hover:bg-amber-500 text-white text-sm font-medium disabled:opacity-50">
+                {msbizDialog.saving ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search */}
       <div className="flex gap-3 items-center">
         <input
@@ -333,7 +486,13 @@ export default function AdminUsersList() {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 shrink-0">
+              <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+                <button
+                  onClick={() => openMsbizDialog(user)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-amber-700/30 hover:border-amber-500/50 text-amber-500 hover:text-amber-400 transition-colors"
+                >
+                  <Building2 className="w-3 h-3" /> MS Biz
+                </button>
                 <button
                   onClick={() => openCreditDialog(user)}
                   className="text-xs px-3 py-1.5 rounded-lg border border-purple-700/40 hover:border-purple-500/60 text-purple-400 hover:text-purple-300 transition-colors"
