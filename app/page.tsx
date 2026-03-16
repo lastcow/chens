@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import HeroSceneWrapper from "@/components/HeroSceneWrapper";
 
 const services = [
   { icon: "feature_security", label: "⚡", title: "Security", desc: "Enterprise-grade security solutions protecting your business assets 24/7." },
@@ -13,18 +14,9 @@ export default function Home() {
     <>
       {/* Hero */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-        {/* Imagen-generated hero background */}
-        <div className="absolute inset-0">
-          <Image
-            src="/api/images/hero"
-            alt="Chen's hero"
-            fill
-            className="object-cover opacity-30"
-            priority
-            unoptimized
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/70 to-gray-950/40" />
+        {/* Three.js network scene */}
+        <HeroSceneWrapper />
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/40 to-transparent pointer-events-none" />
 
         <div className="relative text-center px-4 max-w-4xl mx-auto">
           <div className="inline-block border border-amber-500/30 rounded-full px-4 py-1 text-amber-400 text-sm mb-6">
