@@ -2,11 +2,11 @@ import Link from "next/link";
 import Image from "next/image";
 import HeroSceneWrapper from "@/components/HeroSceneWrapper";
 
-const services = [
-  { icon: "feature_security", label: "⚡", title: "Security", desc: "Enterprise-grade security solutions protecting your business assets 24/7." },
-  { icon: "feature_analytics", label: "📊", title: "Analytics", desc: "Deep data insights and intelligence to drive smarter business decisions." },
-  { icon: "feature_cloud", label: "🌐", title: "Cloud", desc: "Scalable cloud infrastructure built for reliability and performance." },
-  { icon: "feature_support", label: "🛡️", title: "Support", desc: "Dedicated 24/7 expert support whenever your business needs it." },
+const canvasFeatures = [
+  { icon: "📋", label: "Course & Student Sync", desc: "Automatically sync all your Canvas courses, student rosters, and enrollment data in real time. Always up to date, zero manual work." },
+  { icon: "🤖", label: "AI-Powered Grading", desc: "Let AI grade assignments and quizzes for you. Grades are staged for your review before posting — you stay in full control of every score." },
+  { icon: "📊", label: "Grade Management", desc: "Review, edit, and approve AI-generated grades with late penalty automation. Post directly to Canvas with one click." },
+  { icon: "⚠️", label: "At-Risk Identification", desc: "Automatically flag students at risk based on missing assignments, low attendance, and grade trends — before it's too late to intervene." },
 ];
 
 export default function Home() {
@@ -37,30 +37,51 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Services */}
+      {/* Services — Canvas LMS */}
       <section id="services" className="py-24 px-4 max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">Our Services</h2>
+          <div className="inline-block border border-amber-500/30 rounded-full px-4 py-1 text-amber-400 text-sm mb-4">
+            Featured Module
+          </div>
+          <h2 className="text-4xl font-bold mb-4">Canvas LMS Integration</h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Comprehensive solutions designed to elevate your business to the next level.
+            Transform your teaching workflow. Sync, grade, and analyze your courses — all powered by AI.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {services.map((s) => (
-            <div key={s.title} className="card hover:border-amber-500/40 transition-all group overflow-hidden">
-              <div className="relative h-36 mb-4 rounded-lg overflow-hidden bg-gray-800">
-                <Image
-                  src={`/api/images/${s.icon}`}
-                  alt={s.title}
-                  fill
-                  className="object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"
-                  unoptimized
-                />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 group-hover:text-amber-400 transition-colors">
-                {s.title}
-              </h3>
-              <p className="text-gray-400 text-sm leading-relaxed">{s.desc}</p>
+
+        {/* Hero card with generated image */}
+        <div className="card hover:border-amber-500/40 transition-all group overflow-hidden mb-8">
+          <div className="relative h-64 rounded-lg overflow-hidden bg-gray-800 mb-6">
+            <Image
+              src="/api/images/canvas_lms"
+              alt="Canvas LMS"
+              fill
+              className="object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+              unoptimized
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent" />
+            <div className="absolute bottom-4 left-5">
+              <span className="text-xs font-semibold uppercase tracking-widest text-amber-400">Canvas LMS</span>
+              <p className="text-white font-bold text-xl mt-0.5">Intelligent Course Management</p>
+            </div>
+          </div>
+          <p className="text-gray-400 leading-relaxed text-sm max-w-3xl">
+            A complete academic operations suite built on top of Canvas. Sync your courses automatically, grade with AI, identify struggling students early, and manage everything from one clean dashboard — without ever leaving the platform you already use.
+          </p>
+          <div className="mt-5">
+            <Link href="/canvas" className="btn-primary inline-block text-sm px-5 py-2">
+              Explore Canvas LMS →
+            </Link>
+          </div>
+        </div>
+
+        {/* Feature grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {canvasFeatures.map((f) => (
+            <div key={f.label} className="card hover:border-amber-500/30 transition-all">
+              <div className="text-2xl mb-3">{f.icon}</div>
+              <h3 className="text-sm font-semibold text-white mb-2">{f.label}</h3>
+              <p className="text-gray-500 text-xs leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
