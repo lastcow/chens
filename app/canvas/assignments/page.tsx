@@ -619,7 +619,7 @@ function AssignmentsContent() {
                                 <Check className="w-3 h-3" /> Posted
                               </span>
                             ) : (
-                              <div className="flex flex-col items-end gap-1">
+                              <div className="flex flex-col items-end gap-1 w-16">
                                 {/* Include / Exclude toggle */}
                                 <button
                                   onClick={() => setStagingExcluded(prev => {
@@ -628,7 +628,7 @@ function AssignmentsContent() {
                                     else next.add(sg.id);
                                     return next;
                                   })}
-                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer
+                                  className={`w-full inline-flex items-center justify-center gap-1 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer
                                     ${stagingExcluded.has(sg.id)
                                       ? "bg-red-900/30 border border-red-700/50 text-red-400 hover:bg-red-900/50"
                                       : "bg-green-900/30 border border-green-700/50 text-green-400 hover:bg-green-900/50"
@@ -643,7 +643,7 @@ function AssignmentsContent() {
                                 {/* Delete permanently */}
                                 <button
                                   onClick={() => setDeleteStaging(sg)}
-                                  className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-gray-800/60 border border-gray-700/50 text-gray-400 hover:bg-red-900/30 hover:border-red-700/50 hover:text-red-400 transition-colors cursor-pointer"
+                                  className="w-full inline-flex items-center justify-center gap-1 py-1 rounded text-[11px] font-medium bg-gray-800/60 border border-gray-700/50 text-gray-400 hover:bg-red-900/30 hover:border-red-700/50 hover:text-red-400 transition-colors cursor-pointer"
                                 >
                                   <Trash2 className="w-3 h-3" /> Delete
                                 </button>
