@@ -23,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
               <p>© {new Date().getFullYear()} Chen&apos;s. All rights reserved.</p>
               <div className="flex items-center gap-5">
+                <Link href="/sitemap" className="hover:text-gray-300 transition-colors">Sitemap</Link>
                 <Link href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</Link>
                 <Link href="/terms" className="hover:text-gray-300 transition-colors">Terms of Use</Link>
               </div>
