@@ -47,8 +47,8 @@ export default function GradesPage() {
 
   return (
     <div className="space-y-5">
-      {/* Sticky course filter pills */}
-      <div className="sticky top-16 z-10 -mx-1 px-1 py-2 bg-gray-950/90 backdrop-blur-md">
+      {/* Sticky course filter + sort bar */}
+      <div className="sticky top-[100px] z-10 -mx-1 px-1 py-2 bg-gray-950/90 backdrop-blur-md">
         <div className="flex flex-wrap gap-2">
           {courses.map(c => (
             <button key={c} onClick={() => setCourse(c)}

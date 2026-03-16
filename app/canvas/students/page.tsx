@@ -320,7 +320,7 @@ function StudentsContent() {
     />
     <div className="space-y-3">
       {/* Sticky search */}
-      <div className="sticky top-16 z-10 -mx-1 px-1 py-2 bg-gray-950/90 backdrop-blur-md">
+      <div className="sticky top-[100px] z-10 -mx-1 px-1 py-2 bg-gray-950/90 backdrop-blur-md">
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Search students…"
           className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50" />
@@ -355,7 +355,7 @@ function StudentsContent() {
           <div key={cid} className="bg-gray-900 border border-gray-800 rounded-xl">
             {/* Accordion header */}
             <button onClick={() => toggle(cid)}
-              className="w-full px-5 py-4 flex items-center gap-4 hover:bg-gray-800/30 transition-colors text-left sticky top-[116px] z-[8] bg-gray-900 rounded-t-xl border-b border-transparent">
+              className="w-full px-5 py-4 flex items-center gap-4 hover:bg-gray-800/30 transition-colors text-left sticky top-[152px] z-[8] bg-gray-900 rounded-t-xl border-b border-transparent">
 
               {/* Chevron */}
               <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform duration-200 shrink-0 ${isOpen ? "rotate-90" : ""}`} />

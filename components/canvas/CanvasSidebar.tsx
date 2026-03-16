@@ -52,7 +52,7 @@ export default function CanvasSidebar() {
 
   return (
     <aside className="w-48 shrink-0">
-      <nav className="space-y-1 sticky top-24">
+      <nav className="space-y-1 sticky top-[110px]">
         {NAV.map((item) => {
           const active = path.startsWith(item.href);
           return (
