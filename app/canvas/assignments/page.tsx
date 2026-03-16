@@ -619,7 +619,7 @@ function AssignmentsContent() {
                                 <Check className="w-3 h-3" /> Posted
                               </span>
                             ) : (
-                              <div className="flex flex-col items-end gap-1 w-16">
+                              <div className="flex flex-col gap-1 w-full">
                                 {/* Include / Exclude toggle */}
                                 <button
                                   onClick={() => setStagingExcluded(prev => {
