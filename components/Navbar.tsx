@@ -3,11 +3,15 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import {
+  LayoutDashboard, User, ShieldCheck,
+  GraduationCap, Building2,
+} from "lucide-react";
 
-// Map module id → nav label + route
-const MODULE_NAV: Record<string, { label: string; href: string }> = {
-  canvas_lms: { label: "Canvas LMS", href: "/canvas" },
-  msbiz:      { label: "MS Business", href: "/msbiz" },
+// Map module id → nav label + route + icon
+const MODULE_NAV: Record<string, { label: string; href: string; icon: React.ElementType }> = {
+  canvas_lms: { label: "Canvas LMS", href: "/canvas",  icon: GraduationCap },
+  msbiz:      { label: "MS Business", href: "/msbiz",  icon: Building2 },
 };
 
 export default function Navbar() {
@@ -29,17 +33,21 @@ export default function Navbar() {
       .catch(() => {});
   }, [session]);
 
-  const navLink = (href: string, label: string, exact = false) => {
+  const navLink = (
+    href: string,
+    label: string,
+    Icon: React.ElementType,
+    exact = false
+  ) => {
     const active = exact ? pathname === href : pathname.startsWith(href);
     return (
       <Link
         href={href}
-        className={`text-sm transition-colors ${
-          active
-            ? "text-amber-400 font-medium"
-            : "text-gray-400 hover:text-white"
+        className={`flex items-center gap-1.5 text-sm transition-colors ${
+          active ? "text-amber-400 font-medium" : "text-gray-400 hover:text-white"
         }`}
       >
+        <Icon className="w-4 h-4" />
         {label}
       </Link>
     );
@@ -61,9 +69,9 @@ export default function Navbar() {
 
             {session ? (
               <div className="flex items-center gap-4">
-                {role === "ADMIN" && navLink("/admin", "Admin")}
-                {navLink("/dashboard", "Modules")}
-                {navLink("/profile", "Profile", true)}
+                {role === "ADMIN" && navLink("/admin", "Admin", ShieldCheck)}
+                {navLink("/dashboard", "Modules", LayoutDashboard)}
+                {navLink("/profile", "Profile", User, true)}
                 <button
                   onClick={() => signOut()}
                   className="text-sm text-gray-500 hover:text-red-400 transition-colors"
@@ -84,18 +92,19 @@ export default function Navbar() {
         {session && enabledModules.length > 0 && (
           <div className="flex items-center gap-1 justify-end border-t border-gray-800/60 h-9">
             {enabledModules.map(mod => {
-              const { label, href } = MODULE_NAV[mod];
+              const { label, href, icon: Icon } = MODULE_NAV[mod];
               const active = pathname.startsWith(href);
               return (
                 <Link
                   key={mod}
                   href={href}
-                  className={`text-xs px-3 h-full flex items-center border-b-2 transition-colors ${
+                  className={`flex items-center gap-1.5 text-xs px-3 h-full border-b-2 transition-colors ${
                     active
                       ? "text-amber-400 border-amber-400 font-medium"
                       : "text-gray-500 hover:text-gray-300 border-transparent"
                   }`}
                 >
+                  <Icon className="w-3.5 h-3.5" />
                   {label}
                 </Link>
               );
