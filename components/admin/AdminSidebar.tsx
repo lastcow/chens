@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, Puzzle, ShoppingBag, Building2 } from "lucide-react";
+import { Home, Users, Puzzle, ShoppingBag, Building2, MapPin } from "lucide-react";
 
 const NAV = [
   {
@@ -17,6 +17,7 @@ const NAV = [
     icon: Building2,
     items: [
       { href: "/admin/merchandise", label: "Merchandise", icon: ShoppingBag },
+      { href: "/admin/addresses",   label: "Addresses",   icon: MapPin },
     ],
   },
 ];
