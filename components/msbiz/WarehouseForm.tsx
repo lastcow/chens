@@ -84,9 +84,7 @@ export default function WarehouseForm({ warehouseId, onClose, onSaved }: Props) 
                 <option key={a.id} value={a.id}>{a.label ? `[${a.label}] ` : ""}{a.full_address}</option>
               ))}
             </select>
-            <p className="text-[10px] text-gray-600 mt-1">
-              <a href="/msbiz/admin/addresses" className="text-purple-400 hover:text-purple-300">Manage addresses</a>
-            </p>
+
           </div>
 
           <div>
