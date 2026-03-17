@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, Puzzle } from "lucide-react";
+import { Home, Users, Puzzle, ShoppingBag } from "lucide-react";
 
 const NAV = [
-  { href: "/admin",          label: "Overview", icon: Home, exact: true },
-  { href: "/admin/users",    label: "Users",    icon: Users },
-  { href: "/admin/modules",  label: "Modules",  icon: Puzzle },
+  { href: "/admin",             label: "Overview",    icon: Home,        exact: true },
+  { href: "/admin/users",       label: "Users",       icon: Users },
+  { href: "/admin/modules",     label: "Modules",     icon: Puzzle },
+  { href: "/admin/merchandise", label: "Merchandise", icon: ShoppingBag },
 ];
 
 export default function AdminSidebar() {
