@@ -97,7 +97,7 @@ export default function AdminMerchandise() {
               <th className="text-left px-3 py-3">Item</th>
               <th className="text-center px-3 py-3">UPC</th>
               <th className="text-center px-3 py-3">Model</th>
-              <th className="text-left px-3 py-3 w-52">Price / Cost</th>
+              <th className="text-left px-3 py-3 w-36">Price / Cost</th>
               <th className="text-center px-3 py-3">Stock</th>
               <th className="text-center px-3 py-3">Status</th>
               <th className="text-center px-3 py-3 w-20"></th>
@@ -141,14 +141,14 @@ export default function AdminMerchandise() {
                 <td className="px-3 py-2.5 text-center w-28" title={item.model ?? ""}>
                   <span className="text-xs text-gray-400 block truncate max-w-[100px] mx-auto">{item.model || "—"}</span>
                 </td>
-                <td className="px-3 py-2.5 w-52" title={`Price: $${Number(item.price).toFixed(2)}${item.cost != null ? ` | Cost: $${Number(item.cost).toFixed(2)}` : ""}`}>
+                <td className="px-3 py-2.5 w-36" title={`Price: $${Number(item.price).toFixed(2)}${item.cost != null ? ` | Cost: $${Number(item.cost).toFixed(2)}` : ""}`}>
                   {(() => {
                     const price = Number(item.price);
                     const cost  = item.cost != null ? Number(item.cost) : null;
                     const margin = cost != null && price > 0 ? ((price - cost) / price) * 100 : null;
                     const costPct = cost != null && price > 0 ? (cost / price) * 100 : 0;
                     return (
-                      <div className="w-44">
+                      <div className="w-28">
                         <div className="flex items-baseline justify-between mb-1.5">
                           <span className="text-xs font-mono font-semibold text-white">${price.toFixed(2)}</span>
                           {cost != null
