@@ -14,6 +14,7 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
   const headers: Record<string, string> = {
     "x-api-key": KEY,
     "x-user-id": session.user.id,
+    "x-user-role": (session.user as { role?: string })?.role ?? "USER",
   };
 
   let body: BodyInit | null = null;
