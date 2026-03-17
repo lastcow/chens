@@ -249,7 +249,7 @@ export default function AdminPurchaseOrders() {
           </table>
         </div>
 
-        {pages > 1 && (
+        {total > 0 && (
           <div className="border-t border-gray-800 px-4 py-3 flex items-center justify-between">
             <span className="text-xs text-gray-600">{(page-1)*LIMIT+1}–{Math.min(page*LIMIT,total)} of {total}</span>
             <div className="flex items-center gap-1">
