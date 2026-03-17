@@ -5,7 +5,7 @@ import { MapPin, Plus, Search, Edit2, Trash2, X, Copy, Check, ExternalLink } fro
 interface Address {
   id: string; label: string | null; full_address: string; street: string | null;
   city: string | null; state: string | null; zip: string | null; country: string | null;
-  created_at: string;
+  name: string | null; phone: string | null; created_at: string;
 }
 
 export default function AdminAddressesPage() {
@@ -94,6 +94,13 @@ export default function AdminAddressesPage() {
                       </div>
                     )}
                     <div className="text-sm text-white leading-snug">{addr.full_address}</div>
+                    {(addr.name || addr.phone) && (
+                      <div className="flex items-center gap-2 mt-1 text-[11px] text-gray-500">
+                        {addr.name && <span>{addr.name}</span>}
+                        {addr.name && addr.phone && <span className="text-gray-700">·</span>}
+                        {addr.phone && <span className="font-mono">{addr.phone}</span>}
+                      </div>
+                    )}
                     {!addr.label && (
                       <div className="flex items-center gap-1.5 mt-1">
                         <button
@@ -166,6 +173,12 @@ export default function AdminAddressesPage() {
                       {[addr.city, addr.state, addr.zip].filter(Boolean).join(", ")}
                     </div>
                   )}
+                  {(addr.name || addr.phone) && (
+                    <div className="text-xs text-gray-500 mt-1 flex gap-2">
+                      {addr.name && <span>{addr.name}</span>}
+                      {addr.phone && <span className="font-mono">{addr.phone}</span>}
+                    </div>
+                  )}
                 </div>
               )}
               <p className="text-xs text-gray-500">This may affect warehouses or orders linked to this address.</p>
@@ -188,6 +201,8 @@ function AddressForm({ address, onClose, onSaved }: { address: Address | null; o
   const [suggestions, setSuggestions] = useState<{ place_id: string; description: string }[]>([]);
   const [form, setForm] = useState({
     label: address?.label ?? "",
+    name: address?.name ?? "",
+    phone: address?.phone ?? "",
     full_address: address?.full_address ?? "",
     street: address?.street ?? "",
     city: address?.city ?? "",
@@ -258,6 +273,18 @@ function AddressForm({ address, onClose, onSaved }: { address: Address | null; o
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Label</label>
             <input value={form.label} onChange={e => set("label", e.target.value)} placeholder="e.g., Warehouse A, HQ, Customer"
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Contact Name</label>
+              <input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Full name"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Phone</label>
+              <input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+1 (xxx) xxx-xxxx"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+            </div>
           </div>
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">
