@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 
 interface Item {
-  id: string; name: string; sku: string | null; category: string | null;
+  id: string; name: string; upc: string | null; model: string | null;
   description: string | null; price: number; cost: number | null;
   stock: number; unit: string; status: string; image_url: string | null;
   tags: string[]; created_at: string; updated_at: string;
@@ -19,14 +19,13 @@ const STATUS_COLORS: Record<string, string> = {
   out_of_stock: "bg-amber-900/30 text-amber-400 border-amber-700/30",
 };
 
-const CATEGORIES = ["Electronics", "Clothing", "Office", "Food & Beverage", "Software", "Services", "Other"];
 
 export default function AdminMerchandise() {
   const [items, setItems]         = useState<Item[]>([]);
   const [total, setTotal]         = useState(0);
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState("");
-  const [catFilter, setCatFilter] = useState("");
+
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage]           = useState(1);
   const [showForm, setShowForm]   = useState(false);
@@ -37,18 +36,17 @@ export default function AdminMerchandise() {
   const fetchItems = useCallback(async () => {
     setLoading(true);
     const p = new URLSearchParams({ page: String(page), limit: String(limit) });
-    if (search)      p.set("search",   search);
-    if (catFilter)   p.set("category", catFilter);
-    if (statusFilter)p.set("status",   statusFilter);
+    if (search)       p.set("search", search);
+    if (statusFilter) p.set("status", statusFilter);
     const res = await fetch(`/api/admin/merchandise?${p}`);
     const d = await res.json();
     setItems(d.items ?? []);
     setTotal(d.total ?? 0);
     setLoading(false);
-  }, [page, search, catFilter, statusFilter]);
+  }, [page, search, statusFilter]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
-  useEffect(() => { setPage(1); }, [search, catFilter, statusFilter]);
+  useEffect(() => { setPage(1); }, [search, statusFilter]);
 
   const doDelete = async (id: string) => {
     await fetch(`/api/admin/merchandise/${id}`, { method: "DELETE" });
@@ -81,11 +79,6 @@ export default function AdminMerchandise() {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, SKU…"
             className="w-full bg-gray-900 border border-gray-800 rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50" />
         </div>
-        <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
-          className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-amber-500/50">
-          <option value="">All Categories</option>
-          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-amber-500/50">
           <option value="">All Status</option>
@@ -101,8 +94,9 @@ export default function AdminMerchandise() {
           <thead className="border-b border-gray-800 bg-gray-900">
             <tr className="text-xs text-gray-500 uppercase tracking-wider">
               <th className="text-left px-5 py-3">Item</th>
-              <th className="text-center px-3 py-3">SKU</th>
-              <th className="text-center px-3 py-3">Category</th>
+              <th className="text-left px-3 py-3">Image</th>
+              <th className="text-center px-3 py-3">UPC</th>
+              <th className="text-center px-3 py-3">Model</th>
               <th className="text-right px-3 py-3">Price</th>
               <th className="text-right px-3 py-3">Cost</th>
               <th className="text-center px-3 py-3">Stock</th>
@@ -128,11 +122,16 @@ export default function AdminMerchandise() {
                     </div>
                   )}
                 </td>
-                <td className="px-3 py-3 text-center">
-                  <span className="text-xs font-mono text-gray-400">{item.sku || "—"}</span>
+                <td className="px-3 py-3">
+                  {item.image_url
+                    ? <img src={item.image_url} alt={item.name} className="w-10 h-10 object-cover rounded-lg border border-gray-700" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    : <div className="w-10 h-10 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center"><ShoppingBag className="w-4 h-4 text-gray-600" /></div>}
                 </td>
                 <td className="px-3 py-3 text-center">
-                  <span className="text-xs text-gray-400">{item.category || "—"}</span>
+                  <span className="text-xs font-mono text-gray-400">{item.upc || "—"}</span>
+                </td>
+                <td className="px-3 py-3 text-center">
+                  <span className="text-xs text-gray-400">{item.model || "—"}</span>
                 </td>
                 <td className="px-3 py-3 text-right font-mono text-white font-medium">
                   ${Number(item.price).toFixed(2)}
@@ -220,7 +219,7 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
   const [error, setError] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [form, setForm] = useState({
-    name: item?.name ?? "", sku: item?.sku ?? "", category: item?.category ?? "",
+    name: item?.name ?? "", upc: item?.upc ?? "", model: item?.model ?? "",
     description: item?.description ?? "", price: item?.price != null ? String(item.price) : "",
     cost: item?.cost != null ? String(item.cost) : "", stock: item?.stock != null ? String(item.stock) : "0",
     unit: item?.unit ?? "unit", status: item?.status ?? "active",
@@ -240,7 +239,7 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
     if (!form.name) { setError("Name is required"); return; }
     setSaving(true); setError("");
     const body = {
-      name: form.name, sku: form.sku || null, category: form.category || null,
+      name: form.name, upc: form.upc || null, model: form.model || null,
       description: form.description || null, price: parseFloat(form.price) || 0,
       cost: form.cost ? parseFloat(form.cost) : null, stock: parseInt(form.stock, 10) || 0,
       unit: form.unit, status: form.status, image_url: form.image_url || null, tags: form.tags,
@@ -265,37 +264,50 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {error && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">{error}</div>}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Name *</label>
-              <input value={form.name} onChange={e => set("name", e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">SKU</label>
-              <input value={form.sku} onChange={e => set("sku", e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
-            </div>
+          <div>
+            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Name *</label>
+            <input value={form.name} onChange={e => set("name", e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Category</label>
-              <select value={form.category} onChange={e => set("category", e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-                <option value="">— None —</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">UPC</label>
+              <input value={form.upc} onChange={e => set("upc", e.target.value)}
+                placeholder="Barcode number"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Status</label>
-              <select value={form.status} onChange={e => set("status", e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-                {["active","inactive","out_of_stock","discontinued"].map(s => (
-                  <option key={s} value={s}>{s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</option>
-                ))}
-              </select>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Model</label>
+              <input value={form.model} onChange={e => set("model", e.target.value)}
+                placeholder="Model number / name"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
             </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Status</label>
+            <select value={form.status} onChange={e => set("status", e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+              {["active","inactive","out_of_stock","discontinued"].map(s => (
+                <option key={s} value={s}>{s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Image URL with preview */}
+          <div>
+            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Image URL</label>
+            <input value={form.image_url} onChange={e => set("image_url", e.target.value)}
+              placeholder="https://…"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+            {form.image_url && (
+              <div className="mt-2 flex items-center gap-3">
+                <img src={form.image_url} alt="Preview" className="w-16 h-16 object-cover rounded-lg border border-gray-700"
+                  onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                <span className="text-[10px] text-gray-600">Preview</span>
+              </div>
+            )}
           </div>
 
           <div>
@@ -322,13 +334,6 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
                 />
               </div>
             ))}
-          </div>
-
-          <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Image URL</label>
-            <input value={form.image_url} onChange={e => set("image_url", e.target.value)}
-              placeholder="https://…"
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
           </div>
 
           {/* Tags */}
