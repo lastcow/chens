@@ -167,9 +167,7 @@ export default function AdminMerchandise() {
                             )}
                           </div>
                         </div>
-                        {margin != null && (
-                          <div className="text-[9px] text-gray-600 mt-0.5 font-mono">{margin.toFixed(0)}% margin</div>
-                        )}
+
                       </div>
                     );
                   })()}
