@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   UserCircle, Plus, Search, Edit2, Trash2, X, Eye, EyeOff,
-  Copy, Check, DollarSign, Link2, Package, User, Save
+  Copy, Check, DollarSign, Link2, Package, User, Save,
 } from "lucide-react";
 
 interface Account {
@@ -30,8 +30,6 @@ export default function AccountsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [shownPassId, setShownPassId] = useState<string | null>(null);
-
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
     const res = await fetch("/api/msbiz/accounts");
@@ -116,13 +114,7 @@ export default function AccountsPage() {
                     </div>
                     {acc.password && (
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-xs font-mono text-gray-500">
-                          {shownPassId === acc.id ? acc.password : "••••••••"}
-                        </span>
-                        <button onClick={() => setShownPassId(shownPassId === acc.id ? null : acc.id)}
-                          className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-gray-300 transition-all">
-                          {shownPassId === acc.id ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                        </button>
+                        <span className="text-xs font-mono text-gray-400 select-all">{acc.password}</span>
                         <button onClick={() => { navigator.clipboard.writeText(acc.password!); }}
                           className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-gray-300 transition-all">
                           <Copy className="w-3 h-3" />
