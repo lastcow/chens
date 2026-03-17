@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, CreditCard, Warehouse, ArrowDownToLine, ArrowUpFromLine,
-  Truck, AlertTriangle, DollarSign, FileText
+  Truck, AlertTriangle, DollarSign, FileText, UserCircle
 } from "lucide-react";
 
 interface DashboardCounts {
@@ -19,6 +19,7 @@ const NAV_DASHBOARD = [
 ];
 
 const NAV_BUSINESS = [
+  { href: "/msbiz/accounts",     label: "Accounts",      icon: UserCircle },
   { href: "/msbiz/orders",       label: "Orders",        icon: Package,         countKey: "orders" },
   { href: "/msbiz/price-matches",label: "Price Match",   icon: CreditCard,      countKey: "pm" },
   { href: "/msbiz/inbound",      label: "Inbound",       icon: ArrowDownToLine },
