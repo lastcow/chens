@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Select from "react-select";
 import {
   ShoppingCart, Plus, Search, Edit2, Trash2, X, Save,
@@ -11,7 +11,7 @@ interface PO {
   requester_id: string; requester_name: string | null; requester_email: string | null;
   merchandise_id: string; merchandise_name: string | null; upc: string | null; model: string | null;
   image_url: string | null; merchandise_price: number | null;
-  qty: number; required_price: number | null; deadline: string | null;
+  qty: number; completed_qty: number; required_price: number | null; deadline: string | null;
   warehouse_id: string | null; warehouse_name: string | null;
   warehouse_address: string | null; warehouse_contact_name: string | null; warehouse_contact_phone: string | null;
   status: string; notes: string | null; created_at: string;
@@ -137,7 +137,8 @@ export default function AdminPurchaseOrders() {
                   <p className="text-gray-500 text-sm">No purchase orders.</p>
                 </td></tr>
               ) : orders.map(po => (
-                <tr key={po.id} className="hover:bg-gray-800/30 transition-colors group">
+                <React.Fragment key={po.id}>
+                <tr className="hover:bg-gray-800/30 transition-colors group">
                   {/* Status bar */}
                   <td className="pl-2 pr-0 py-0 w-1.5">
                     <div className={`w-1 rounded-full h-7 mx-auto ${STATUS_BAR[po.status] ?? "bg-gray-600"}`} title={po.status} />
@@ -244,6 +245,22 @@ export default function AdminPurchaseOrders() {
                     </div>
                   </td>
                 </tr>
+                  {/* Full-width progress bar row */}
+                  <tr key={`${po.id}-bar`} className="group">
+                    <td colSpan={9} className="px-0 pt-0 pb-1">
+                      {(() => {
+                        const pct = po.qty > 0 ? Math.min((po.completed_qty / po.qty) * 100, 100) : 0;
+                        const done = po.completed_qty >= po.qty && po.qty > 0;
+                        const color = done ? "bg-green-500" : pct > 0 ? "bg-blue-500" : "bg-gray-700";
+                        return (
+                          <div className="h-0.5 w-full bg-gray-800/60" title={`${po.completed_qty} / ${po.qty} completed`}>
+                            <div className={`h-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+                          </div>
+                        );
+                      })()}
+                    </td>
+                  </tr>
+                </React.Fragment>
               ))}
             </tbody>
           </table>
@@ -322,6 +339,7 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
     requester_id: po?.requester_id ?? "",
     merchandise_id: po?.merchandise_id ?? "",
     qty: String(po?.qty ?? "1"),
+    completed_qty: String(po?.completed_qty ?? "0"),
     required_price: po?.required_price != null ? String(po.required_price) : "",
     deadline: po?.deadline ? po.deadline.slice(0, 10) : "",
     warehouse_id: po?.warehouse_id ?? "",
@@ -362,6 +380,7 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
       requester_id: form.requester_id,
       merchandise_id: form.merchandise_id,
       qty: parseInt(form.qty, 10) || 1,
+      completed_qty: parseInt(form.completed_qty, 10) || 0,
       required_price: form.required_price ? parseFloat(form.required_price) : null,
       deadline: form.deadline || null,
       warehouse_id: form.warehouse_id || null,
@@ -449,11 +468,16 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
             )}
           </div>
 
-          {/* Qty + Required Price */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Qty + Completed Qty + Required Price */}
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Qty</label>
               <input type="number" min="1" value={form.qty} onChange={e => set("qty", e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Completed</label>
+              <input type="number" min="0" value={form.completed_qty} onChange={e => set("completed_qty", e.target.value)}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
             </div>
             <div>
