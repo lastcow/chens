@@ -120,26 +120,26 @@ export default function AdminMerchandise() {
                         <ShoppingBag className="w-4 h-4 text-gray-600" />
                       </div>}
                 </td>
-                {/* Name + tags + link — all on one line, no wrap */}
-                <td className="px-3 py-2.5">
-                  <div className="flex items-center gap-1.5 overflow-hidden">
-                    <span className="font-medium text-white text-sm whitespace-nowrap">{item.name}</span>
+                {/* Name — truncated, max width, single row */}
+                <td className="px-3 py-2.5 max-w-0 w-full">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="font-medium text-white text-sm truncate flex-1 min-w-0">{item.name}</span>
                     {item.tags?.map(t => (
                       <span key={t} className="text-[9px] bg-gray-800 text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">{t}</span>
                     ))}
                     {item.item_url && (
                       <a href={item.item_url} target="_blank" rel="noopener noreferrer"
-                        className="text-gray-600 hover:text-blue-400 transition-colors flex-shrink-0 ml-0.5">
+                        className="text-gray-600 hover:text-blue-400 transition-colors flex-shrink-0">
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     )}
                   </div>
                 </td>
-                <td className="px-3 py-3 text-center">
-                  <span className="text-xs font-mono text-gray-400">{item.upc || "—"}</span>
+                <td className="px-3 py-2.5 text-center w-28">
+                  <span className="text-xs font-mono text-gray-400 block truncate max-w-[100px] mx-auto" title={item.upc ?? ""}>{item.upc || "—"}</span>
                 </td>
-                <td className="px-3 py-3 text-center">
-                  <span className="text-xs text-gray-400">{item.model || "—"}</span>
+                <td className="px-3 py-2.5 text-center w-28">
+                  <span className="text-xs text-gray-400 block truncate max-w-[100px] mx-auto" title={item.model ?? ""}>{item.model || "—"}</span>
                 </td>
                 <td className="px-3 py-3 w-44">
                   {(() => {
