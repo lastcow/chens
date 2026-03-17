@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, CreditCard, Warehouse, ArrowDownToLine, ArrowUpFromLine,
-  Truck, AlertTriangle, DollarSign, Settings, FileText
+  Truck, AlertTriangle, DollarSign, FileText
 } from "lucide-react";
 
 interface DashboardCounts {
@@ -28,7 +28,6 @@ const NAV_MAIN = [
 
 const NAV_SETTINGS = [
   { href: "/msbiz/warehouse",    label: "Warehouse",     icon: Warehouse },
-  { href: "/msbiz/settings",     label: "Settings",      icon: Settings },
 ];
 
 export default function MsbizSidebar() {
