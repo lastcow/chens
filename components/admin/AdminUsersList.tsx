@@ -86,24 +86,25 @@ export default function AdminUsersList() {
     const msbizEnabled = userMod?.modules?.msbiz ?? false;
     const msbizUser = (permRes.users ?? []).find((u: { id: string }) => u.id === user.id);
     const perms = msbizUser?.permissions ?? Object.fromEntries(ALL_MSBIZ_PERMS.map(p => [p, false]));
-    setMsbizDialog({ user, perms, role: msbizUser?.role ?? "operator", enabled: msbizEnabled, saving: false });
+    setMsbizDialog({ user, perms, role: msbizUser?.role_name ?? "operator", enabled: msbizEnabled, saving: false });
   };
 
   const saveMsbizPerms = async () => {
     if (!msbizDialog) return;
     setMsbizDialog(d => d ? { ...d, saving: true } : null);
-    // Toggle module enable/disable if changed
+
+    // 1. Toggle module enable/disable in user_modules table
     await fetch("/api/admin/modules", {
       method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: msbizDialog.user.id, module: "msbiz", enabled: msbizDialog.enabled }),
     });
-    // Save permissions
-    if (msbizDialog.enabled) {
-      await fetch(`/api/msbiz/admin/users/${msbizDialog.user.id}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ permissions: msbizDialog.perms }),
-      });
-    }
+
+    // 2. Always upsert permissions (enabled or disabled — so state is preserved for re-enable)
+    await fetch(`/api/msbiz/admin/users/${msbizDialog.user.id}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ permissions: msbizDialog.perms, role_name: msbizDialog.role }),
+    });
+
     setMsbizDialog(null);
     await fetchUsers();
   };
