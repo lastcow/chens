@@ -263,11 +263,39 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div className="border-b border-gray-800 px-6 py-4 flex items-center justify-between shrink-0">
-          <h2 className="text-lg font-bold text-white">{item ? "Edit Item" : "Add Item"}</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-gray-800 text-gray-500 flex items-center justify-center">
-            <X className="w-5 h-5" />
-          </button>
+        {/* Header with Bento Grid pattern */}
+        <div className="relative overflow-hidden rounded-t-2xl shrink-0 border-b border-gray-800">
+          {/* Grid background */}
+          <div className="absolute inset-0 bg-gray-950">
+            <div className="absolute inset-0 opacity-[0.07]"
+              style={{
+                backgroundImage: `linear-gradient(#f59e0b 1px, transparent 1px), linear-gradient(90deg, #f59e0b 1px, transparent 1px)`,
+                backgroundSize: "32px 32px",
+              }} />
+            {/* Bento cells */}
+            <div className="absolute inset-0 grid grid-cols-6 grid-rows-3 gap-1.5 p-3 opacity-[0.06]">
+              {[...Array(18)].map((_, i) => (
+                <div key={i} className="rounded-md bg-amber-400" style={{ opacity: Math.random() > 0.5 ? 1 : 0.3 }} />
+              ))}
+            </div>
+            {/* Amber glow */}
+            <div className="absolute -top-8 -left-8 w-40 h-40 bg-amber-500/20 rounded-full blur-2xl" />
+            <div className="absolute -bottom-6 right-10 w-32 h-32 bg-amber-400/10 rounded-full blur-xl" />
+          </div>
+          <div className="relative px-6 py-5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                <ShoppingBag className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">{item ? "Edit Item" : "Add Item"}</h2>
+                <p className="text-[11px] text-gray-500 mt-0.5">{item ? `Updating ${item.name}` : "Add a new merchandise item"}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
