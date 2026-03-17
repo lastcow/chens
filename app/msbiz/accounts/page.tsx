@@ -28,7 +28,7 @@ const STATUS_BAR: Record<string, string> = {
   Suspended: "bg-red-500",
   Topup:     "bg-amber-500",
   Error:     "bg-red-400",
-  Hold:      "bg-gray-600",
+  Hold:      "bg-gray-500",
 };
 
 const LIMIT = 20;
