@@ -120,8 +120,8 @@ export default function AdminMerchandise() {
                         <ShoppingBag className="w-4 h-4 text-gray-600" />
                       </div>}
                 </td>
-                {/* Name — truncates to keep tags + link visible */}
-                <td className="px-3 py-2.5 w-0 min-w-0" style={{ maxWidth: "220px" }}>
+                {/* Name — takes all remaining space */}
+                <td className="px-3 py-2.5 w-full min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="font-medium text-white text-sm truncate shrink min-w-0" title={item.name}>{item.name}</span>
                     {item.tags?.map(t => (
