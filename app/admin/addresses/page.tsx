@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { MapPin, Plus, Search, Edit2, Trash2, X } from "lucide-react";
+import { MapPin, Plus, Search, Edit2, Trash2, X, Copy, Check, ExternalLink } from "lucide-react";
 
 interface Address {
   id: string; label: string | null; full_address: string; street: string | null;
@@ -15,6 +15,7 @@ export default function AdminAddressesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editAddr, setEditAddr] = useState<Address | null>(null);
   const [deletingId, setDeletingId] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const fetchAddresses = () => {
     const q = search ? `?search=${encodeURIComponent(search)}` : "";
@@ -68,9 +69,54 @@ export default function AdminAddressesPage() {
                     <MapPin className="w-4 h-4 text-amber-400" />
                   </div>
                   <div className="min-w-0">
-                    {addr.label && <div className="text-xs font-semibold text-amber-400 mb-0.5">{addr.label}</div>}
+                    {addr.label && (
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-xs font-semibold text-amber-400">{addr.label}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(addr.full_address);
+                            setCopiedId(addr.id);
+                            setTimeout(() => setCopiedId(null), 1500);
+                          }}
+                          title="Copy address"
+                          className="text-gray-600 hover:text-green-400 transition-colors">
+                          {copiedId === addr.id
+                            ? <Check className="w-3 h-3 text-green-400" />
+                            : <Copy className="w-3 h-3" />}
+                        </button>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr.full_address)}`}
+                          target="_blank" rel="noopener noreferrer"
+                          title="Open in Google Maps"
+                          className="text-gray-600 hover:text-blue-400 transition-colors">
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
                     <div className="text-sm text-white leading-snug">{addr.full_address}</div>
-                    <div className="text-[10px] text-gray-600 mt-1 font-mono">{addr.id.slice(0,16)}…</div>
+                    {!addr.label && (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(addr.full_address);
+                            setCopiedId(addr.id);
+                            setTimeout(() => setCopiedId(null), 1500);
+                          }}
+                          title="Copy address"
+                          className="text-gray-600 hover:text-green-400 transition-colors">
+                          {copiedId === addr.id
+                            ? <Check className="w-3 h-3 text-green-400" />
+                            : <Copy className="w-3 h-3" />}
+                        </button>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr.full_address)}`}
+                          target="_blank" rel="noopener noreferrer"
+                          title="Open in Google Maps"
+                          className="text-gray-600 hover:text-blue-400 transition-colors">
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
@@ -97,18 +143,40 @@ export default function AdminAddressesPage() {
         />
       )}
 
-      {deletingId && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full">
-            <h3 className="font-bold text-white mb-2">Delete Address?</h3>
-            <p className="text-sm text-gray-400 mb-6">This may affect warehouses or orders linked to this address.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeletingId("")} className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm">Cancel</button>
-              <button onClick={() => doDelete(deletingId)} className="flex-1 px-4 py-2 rounded-lg bg-red-500/90 hover:bg-red-500 text-white text-sm font-medium">Delete</button>
+      {deletingId && (() => {
+        const addr = addresses.find(a => a.id === deletingId);
+        return (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-4 h-4 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">Delete Address?</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">This cannot be undone.</p>
+                </div>
+              </div>
+              {addr && (
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-1">
+                  {addr.label && <div className="text-xs font-semibold text-amber-400">{addr.label}</div>}
+                  <div className="text-sm text-white">{addr.full_address}</div>
+                  {(addr.city || addr.state || addr.zip) && (
+                    <div className="text-xs text-gray-500">
+                      {[addr.city, addr.state, addr.zip].filter(Boolean).join(", ")}
+                    </div>
+                  )}
+                </div>
+              )}
+              <p className="text-xs text-gray-500">This may affect warehouses or orders linked to this address.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setDeletingId("")} className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm">Cancel</button>
+                <button onClick={() => doDelete(deletingId)} className="flex-1 px-4 py-2 rounded-lg bg-red-500/90 hover:bg-red-500 text-white text-sm font-medium">Delete</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
