@@ -125,7 +125,7 @@ export default function AdminMerchandise() {
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="font-medium text-white text-sm truncate shrink min-w-0" title={item.name}>{item.name}</span>
                     {item.tags?.map(t => (
-                      <span key={t} className="text-[9px] bg-gray-800 text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">{t}</span>
+                      <span key={t} title={t} className="text-[9px] bg-gray-800 text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">{t}</span>
                     ))}
                     {item.item_url && (
                       <a href={item.item_url} target="_blank" rel="noopener noreferrer"
@@ -135,13 +135,13 @@ export default function AdminMerchandise() {
                     )}
                   </div>
                 </td>
-                <td className="px-3 py-2.5 text-center w-28">
-                  <span className="text-xs font-mono text-gray-400 block truncate max-w-[100px] mx-auto" title={item.upc ?? ""}>{item.upc || "—"}</span>
+                <td className="px-3 py-2.5 text-center w-28" title={item.upc ?? ""}>
+                  <span className="text-xs font-mono text-gray-400 block truncate max-w-[100px] mx-auto">{item.upc || "—"}</span>
                 </td>
-                <td className="px-3 py-2.5 text-center w-28">
-                  <span className="text-xs text-gray-400 block truncate max-w-[100px] mx-auto" title={item.model ?? ""}>{item.model || "—"}</span>
+                <td className="px-3 py-2.5 text-center w-28" title={item.model ?? ""}>
+                  <span className="text-xs text-gray-400 block truncate max-w-[100px] mx-auto">{item.model || "—"}</span>
                 </td>
-                <td className="px-3 py-2.5 w-52">
+                <td className="px-3 py-2.5 w-52" title={`Price: $${Number(item.price).toFixed(2)}${item.cost != null ? ` | Cost: $${Number(item.cost).toFixed(2)}` : ""}`}>
                   {(() => {
                     const price = Number(item.price);
                     const cost  = item.cost != null ? Number(item.cost) : null;
