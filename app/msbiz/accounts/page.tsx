@@ -327,18 +327,27 @@ function AccountForm({ accountId, onClose, onSaved }: { accountId: string | null
             </div>
           </div>
 
-          {/* Owner */}
+          {/* Owner — editable on create only */}
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block flex items-center gap-1">
               <User className="w-3 h-3" /> Owner
+              {accountId && <span className="text-gray-600 normal-case font-normal text-[10px] ml-1">(set at creation, read-only)</span>}
             </label>
-            <select value={form.owner_id} onChange={e => set("owner_id", e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-              <option value="">— No owner —</option>
-              {sysUsers.map(u => (
-                <option key={u.id} value={u.id}>{u.name ? `${u.name} (${u.email})` : u.email}</option>
-              ))}
-            </select>
+            {accountId ? (
+              <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-sm text-gray-400 font-mono">
+                {sysUsers.find(u => u.id === form.owner_id)
+                  ? (() => { const u = sysUsers.find(u => u.id === form.owner_id)!; return u.name ? `${u.name} (${u.email})` : u.email; })()
+                  : form.owner_id || "—"}
+              </div>
+            ) : (
+              <select value={form.owner_id} onChange={e => set("owner_id", e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                <option value="">— No owner —</option>
+                {sysUsers.map(u => (
+                  <option key={u.id} value={u.id}>{u.name ? `${u.name} (${u.email})` : u.email}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Linked orders */}
