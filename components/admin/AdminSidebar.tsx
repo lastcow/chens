@@ -39,7 +39,7 @@ export default function AdminSidebar() {
             )}
             <div className="space-y-0.5">
               {group.items.map((item) => {
-                const active = item.exact ? path === item.href : path.startsWith(item.href);
+                const active = "exact" in item && item.exact ? path === item.href : path.startsWith(item.href);
                 return (
                   <Link
                     key={item.href}
