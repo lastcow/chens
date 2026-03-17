@@ -189,9 +189,12 @@ export default function AdminPurchaseOrders() {
                     <div className="text-xs text-white truncate max-w-[120px]" title={po.requester_name ?? ""}>{po.requester_name || "—"}</div>
                     <div className="text-[10px] text-gray-600 font-mono truncate max-w-[120px]" title={po.requester_email ?? ""}>{po.requester_email}</div>
                   </td>
-                  {/* Qty */}
+                  {/* Qty / Completed */}
                   <td className="px-3 py-2.5 w-12 shrink-0 text-center whitespace-nowrap">
                     <span className="text-sm font-mono font-bold text-white">{po.qty}</span>
+                    <div className={`text-[10px] font-mono ${po.completed_qty >= po.qty && po.qty > 0 ? "text-green-400" : "text-gray-600"}`}>
+                      {po.completed_qty}
+                    </div>
                   </td>
                   {/* Required price */}
                   <td className="px-3 py-2.5 w-24 shrink-0 text-right whitespace-nowrap">
