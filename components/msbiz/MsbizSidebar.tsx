@@ -14,8 +14,11 @@ interface DashboardCounts {
   reminders_due?: number;
 }
 
-const NAV_MAIN = [
+const NAV_DASHBOARD = [
   { href: "/msbiz",              label: "Dashboard",     icon: LayoutDashboard, exact: true },
+];
+
+const NAV_BUSINESS = [
   { href: "/msbiz/orders",       label: "Orders",        icon: Package,         countKey: "orders" },
   { href: "/msbiz/price-matches",label: "Price Match",   icon: CreditCard,      countKey: "pm" },
   { href: "/msbiz/inbound",      label: "Inbound",       icon: ArrowDownToLine },
@@ -81,7 +84,15 @@ export default function MsbizSidebar() {
   return (
     <aside className="w-52 shrink-0">
       <nav className="space-y-1 sticky top-[110px]">
-        {NAV_MAIN.map(navItem)}
+        <div className="pb-1 px-3">
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Dashboard</p>
+        </div>
+        {NAV_DASHBOARD.map(navItem)}
+
+        <div className="pt-3 pb-1 px-3">
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Business</p>
+        </div>
+        {NAV_BUSINESS.map(navItem)}
 
         <div className="pt-3 pb-1 px-3">
           <p className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Settings</p>
