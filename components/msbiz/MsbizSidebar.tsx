@@ -4,8 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, CreditCard, Warehouse, ArrowDownToLine, ArrowUpFromLine,
-  Truck, AlertTriangle, DollarSign, Settings, Users, MapPin, ClipboardList, Mail,
-  ShieldCheck, FileText
+  Truck, AlertTriangle, DollarSign, Settings, FileText
 } from "lucide-react";
 
 interface DashboardCounts {
@@ -19,38 +18,27 @@ const NAV_MAIN = [
   { href: "/msbiz",              label: "Dashboard",     icon: LayoutDashboard, exact: true },
   { href: "/msbiz/orders",       label: "Orders",        icon: Package,         countKey: "orders" },
   { href: "/msbiz/price-matches",label: "Price Match",   icon: CreditCard,      countKey: "pm" },
-  { href: "/msbiz/warehouse",    label: "Warehouse",     icon: Warehouse },
   { href: "/msbiz/inbound",      label: "Inbound",       icon: ArrowDownToLine },
   { href: "/msbiz/outbound",     label: "Outbound",      icon: ArrowUpFromLine },
   { href: "/msbiz/invoices",     label: "Invoices",      icon: FileText },
   { href: "/msbiz/tracking",     label: "Tracking",      icon: Truck },
   { href: "/msbiz/exceptions",   label: "Exceptions",    icon: AlertTriangle,   countKey: "exceptions" },
   { href: "/msbiz/costs",        label: "Costs",         icon: DollarSign },
-  { href: "/msbiz/settings",     label: "Settings",      icon: Settings },
 ];
 
-const NAV_ADMIN = [
-  { href: "/msbiz/admin/users",       label: "Users",       icon: Users },
-  { href: "/msbiz/admin/invitations", label: "Invitations", icon: Mail },
-  { href: "/msbiz/admin/addresses",   label: "Addresses",   icon: MapPin },
-  { href: "/msbiz/admin/roles",       label: "Roles",       icon: ShieldCheck },
-  { href: "/msbiz/admin/audit",       label: "Audit Log",   icon: ClipboardList },
+const NAV_SETTINGS = [
+  { href: "/msbiz/warehouse",    label: "Warehouse",     icon: Warehouse },
+  { href: "/msbiz/settings",     label: "Settings",      icon: Settings },
 ];
 
 export default function MsbizSidebar() {
   const path = usePathname();
   const [counts, setCounts] = useState<DashboardCounts>({});
-  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     fetch("/api/msbiz/dashboard")
       .then(r => r.json())
       .then(d => { setCounts(d); })
-      .catch(() => {});
-
-    // Check admin permission
-    fetch("/api/msbiz/admin/users")
-      .then(r => { if (r.ok) setIsAdmin(true); })
       .catch(() => {});
   }, []);
 
@@ -96,14 +84,10 @@ export default function MsbizSidebar() {
       <nav className="space-y-1 sticky top-[110px]">
         {NAV_MAIN.map(navItem)}
 
-        {isAdmin && (
-          <>
-            <div className="pt-3 pb-1 px-3">
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Admin</p>
-            </div>
-            {NAV_ADMIN.map(navItem)}
-          </>
-        )}
+        <div className="pt-3 pb-1 px-3">
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Settings</p>
+        </div>
+        {NAV_SETTINGS.map(navItem)}
       </nav>
     </aside>
   );
