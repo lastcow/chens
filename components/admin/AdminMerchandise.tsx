@@ -75,8 +75,8 @@ export default function AdminMerchandise() {
           <p className="text-sm text-gray-500 mt-0.5">{total} item{total !== 1 ? "s" : ""}</p>
         </div>
         <button onClick={() => { setEditItem(null); setShowForm(true); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-md bg-amber-500/90 hover:bg-amber-500 text-white text-sm font-medium transition-colors">
-          <Plus className="w-4 h-4" /> Add Item
+          className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-700 bg-transparent hover:bg-gray-800 text-gray-300 hover:text-white text-sm font-medium transition-colors">
+          <Plus className="w-4 h-4" /> Add Merchandise
         </button>
       </div>
 
