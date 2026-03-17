@@ -383,7 +383,11 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
   };
 
   const submit = async () => {
-    if (!form.requester_id || !form.merchandise_id) { setError("Requester and item are required"); return; }
+    if (!form.requester_id) { setError("Requester is required"); return; }
+    if (!form.merchandise_id) { setError("Merchandise is required"); return; }
+    if (!form.qty || parseInt(form.qty, 10) < 1) { setError("Qty must be at least 1"); return; }
+    if (!form.required_price) { setError("Required price is required"); return; }
+    if (!form.warehouse_id) { setError("Ship to warehouse is required"); return; }
     setSaving(true); setError("");
     const body = {
       requester_id: form.requester_id,
@@ -480,7 +484,7 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
           {/* Qty + Completed Qty + Required Price */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Qty</label>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Qty *</label>
               <input type="number" min="1" value={form.qty} onChange={e => set("qty", e.target.value)}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
             </div>
@@ -490,7 +494,7 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Required Price ($)</label>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Required Price ($) *</label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
                 <input type="text" inputMode="decimal" value={form.required_price}
@@ -521,7 +525,7 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
 
           {/* Ship To Warehouse — with full address */}
           <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Ship To Warehouse</label>
+            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Ship To Warehouse *</label>
             <select value={form.warehouse_id} onChange={e => set("warehouse_id", e.target.value)}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
               <option value="">— None —</option>
