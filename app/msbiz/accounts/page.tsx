@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 
 interface Account {
-  id: string; email: string; display_name: string | null;
+  id: string; email: string; display_name: string | null; password?: string;
   status: string; notes: string | null; balance: number;
   owner_id: string | null; owner_name: string | null; owner_email: string | null;
   order_ids: string[]; last_used_at: string | null; created_at: string;
@@ -30,6 +30,7 @@ export default function AccountsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [shownPassId, setShownPassId] = useState<string | null>(null);
 
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
@@ -106,13 +107,28 @@ export default function AccountsPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 mb-1">
+                    <div className="flex items-center gap-1.5 mb-0.5">
                       <span className="text-xs text-gray-400 font-mono">{acc.email}</span>
                       <button onClick={() => copyEmail(acc.email, acc.id)}
                         className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-gray-300 transition-all">
                         {copiedId === acc.id ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
                       </button>
                     </div>
+                    {acc.password && (
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-xs font-mono text-gray-500">
+                          {shownPassId === acc.id ? acc.password : "••••••••"}
+                        </span>
+                        <button onClick={() => setShownPassId(shownPassId === acc.id ? null : acc.id)}
+                          className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-gray-300 transition-all">
+                          {shownPassId === acc.id ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        </button>
+                        <button onClick={() => { navigator.clipboard.writeText(acc.password!); }}
+                          className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-gray-300 transition-all">
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-4 text-[10px] text-gray-500 flex-wrap">
                       {/* Balance */}
