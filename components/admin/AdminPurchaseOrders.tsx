@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import Select from "react-select";
 import {
   ShoppingCart, Plus, Search, Edit2, Trash2, X, Save,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Package, DollarSign
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Package, DollarSign, Check
 } from "lucide-react";
 
 interface PO {
@@ -48,6 +48,7 @@ export default function AdminPurchaseOrders() {
   const [showForm, setShowForm]   = useState(false);
   const [editItem, setEditItem]   = useState<PO | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [copiedPoId, setCopiedPoId] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -140,11 +141,29 @@ export default function AdminPurchaseOrders() {
                   <td className="pl-2 pr-0 py-0 w-1.5">
                     <div className={`w-1 rounded-full h-7 mx-auto ${STATUS_BAR[po.status] ?? "bg-gray-600"}`} title={po.status} />
                   </td>
-                  {/* PO Number */}
+                  {/* PO Number — click to copy full details */}
                   <td className="px-3 py-2.5 w-36">
-                    <span className="text-xs font-mono text-amber-400 whitespace-nowrap" title={po.po_number ?? ""}>
-                      {po.po_number ? po.po_number.slice(-4) : "—"}
-                    </span>
+                    {po.po_number ? (
+                      <button
+                        onClick={() => {
+                          const parts = [
+                            `PO# ${po.po_number}`,
+                            `item: ${po.merchandise_name ?? ""}${po.upc ? ` (${po.upc})` : ""}`,
+                            po.warehouse_name ? `ship to: ${po.warehouse_name}` : null,
+                            po.merchandise_price != null ? `list price $${Number(po.merchandise_price).toFixed(2)}` : null,
+                          ].filter(Boolean).join(", ");
+                          navigator.clipboard.writeText(parts);
+                          setCopiedPoId(po.id);
+                          setTimeout(() => setCopiedPoId(null), 1500);
+                        }}
+                        title={po.po_number}
+                        className="flex items-center gap-1 text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors cursor-pointer group/po">
+                        {copiedPoId === po.id
+                          ? <Check className="w-3 h-3 text-green-400 shrink-0" />
+                          : null}
+                        <span>{po.po_number.slice(-4)}</span>
+                      </button>
+                    ) : <span className="text-gray-700 text-xs">—</span>}
                   </td>
                   {/* Image */}
                   <td className="px-3 py-2.5 w-12">
