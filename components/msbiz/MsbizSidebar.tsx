@@ -37,6 +37,11 @@ const NAV_SETTINGS = [
 export default function MsbizSidebar() {
   const path = usePathname();
   const [counts, setCounts] = useState<DashboardCounts>({});
+  const [perms, setPerms] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/msbiz/permissions").then(r => r.json()).then(d => setPerms(d.permissions ?? [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/msbiz/dashboard")
@@ -93,7 +98,12 @@ export default function MsbizSidebar() {
         <div className="pt-3 pb-1 px-3">
           <p className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Business</p>
         </div>
-        {NAV_BUSINESS.map(navItem)}
+        {NAV_BUSINESS.filter(item => {
+          if (item.href === "/msbiz/accounts") {
+            return perms.includes("*") || perms.includes("accounts.view") || perms.includes("accounts.manage");
+          }
+          return true;
+        }).map(navItem)}
 
         <div className="pt-3 pb-1 px-3">
           <p className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Settings</p>
