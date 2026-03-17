@@ -145,7 +145,9 @@ export default function AdminMerchandise() {
                         </a>
                         <button
                           onClick={() => {
-                            navigator.clipboard.writeText(item.item_url!);
+                            navigator.clipboard.writeText(
+                              `${item.name}: ${item.item_url}, price: $${Number(item.price).toFixed(2)}`
+                            );
                             setCopiedId(item.id);
                             setTimeout(() => setCopiedId(null), 1500);
                           }}
