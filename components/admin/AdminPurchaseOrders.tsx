@@ -15,9 +15,9 @@ interface PO {
   status: string; notes: string | null; created_at: string;
 }
 
-interface User { id: string; name: string | null; email: string; }
+interface User { id: string; name: string | null; email: string; role_name?: string; }
 interface Merch { id: string; name: string; upc: string | null; model: string | null; image_url: string | null; price: number; }
-interface Warehouse { id: string; name: string; }
+interface Warehouse { id: string; name: string; full_address: string | null; city: string | null; state: string | null; zip: string | null; }
 
 const STATUS_COLORS: Record<string, string> = {
   pending:   "bg-amber-900/30 text-amber-400 border-amber-700/30",
@@ -252,11 +252,13 @@ export default function AdminPurchaseOrders() {
 }
 
 function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; onSaved: () => void }) {
-  const [saving, setSaving]     = useState(false);
-  const [error, setError]       = useState("");
-  const [users, setUsers]       = useState<User[]>([]);
-  const [merch, setMerch]       = useState<Merch[]>([]);
+  const [saving, setSaving]         = useState(false);
+  const [error, setError]           = useState("");
+  const [allUsers, setAllUsers]     = useState<User[]>([]);
+  const [allMerch, setAllMerch]     = useState<Merch[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [userSearch, setUserSearch] = useState("");
+  const [merchSearch, setMerchSearch] = useState("");
   const [form, setForm] = useState({
     requester_id: po?.requester_id ?? "",
     merchandise_id: po?.merchandise_id ?? "",
@@ -270,17 +272,39 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/admin/users?limit=200").then(r => r.json()),
-      fetch("/api/admin/merchandise?limit=200").then(r => r.json()),
-      fetch("/api/msbiz/warehouses").then(r => r.json()),
+      fetch("/api/admin/msbiz-users").then(r => r.json()),
+      fetch("/api/admin/merchandise?limit=500").then(r => r.json()),
+      fetch("/api/admin/msbiz-warehouses").then(r => r.json()),
     ]).then(([u, m, w]) => {
-      setUsers(u.users ?? []);
-      setMerch(m.items ?? []);
+      setAllUsers(u.users ?? []);
+      setAllMerch(m.items ?? []);
       setWarehouses(w.warehouses ?? []);
     }).catch(() => {});
   }, []);
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const filteredUsers = allUsers.filter(u => {
+    const q = userSearch.toLowerCase();
+    return !q || u.email.toLowerCase().includes(q) || (u.name ?? "").toLowerCase().includes(q);
+  });
+
+  const filteredMerch = allMerch.filter(m => {
+    const q = merchSearch.toLowerCase();
+    return !q || m.name.toLowerCase().includes(q) || (m.upc ?? "").includes(q) || (m.model ?? "").toLowerCase().includes(q);
+  });
+
+  const selectedMerch = allMerch.find(m => m.id === form.merchandise_id);
+  const selectedWarehouse = warehouses.find(w => w.id === form.warehouse_id);
+
+  const handleMerchChange = (id: string) => {
+    const m = allMerch.find(x => x.id === id);
+    setForm(f => ({
+      ...f,
+      merchandise_id: id,
+      required_price: m ? String(Number(m.price).toFixed(2)) : f.required_price,
+    }));
+  };
 
   const submit = async () => {
     if (!form.requester_id || !form.merchandise_id) { setError("Requester and item are required"); return; }
@@ -303,8 +327,6 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
     if (res.ok) { onSaved(); } else { const d = await res.json(); setError(d.error || "Failed"); setSaving(false); }
   };
 
-  const selectedMerch = merch.find(m => m.id === form.merchandise_id);
-
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
@@ -326,7 +348,7 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
               </div>
               <div>
                 <h2 className="text-base font-bold text-white">{po ? "Edit PO" : "New Purchase Order"}</h2>
-                <p className="text-[11px] text-gray-500 mt-0.5">{po ? `Updating PO` : "Create a new purchase order"}</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">{po ? "Updating PO" : "Create a new purchase order"}</p>
               </div>
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors">
@@ -338,28 +360,51 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {error && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">{error}</div>}
 
-          {/* Requester */}
+          {/* Requester — searchable list of msbiz users */}
           <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Requester *</label>
-            <select value={form.requester_id} onChange={e => set("requester_id", e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-              <option value="">— Select user —</option>
-              {users.map(u => <option key={u.id} value={u.id}>{u.name ? `${u.name} (${u.email})` : u.email}</option>)}
+            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Requester * <span className="text-gray-600 normal-case font-normal">(MS Business users)</span></label>
+            <div className="relative mb-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+              <input value={userSearch} onChange={e => setUserSearch(e.target.value)}
+                placeholder="Search users…"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" />
+            </div>
+            <select value={form.requester_id} onChange={e => set("requester_id", e.target.value)} size={4}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-amber-500 overflow-y-auto">
+              <option value="">— Select —</option>
+              {filteredUsers.map(u => (
+                <option key={u.id} value={u.id}>{u.name ? `${u.name} · ${u.email}` : u.email}</option>
+              ))}
             </select>
+            {form.requester_id && (() => {
+              const u = allUsers.find(x => x.id === form.requester_id);
+              return u ? <div className="text-[10px] text-amber-400 mt-1 font-mono">{u.name || u.email}</div> : null;
+            })()}
           </div>
 
-          {/* Merchandise */}
+          {/* Merchandise — searchable */}
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Merchandise *</label>
-            <select value={form.merchandise_id} onChange={e => set("merchandise_id", e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-              <option value="">— Select item —</option>
-              {merch.map(m => <option key={m.id} value={m.id}>{m.name}{m.upc ? ` · ${m.upc}` : ""}</option>)}
+            <div className="relative mb-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+              <input value={merchSearch} onChange={e => setMerchSearch(e.target.value)}
+                placeholder="Search by name, UPC, model…"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" />
+            </div>
+            <select value={form.merchandise_id} onChange={e => handleMerchChange(e.target.value)} size={4}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-amber-500">
+              <option value="">— Select —</option>
+              {filteredMerch.map(m => (
+                <option key={m.id} value={m.id}>{m.name}{m.upc ? ` · ${m.upc}` : ""}{m.model ? ` · ${m.model}` : ""}</option>
+              ))}
             </select>
             {selectedMerch && (
               <div className="mt-1.5 flex items-center gap-2 text-[11px] text-gray-500">
-                {selectedMerch.image_url && <img src={selectedMerch.image_url} className="w-8 h-8 object-contain rounded border border-gray-700" alt="" />}
-                <span>List price: <span className="text-green-400 font-mono">${Number(selectedMerch.price).toFixed(2)}</span></span>
+                {selectedMerch.image_url && (
+                  <img src={selectedMerch.image_url} className="w-8 h-8 object-contain rounded border border-gray-700" alt=""
+                    onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                )}
+                <span>List: <span className="text-green-400 font-mono">${Number(selectedMerch.price).toFixed(2)}</span></span>
                 {selectedMerch.model && <span className="text-gray-600">· {selectedMerch.model}</span>}
               </div>
             )}
@@ -378,7 +423,7 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
                 <input type="text" inputMode="decimal" value={form.required_price}
                   onChange={e => set("required_price", e.target.value.replace(/[^0-9.]/g, ""))}
-                  placeholder="Max price"
+                  placeholder="Pre-filled from list price"
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-8 pr-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
               </div>
             </div>
@@ -402,7 +447,7 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
             </div>
           </div>
 
-          {/* Warehouse */}
+          {/* Ship To Warehouse — with full address */}
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Ship To Warehouse</label>
             <select value={form.warehouse_id} onChange={e => set("warehouse_id", e.target.value)}
@@ -410,6 +455,12 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
               <option value="">— None —</option>
               {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
+            {selectedWarehouse && selectedWarehouse.full_address && (
+              <div className="mt-1.5 text-[11px] text-gray-500 flex items-start gap-1.5">
+                <Package className="w-3 h-3 mt-0.5 text-gray-600 shrink-0" />
+                <span>{selectedWarehouse.full_address}</span>
+              </div>
+            )}
           </div>
 
           {/* Notes */}
