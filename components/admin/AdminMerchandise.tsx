@@ -93,8 +93,8 @@ export default function AdminMerchandise() {
         <table className="w-full text-sm">
           <thead className="border-b border-gray-800 bg-gray-900">
             <tr className="text-xs text-gray-500 uppercase tracking-wider">
-              <th className="text-left px-5 py-3">Item</th>
-              <th className="text-left px-3 py-3">Image</th>
+              <th className="px-4 py-3 w-12"></th>
+              <th className="text-left px-3 py-3">Item</th>
               <th className="text-center px-3 py-3">UPC</th>
               <th className="text-center px-3 py-3">Model</th>
               <th className="text-left px-3 py-3 w-44">Price / Cost</th>
@@ -110,8 +110,15 @@ export default function AdminMerchandise() {
               <tr><td colSpan={8} className="text-center py-10 text-gray-600">No items found.</td></tr>
             ) : items.map(item => (
               <tr key={item.id} className="hover:bg-gray-800/30 transition-colors group">
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-1.5">
+                {/* Image thumbnail */}
+                <td className="px-4 py-3">
+                  {item.image_url
+                    ? <img src={item.image_url} alt={item.name} className="w-10 h-10 object-cover rounded-lg border border-gray-700 flex-shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    : <div className="w-10 h-10 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center flex-shrink-0"><ShoppingBag className="w-4 h-4 text-gray-600" /></div>}
+                </td>
+                {/* Name + tags */}
+                <td className="px-3 py-3">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="font-medium text-white text-sm">{item.name}</span>
                     {item.item_url && (
                       <a href={item.item_url} target="_blank" rel="noopener noreferrer"
@@ -119,19 +126,10 @@ export default function AdminMerchandise() {
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     )}
+                    {item.tags?.map(t => (
+                      <span key={t} className="text-[9px] bg-gray-800 text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full">{t}</span>
+                    ))}
                   </div>
-                  {item.tags?.length > 0 && (
-                    <div className="flex gap-1 mt-1 flex-wrap">
-                      {item.tags.slice(0, 3).map(t => (
-                        <span key={t} className="text-[9px] bg-gray-800 text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full">{t}</span>
-                      ))}
-                    </div>
-                  )}
-                </td>
-                <td className="px-3 py-3">
-                  {item.image_url
-                    ? <img src={item.image_url} alt={item.name} className="w-10 h-10 object-cover rounded-lg border border-gray-700" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                    : <div className="w-10 h-10 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center"><ShoppingBag className="w-4 h-4 text-gray-600" /></div>}
                 </td>
                 <td className="px-3 py-3 text-center">
                   <span className="text-xs font-mono text-gray-400">{item.upc || "—"}</span>
