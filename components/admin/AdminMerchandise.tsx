@@ -110,25 +110,29 @@ export default function AdminMerchandise() {
               <tr><td colSpan={8} className="text-center py-10 text-gray-600">No items found.</td></tr>
             ) : items.map(item => (
               <tr key={item.id} className="hover:bg-gray-800/30 transition-colors group">
-                {/* Image thumbnail */}
-                <td className="px-4 py-3">
+                {/* Image — natural aspect ratio, max 48px tall */}
+                <td className="px-4 py-2.5">
                   {item.image_url
-                    ? <img src={item.image_url} alt={item.name} className="w-10 h-10 object-cover rounded-lg border border-gray-700 flex-shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                    : <div className="w-10 h-10 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center flex-shrink-0"><ShoppingBag className="w-4 h-4 text-gray-600" /></div>}
+                    ? <img src={item.image_url} alt={item.name}
+                        className="max-h-12 max-w-[48px] w-auto h-auto rounded-md border border-gray-700 object-contain"
+                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    : <div className="w-10 h-10 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center flex-shrink-0">
+                        <ShoppingBag className="w-4 h-4 text-gray-600" />
+                      </div>}
                 </td>
-                {/* Name + tags */}
-                <td className="px-3 py-3">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-medium text-white text-sm">{item.name}</span>
+                {/* Name + tags + link — all on one line, no wrap */}
+                <td className="px-3 py-2.5">
+                  <div className="flex items-center gap-1.5 overflow-hidden">
+                    <span className="font-medium text-white text-sm whitespace-nowrap">{item.name}</span>
+                    {item.tags?.map(t => (
+                      <span key={t} className="text-[9px] bg-gray-800 text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">{t}</span>
+                    ))}
                     {item.item_url && (
                       <a href={item.item_url} target="_blank" rel="noopener noreferrer"
-                        className="text-gray-600 hover:text-blue-400 transition-colors flex-shrink-0">
+                        className="text-gray-600 hover:text-blue-400 transition-colors flex-shrink-0 ml-0.5">
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     )}
-                    {item.tags?.map(t => (
-                      <span key={t} className="text-[9px] bg-gray-800 text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full">{t}</span>
-                    ))}
                   </div>
                 </td>
                 <td className="px-3 py-3 text-center">
