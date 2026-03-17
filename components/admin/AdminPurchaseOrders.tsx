@@ -54,7 +54,7 @@ export default function AdminPurchaseOrders() {
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     const p = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
-    if (search.length >= 3) p.set("search", search);
+    if (search.length >= 2) p.set("search", search);
     if (statusFilter) p.set("status", statusFilter);
     const res = await fetch(`/api/admin/purchase-orders?${p}`);
     const d = await res.json();
