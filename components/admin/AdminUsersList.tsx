@@ -86,7 +86,9 @@ export default function AdminUsersList() {
     const msbizEnabled = userMod?.modules?.msbiz ?? false;
     const msbizUser = (permRes.users ?? []).find((u: { id: string }) => u.id === user.id);
     const perms = msbizUser?.permissions ?? Object.fromEntries(ALL_MSBIZ_PERMS.map(p => [p, false]));
-    setMsbizDialog({ user, perms, role: msbizUser?.role_name ?? "operator", enabled: msbizEnabled, saving: false });
+    // User is enabled if user_modules says so OR if they already have a permissions row
+    const effectiveEnabled = msbizEnabled || !!msbizUser;
+    setMsbizDialog({ user, perms, role: msbizUser?.role_name ?? "operator", enabled: effectiveEnabled, saving: false });
   };
 
   const saveMsbizPerms = async () => {
