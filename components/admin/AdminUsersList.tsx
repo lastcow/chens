@@ -21,6 +21,7 @@ const ALL_MSBIZ_PERMS = Object.values(MSBIZ_PERMISSION_GROUPS).flat();
 
 const MSBIZ_PRESETS: Record<string, Set<string>> = {
   viewer:   new Set(ALL_MSBIZ_PERMS.filter(p => p.endsWith(".view"))),
+  pmer:     new Set(["orders.view","accounts.view","pm.view","pm.manage","price_match.view","price_match.manage","exceptions.view"]),
   operator: new Set(["orders.view","orders.create","orders.edit","pm.view","pm.manage","warehouse.view","inbound.view","inbound.create","inbound.receive","outbound.view","outbound.create","exceptions.view","exceptions.create","tracking.view","costs.view","accounts.view","addresses.view","invoices.view"]),
   admin:    new Set(ALL_MSBIZ_PERMS),
 };
@@ -399,7 +400,7 @@ export default function AdminUsersList() {
                 <div className="px-6 py-3 border-b border-gray-800 flex items-center gap-3">
                   <Shield className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                   <span className="text-xs text-gray-500 mr-1">Preset:</span>
-                  {["viewer","operator","admin"].map(preset => (
+                  {["viewer","pmer","operator","admin"].map(preset => (
                     <button key={preset} onClick={() => setMsbizDialog(d => d ? {
                       ...d,
                       role: preset,

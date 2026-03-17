@@ -68,6 +68,9 @@ export default function AdminUsersPage() {
     if (preset === "viewer") {
       const viewOnly = allFlat.filter(p => p.endsWith(".view"));
       setPerms(Object.fromEntries(allFlat.map(p => [p, viewOnly.includes(p)])));
+    } else if (preset === "pmer") {
+      const pmerSet = new Set(["orders.view","accounts.view","pm.view","pm.manage","price_match.view","price_match.manage","exceptions.view"]);
+      setPerms(Object.fromEntries(allFlat.map(p => [p, pmerSet.has(p)])));
     } else if (preset === "operator") {
       const ops = new Set(["orders.view","orders.create","orders.edit","pm.view","pm.manage","warehouse.view","inbound.view","inbound.create","inbound.receive","outbound.view","outbound.create","exceptions.view","exceptions.create","tracking.view","costs.view"]);
       setPerms(Object.fromEntries(allFlat.map(p => [p, ops.has(p)])));
@@ -155,7 +158,7 @@ export default function AdminUsersPage() {
             {/* Presets */}
             <div className="px-6 py-3 border-b border-gray-800 flex items-center gap-2">
               <span className="text-xs text-gray-500 mr-1">Preset:</span>
-              {["viewer","operator","admin"].map(p => (
+              {["viewer","pmer","operator","admin"].map(p => (
                 <button key={p} onClick={() => applyPreset(p)}
                   className="px-3 py-1 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-xs capitalize transition-colors">
                   {p}
