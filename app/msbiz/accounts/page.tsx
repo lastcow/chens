@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   UserCircle, Plus, Search, Edit2, Trash2, X,
-  Copy, Check, DollarSign, Link2, Package, User, Save,
+  Copy, Check, DollarSign, Link2, Save,
   Eye, EyeOff, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
 } from "lucide-react";
 
@@ -112,9 +112,7 @@ export default function AccountsPage() {
               <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
                 <th className="w-1.5 pl-2"></th>
                 <th className="text-left px-4 py-3">Account</th>
-                <th className="text-left px-3 py-3 w-36">Password</th>
-                <th className="text-right px-3 py-3 w-28">Balance</th>
-                <th className="text-left px-3 py-3 w-36">Owner</th>
+                <th className="text-left px-3 py-3 w-36">Balance</th>
                 <th className="text-center px-3 py-3 w-20">Orders</th>
                 <th className="text-center px-3 py-3 w-20"></th>
               </tr>
@@ -142,46 +140,39 @@ export default function AccountsPage() {
                     <div className={`w-1 rounded-full h-7 mx-auto ${STATUS_BAR[acc.status] ?? "bg-gray-600"}`}
                       title={acc.status} />
                   </td>
-                  {/* Account: display name + email */}
+                  {/* Account: email + password + copy-all */}
                   <td className="px-4 py-3 w-full min-w-0">
-                    <div className="font-medium text-white text-sm truncate">{acc.display_name || "—"}</div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-xs font-mono text-gray-500 truncate">{acc.email}</span>
-                      <button onClick={() => {
-                        navigator.clipboard.writeText(acc.email);
-                        setCopiedId(`email-${acc.id}`);
-                        setTimeout(() => setCopiedId(null), 1500);
-                      }} className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-green-400 transition-all shrink-0">
-                        {copiedId === `email-${acc.id}` ? <Check className="w-2.5 h-2.5 text-green-400" /> : <Copy className="w-2.5 h-2.5" />}
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-sm font-mono text-white truncate">{acc.email}</span>
+                      <button
+                        onClick={() => copyAll(acc)}
+                        title="Copy email, password & balance"
+                        className={`opacity-0 group-hover:opacity-100 transition-all shrink-0 ${
+                          copiedId === `all-${acc.id}` ? "text-green-400" : "text-gray-600 hover:text-green-400"
+                        }`}>
+                        {copiedId === `all-${acc.id}` ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                       </button>
                     </div>
+                    {acc.password && (
+                      <div className="text-[11px] font-mono text-gray-600 mt-0.5 truncate">••••••••</div>
+                    )}
                   </td>
-                  {/* Password */}
+                  {/* Balance progress bar */}
                   <td className="px-3 py-3 w-36">
-                    {acc.password ? (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-mono text-gray-400 truncate max-w-[90px]" title={acc.password}>••••••••</span>
-                        <button onClick={() => {
-                          navigator.clipboard.writeText(acc.password!);
-                          setCopiedId(`pw-${acc.id}`);
-                          setTimeout(() => setCopiedId(null), 1500);
-                        }} className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-green-400 transition-all shrink-0">
-                          {copiedId === `pw-${acc.id}` ? <Check className="w-2.5 h-2.5 text-green-400" /> : <Copy className="w-2.5 h-2.5" />}
-                        </button>
-                      </div>
-                    ) : <span className="text-gray-700 text-xs">—</span>}
-                  </td>
-                  {/* Balance */}
-                  <td className="px-3 py-3 w-28 text-right">
-                    <span className="text-sm font-mono font-semibold text-green-400">
-                      ${Number(acc.balance ?? 0).toFixed(2)}
-                    </span>
-                  </td>
-                  {/* Owner */}
-                  <td className="px-3 py-3 w-36">
-                    <span className="text-xs text-blue-300 truncate block max-w-[120px]" title={acc.owner_name ?? acc.owner_email ?? ""}>
-                      {acc.owner_name || acc.owner_email || "—"}
-                    </span>
+                    {(() => {
+                      const bal = Number(acc.balance ?? 0);
+                      const max = 1000;
+                      const pct = Math.min((bal / max) * 100, 100);
+                      const color = bal <= 0 ? "bg-gray-700" : bal < 100 ? "bg-red-500/70" : bal < 400 ? "bg-amber-500/70" : "bg-green-500/70";
+                      return (
+                        <div title={`$${bal.toFixed(2)}`}>
+                          <div className="text-xs font-mono font-semibold text-green-400 mb-1">${bal.toFixed(2)}</div>
+                          <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </td>
                   {/* Orders */}
                   <td className="px-3 py-3 w-20 text-center">
@@ -192,12 +183,6 @@ export default function AccountsPage() {
                   {/* Actions */}
                   <td className="px-3 py-3 w-20">
                     <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => copyAll(acc)} title="Copy email, password & balance"
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-                          copiedId === `all-${acc.id}` ? "text-green-400 bg-green-500/10" : "text-gray-500 hover:text-blue-400 hover:bg-blue-500/10"
-                        }`}>
-                        {copiedId === `all-${acc.id}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
                       <button onClick={() => { setEditId(acc.id); setShowForm(true); }}
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
                         <Edit2 className="w-3.5 h-3.5" />
