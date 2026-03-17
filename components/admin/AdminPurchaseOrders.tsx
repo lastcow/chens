@@ -110,17 +110,17 @@ export default function AdminPurchaseOrders() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
+              <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800 whitespace-nowrap">
                 <th className="w-1.5 pl-2"></th>
-                <th className="text-left px-3 py-3 w-36">PO #</th>
-                <th className="text-left px-3 py-3 w-12"></th>
+                <th className="text-left px-3 py-3 w-14 shrink-0">PO #</th>
+                <th className="text-left px-3 py-3 w-10 shrink-0"></th>
                 <th className="text-left px-3 py-3">Item</th>
-                <th className="text-left px-3 py-3 w-40">Requester</th>
-                <th className="text-center px-3 py-3 w-16">Qty</th>
-                <th className="text-right px-3 py-3 w-28">Req. Price</th>
-                <th className="text-left px-3 py-3 w-36">Deadline</th>
-                <th className="text-left px-3 py-3 w-36">Ship To</th>
-                <th className="text-center px-3 py-3 w-16"></th>
+                <th className="text-left px-3 py-3 w-32 shrink-0">Requester</th>
+                <th className="text-center px-3 py-3 w-12 shrink-0">Qty</th>
+                <th className="text-right px-3 py-3 w-24 shrink-0">Price</th>
+                <th className="text-left px-3 py-3 w-24 shrink-0">Deadline</th>
+                <th className="text-left px-3 py-3 w-32 shrink-0">Ship To</th>
+                <th className="text-center px-3 py-3 w-16 shrink-0"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/50">
@@ -142,7 +142,7 @@ export default function AdminPurchaseOrders() {
                     <div className={`w-1 rounded-full h-7 mx-auto ${STATUS_BAR[po.status] ?? "bg-gray-600"}`} title={po.status} />
                   </td>
                   {/* PO Number — click to copy full details */}
-                  <td className="px-3 py-2.5 w-36">
+                  <td className="px-3 py-2.5 w-14 shrink-0 whitespace-nowrap">
                     {po.po_number ? (
                       <button
                         onClick={() => {
@@ -166,7 +166,7 @@ export default function AdminPurchaseOrders() {
                     ) : <span className="text-gray-700 text-xs">—</span>}
                   </td>
                   {/* Image */}
-                  <td className="px-3 py-2.5 w-12">
+                  <td className="px-3 py-2.5 w-10 shrink-0">
                     {po.image_url
                       ? <img src={po.image_url} alt="" className="max-h-10 max-w-[40px] w-auto h-auto rounded-md border border-gray-700 object-contain"
                           onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
@@ -174,25 +174,25 @@ export default function AdminPurchaseOrders() {
                           <Package className="w-3.5 h-3.5 text-gray-600" />
                         </div>}
                   </td>
-                  {/* Item */}
-                  <td className="px-3 py-2.5 w-full min-w-0">
-                    <div className="font-medium text-white text-sm truncate">{po.merchandise_name ?? "—"}</div>
-                    <div className="flex gap-2 mt-0.5 text-[10px] text-gray-600 font-mono">
+                  {/* Item — takes remaining space, truncates */}
+                  <td className="px-3 py-2.5 w-full min-w-0 max-w-0">
+                    <div className="font-medium text-white text-sm truncate whitespace-nowrap" title={po.merchandise_name ?? ""}>{po.merchandise_name ?? "—"}</div>
+                    <div className="flex gap-2 mt-0.5 text-[10px] text-gray-600 font-mono whitespace-nowrap">
                       {po.upc && <span>{po.upc}</span>}
-                      {po.model && <span>{po.model}</span>}
+                      {po.model && <span className="truncate">{po.model}</span>}
                     </div>
                   </td>
                   {/* Requester */}
-                  <td className="px-3 py-2.5 w-40">
-                    <div className="text-xs text-white truncate">{po.requester_name || "—"}</div>
-                    <div className="text-[10px] text-gray-600 font-mono truncate">{po.requester_email}</div>
+                  <td className="px-3 py-2.5 w-32 shrink-0 whitespace-nowrap">
+                    <div className="text-xs text-white truncate max-w-[120px]" title={po.requester_name ?? ""}>{po.requester_name || "—"}</div>
+                    <div className="text-[10px] text-gray-600 font-mono truncate max-w-[120px]" title={po.requester_email ?? ""}>{po.requester_email}</div>
                   </td>
                   {/* Qty */}
-                  <td className="px-3 py-2.5 w-16 text-center">
+                  <td className="px-3 py-2.5 w-12 shrink-0 text-center whitespace-nowrap">
                     <span className="text-sm font-mono font-bold text-white">{po.qty}</span>
                   </td>
                   {/* Required price */}
-                  <td className="px-3 py-2.5 w-28 text-right">
+                  <td className="px-3 py-2.5 w-24 shrink-0 text-right whitespace-nowrap">
                     {po.required_price != null ? (
                       <div>
                         <div className="text-xs font-mono font-semibold text-green-400">${Number(po.required_price).toFixed(2)}</div>
@@ -203,7 +203,7 @@ export default function AdminPurchaseOrders() {
                     ) : <span className="text-gray-700 text-xs">—</span>}
                   </td>
                   {/* Deadline */}
-                  <td className="px-3 py-2.5 w-36">
+                  <td className="px-3 py-2.5 w-24 shrink-0 whitespace-nowrap">
                     {po.deadline ? (() => {
                       const days = Math.ceil((new Date(po.deadline).getTime() - Date.now()) / 86400000);
                       const overdue = days < 0;
@@ -218,11 +218,11 @@ export default function AdminPurchaseOrders() {
                     })() : <span className="text-gray-700 text-xs">—</span>}
                   </td>
                   {/* Warehouse */}
-                  <td className="px-3 py-2.5 w-36">
-                    <span className="text-xs text-gray-400 truncate block max-w-[120px]">{po.warehouse_name || "—"}</span>
+                  <td className="px-3 py-2.5 w-32 shrink-0 whitespace-nowrap">
+                    <span className="text-xs text-gray-400 truncate block max-w-[120px]" title={po.warehouse_name ?? ""}>{po.warehouse_name || "—"}</span>
                   </td>
                   {/* Actions */}
-                  <td className="px-3 py-2.5 w-16">
+                  <td className="px-3 py-2.5 w-16 shrink-0 whitespace-nowrap">
                     <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => { setEditItem(po); setShowForm(true); }}
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
