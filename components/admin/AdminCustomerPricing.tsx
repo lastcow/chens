@@ -112,7 +112,7 @@ export default function AdminCustomerPricing() {
 
       {/* Search */}
       <div className="sticky top-[100px] z-10 bg-gray-950/80 backdrop-blur-md py-2">
-        <div className="relative w-64">
+        <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Filter items… (2+ chars)"
