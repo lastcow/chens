@@ -97,7 +97,7 @@ export default function AdminMerchandise() {
               <th className="text-left px-3 py-3">Item</th>
               <th className="text-center px-3 py-3">UPC</th>
               <th className="text-center px-3 py-3">Model</th>
-              <th className="text-left px-3 py-3 w-44">Price / Cost</th>
+              <th className="text-left px-3 py-3 w-52">Price / Cost</th>
               <th className="text-center px-3 py-3">Stock</th>
               <th className="text-center px-3 py-3">Status</th>
               <th className="text-center px-3 py-3 w-20"></th>
@@ -120,16 +120,16 @@ export default function AdminMerchandise() {
                         <ShoppingBag className="w-4 h-4 text-gray-600" />
                       </div>}
                 </td>
-                {/* Name — truncated, max width, single row */}
-                <td className="px-3 py-2.5 max-w-0 w-full">
+                {/* Name — truncates to keep tags + link visible */}
+                <td className="px-3 py-2.5 w-0 min-w-0" style={{ maxWidth: "220px" }}>
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="font-medium text-white text-sm truncate flex-1 min-w-0">{item.name}</span>
+                    <span className="font-medium text-white text-sm truncate shrink min-w-0" title={item.name}>{item.name}</span>
                     {item.tags?.map(t => (
-                      <span key={t} className="text-[9px] bg-gray-800 text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">{t}</span>
+                      <span key={t} className="text-[9px] bg-gray-800 text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">{t}</span>
                     ))}
                     {item.item_url && (
                       <a href={item.item_url} target="_blank" rel="noopener noreferrer"
-                        className="text-gray-600 hover:text-blue-400 transition-colors flex-shrink-0">
+                        className="text-gray-600 hover:text-blue-400 transition-colors shrink-0">
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     )}
@@ -141,37 +141,34 @@ export default function AdminMerchandise() {
                 <td className="px-3 py-2.5 text-center w-28">
                   <span className="text-xs text-gray-400 block truncate max-w-[100px] mx-auto" title={item.model ?? ""}>{item.model || "—"}</span>
                 </td>
-                <td className="px-3 py-3 w-44">
+                <td className="px-3 py-2.5 w-52">
                   {(() => {
                     const price = Number(item.price);
                     const cost  = item.cost != null ? Number(item.cost) : null;
                     const margin = cost != null && price > 0 ? ((price - cost) / price) * 100 : null;
                     const costPct = cost != null && price > 0 ? (cost / price) * 100 : 0;
                     return (
-                      <div>
-                        <div className="flex items-center justify-between mb-1 text-[11px]">
-                          <span className="font-mono font-semibold text-white">${price.toFixed(2)}</span>
-                          {cost != null && (
-                            <span className="font-mono text-gray-500">${cost.toFixed(2)}</span>
-                          )}
+                      <div className="w-44">
+                        <div className="flex items-baseline justify-between mb-1.5">
+                          <span className="text-xs font-mono font-semibold text-white">${price.toFixed(2)}</span>
+                          {cost != null
+                            ? <span className="text-xs font-mono text-gray-500">${cost.toFixed(2)}</span>
+                            : <span className="text-[10px] text-gray-700">no cost</span>}
                         </div>
                         <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
                           <div className="h-full flex rounded-full overflow-hidden">
-                            {cost != null && (
-                              <div className="h-full bg-red-500/70" style={{ width: `${Math.min(costPct, 100)}%` }} />
-                            )}
-                            {margin != null && (
-                              <div className="h-full bg-green-500/70" style={{ width: `${Math.min(margin, 100)}%` }} />
-                            )}
-                            {cost == null && (
-                              <div className="h-full bg-amber-500/50 w-full" />
+                            {cost != null ? (
+                              <>
+                                <div className="h-full bg-red-500/70 transition-all" style={{ width: `${Math.min(costPct, 100)}%` }} />
+                                <div className="h-full bg-green-500/70 transition-all" style={{ width: `${Math.min(margin ?? 0, 100)}%` }} />
+                              </>
+                            ) : (
+                              <div className="h-full bg-amber-500/40 w-full" />
                             )}
                           </div>
                         </div>
                         {margin != null && (
-                          <div className="text-[9px] text-gray-600 mt-0.5 font-mono">
-                            {margin.toFixed(0)}% margin
-                          </div>
+                          <div className="text-[9px] text-gray-600 mt-0.5 font-mono">{margin.toFixed(0)}% margin</div>
                         )}
                       </div>
                     );
