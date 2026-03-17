@@ -245,16 +245,22 @@ export default function AdminPurchaseOrders() {
                     </div>
                   </td>
                 </tr>
-                  {/* Full-width progress bar row */}
-                  <tr key={`${po.id}-bar`} className="group">
-                    <td colSpan={9} className="px-0 pt-0 pb-1">
+                  {/* Full-width progress bar row — spans all 10 columns */}
+                  <tr>
+                    <td colSpan={10} className="p-0">
                       {(() => {
                         const pct = po.qty > 0 ? Math.min((po.completed_qty / po.qty) * 100, 100) : 0;
-                        const done = po.completed_qty >= po.qty && po.qty > 0;
-                        const color = done ? "bg-green-500" : pct > 0 ? "bg-blue-500" : "bg-gray-700";
+                        const color =
+                          po.qty === 0              ? "bg-gray-700" :
+                          po.completed_qty === 0    ? "bg-gray-700" :
+                          pct < 25                  ? "bg-red-500/80" :
+                          pct < 50                  ? "bg-orange-500/80" :
+                          pct < 75                  ? "bg-amber-500/80" :
+                          pct < 100                 ? "bg-blue-500/80" :
+                                                      "bg-green-500";
                         return (
-                          <div className="h-0.5 w-full bg-gray-800/60" title={`${po.completed_qty} / ${po.qty} completed`}>
-                            <div className={`h-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+                          <div className="h-[3px] w-full bg-gray-800" title={`${po.completed_qty} / ${po.qty} completed (${Math.round(pct)}%)`}>
+                            <div className={`h-full transition-all duration-500 ${color}`} style={{ width: `${pct}%` }} />
                           </div>
                         );
                       })()}
