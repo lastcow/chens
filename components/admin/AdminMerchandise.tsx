@@ -36,8 +36,8 @@ export default function AdminMerchandise() {
   const fetchItems = useCallback(async () => {
     setLoading(true);
     const p = new URLSearchParams({ page: String(page), limit: String(limit) });
-    if (search)       p.set("search", search);
-    if (statusFilter) p.set("status", statusFilter);
+    if (search.length >= 3) p.set("search", search);
+    if (statusFilter)       p.set("status", statusFilter);
     const res = await fetch(`/api/admin/merchandise?${p}`);
     const d = await res.json();
     setItems(d.items ?? []);
@@ -97,8 +97,7 @@ export default function AdminMerchandise() {
               <th className="text-left px-3 py-3">Image</th>
               <th className="text-center px-3 py-3">UPC</th>
               <th className="text-center px-3 py-3">Model</th>
-              <th className="text-right px-3 py-3">Price</th>
-              <th className="text-right px-3 py-3">Cost</th>
+              <th className="text-left px-3 py-3 w-44">Price / Cost</th>
               <th className="text-center px-3 py-3">Stock</th>
               <th className="text-center px-3 py-3">Status</th>
               <th className="text-center px-3 py-3 w-20"></th>
@@ -121,7 +120,6 @@ export default function AdminMerchandise() {
                       </a>
                     )}
                   </div>
-                  {item.description && <div className="text-[10px] text-gray-600 truncate max-w-48">{item.description}</div>}
                   {item.tags?.length > 0 && (
                     <div className="flex gap-1 mt-1 flex-wrap">
                       {item.tags.slice(0, 3).map(t => (
@@ -141,11 +139,41 @@ export default function AdminMerchandise() {
                 <td className="px-3 py-3 text-center">
                   <span className="text-xs text-gray-400">{item.model || "—"}</span>
                 </td>
-                <td className="px-3 py-3 text-right font-mono text-white font-medium">
-                  ${Number(item.price).toFixed(2)}
-                </td>
-                <td className="px-3 py-3 text-right font-mono text-gray-500">
-                  {item.cost != null ? `$${Number(item.cost).toFixed(2)}` : "—"}
+                <td className="px-3 py-3 w-44">
+                  {(() => {
+                    const price = Number(item.price);
+                    const cost  = item.cost != null ? Number(item.cost) : null;
+                    const margin = cost != null && price > 0 ? ((price - cost) / price) * 100 : null;
+                    const costPct = cost != null && price > 0 ? (cost / price) * 100 : 0;
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between mb-1 text-[11px]">
+                          <span className="font-mono font-semibold text-white">${price.toFixed(2)}</span>
+                          {cost != null && (
+                            <span className="font-mono text-gray-500">${cost.toFixed(2)}</span>
+                          )}
+                        </div>
+                        <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                          <div className="h-full flex rounded-full overflow-hidden">
+                            {cost != null && (
+                              <div className="h-full bg-red-500/70" style={{ width: `${Math.min(costPct, 100)}%` }} />
+                            )}
+                            {margin != null && (
+                              <div className="h-full bg-green-500/70" style={{ width: `${Math.min(margin, 100)}%` }} />
+                            )}
+                            {cost == null && (
+                              <div className="h-full bg-amber-500/50 w-full" />
+                            )}
+                          </div>
+                        </div>
+                        {margin != null && (
+                          <div className="text-[9px] text-gray-600 mt-0.5 font-mono">
+                            {margin.toFixed(0)}% margin
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </td>
                 <td className="px-3 py-3 text-center">
                   <span className={`font-mono text-sm font-bold ${item.stock === 0 ? "text-red-400" : item.stock < 10 ? "text-amber-400" : "text-gray-300"}`}>
