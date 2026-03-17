@@ -13,7 +13,6 @@ interface Account {
 }
 
 interface Order { id: string; ms_order_number: string; status: string; }
-interface SysUser { id: string; name: string | null; email: string; }
 
 const STATUS_COLORS: Record<string, string> = {
   Ready:     "bg-green-900/30 text-green-400 border-green-700/30",
@@ -190,20 +189,16 @@ function AccountForm({ accountId, onClose, onSaved }: { accountId: string | null
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [sysUsers, setSysUsers] = useState<SysUser[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [form, setForm] = useState({
     email: "", password: "", display_name: "", status: "Ready",
-    notes: "", balance: "", owner_id: "", order_ids: [] as string[],
+    notes: "", balance: "", order_ids: [] as string[],
   });
 
   useEffect(() => {
-    // Fetch system users for owner dropdown
-    fetch("/api/admin/users").then(r => r.json()).then(d => setSysUsers(Array.isArray(d) ? d : [])).catch(() => {});
-    // Fetch orders for linking
-    fetch("/api/msbiz/orders?limit=200").then(r => r.json()).then(d => setOrders(d.orders ?? [])).catch(() => {});
-
     if (!accountId) return;
+    // Fetch orders for linking (edit only)
+    fetch("/api/msbiz/orders?limit=200").then(r => r.json()).then(d => setOrders(d.orders ?? [])).catch(() => {});
     fetch(`/api/msbiz/accounts/${accountId}`)
       .then(r => r.json())
       .then(d => {
@@ -213,7 +208,7 @@ function AccountForm({ accountId, onClose, onSaved }: { accountId: string | null
             email: a.email, password: a.password ?? "",
             display_name: a.display_name ?? "", status: a.status ?? "Ready",
             notes: a.notes ?? "", balance: a.balance != null ? String(a.balance) : "0",
-            owner_id: a.owner_id ?? "", order_ids: a.order_ids ?? [],
+            order_ids: a.order_ids ?? [],
           });
         }
       });
@@ -239,7 +234,6 @@ function AccountForm({ accountId, onClose, onSaved }: { accountId: string | null
       email: form.email, display_name: form.display_name || null,
       status: form.status, notes: form.notes || null,
       balance: parseFloat(form.balance) || 0,
-      owner_id: form.owner_id || null,
       order_ids: form.order_ids,
     };
     if (form.password) body.password = form.password;
@@ -327,56 +321,35 @@ function AccountForm({ accountId, onClose, onSaved }: { accountId: string | null
             </div>
           </div>
 
-          {/* Owner — editable on create only */}
-          <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block flex items-center gap-1">
-              <User className="w-3 h-3" /> Owner
-              {accountId && <span className="text-gray-600 normal-case font-normal text-[10px] ml-1">(set at creation, read-only)</span>}
-            </label>
-            {accountId ? (
-              <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-sm text-gray-400 font-mono">
-                {sysUsers.find(u => u.id === form.owner_id)
-                  ? (() => { const u = sysUsers.find(u => u.id === form.owner_id)!; return u.name ? `${u.name} (${u.email})` : u.email; })()
-                  : form.owner_id || "—"}
-              </div>
-            ) : (
-              <select value={form.owner_id} onChange={e => set("owner_id", e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-                <option value="">— No owner —</option>
-                {sysUsers.map(u => (
-                  <option key={u.id} value={u.id}>{u.name ? `${u.name} (${u.email})` : u.email}</option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          {/* Linked orders */}
-          <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1">
-              <Link2 className="w-3 h-3" /> Linked Orders
-              {form.order_ids.length > 0 && <span className="ml-1 text-amber-400 font-mono">[{form.order_ids.length}]</span>}
-            </label>
-            {orders.length === 0 ? (
-              <p className="text-xs text-gray-600">No orders available.</p>
-            ) : (
-              <div className="max-h-36 overflow-y-auto space-y-1 border border-gray-700 rounded-lg p-2 bg-gray-800/50">
-                {orders.map(o => (
-                  <label key={o.id} className="flex items-center gap-2.5 cursor-pointer group px-1 py-1 rounded hover:bg-gray-700/40 transition-colors">
-                    <div onClick={() => toggleOrder(o.id)}
-                      className={`w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${
-                        form.order_ids.includes(o.id)
-                          ? "bg-amber-500 border-amber-500"
-                          : "bg-gray-800 border-gray-600 group-hover:border-gray-500"
-                      }`}>
-                      {form.order_ids.includes(o.id) && <Check className="w-2.5 h-2.5 text-white" />}
-                    </div>
-                    <span className="text-xs font-mono text-amber-400">{o.ms_order_number}</span>
-                    <span className="text-[10px] text-gray-500 capitalize">{o.status}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Linked orders — edit only */}
+          {accountId && (
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1">
+                <Link2 className="w-3 h-3" /> Linked Orders
+                {form.order_ids.length > 0 && <span className="ml-1 text-amber-400 font-mono">[{form.order_ids.length}]</span>}
+              </label>
+              {orders.length === 0 ? (
+                <p className="text-xs text-gray-600">No orders available.</p>
+              ) : (
+                <div className="max-h-36 overflow-y-auto space-y-1 border border-gray-700 rounded-lg p-2 bg-gray-800/50">
+                  {orders.map(o => (
+                    <label key={o.id} className="flex items-center gap-2.5 cursor-pointer group px-1 py-1 rounded hover:bg-gray-700/40 transition-colors">
+                      <div onClick={() => toggleOrder(o.id)}
+                        className={`w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${
+                          form.order_ids.includes(o.id)
+                            ? "bg-amber-500 border-amber-500"
+                            : "bg-gray-800 border-gray-600 group-hover:border-gray-500"
+                        }`}>
+                        {form.order_ids.includes(o.id) && <Check className="w-2.5 h-2.5 text-white" />}
+                      </div>
+                      <span className="text-xs font-mono text-amber-400">{o.ms_order_number}</span>
+                      <span className="text-[10px] text-gray-500 capitalize">{o.status}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Notes */}
           <div>
