@@ -77,38 +77,59 @@ export default function AdminUsersList() {
   const [msbizDialog, setMsbizDialog] = useState<MsbizDialog | null>(null);
 
   const openMsbizDialog = async (user: User) => {
-    // Fetch current msbiz state for this user
-    const [modRes, permRes] = await Promise.all([
-      fetch(`/api/admin/modules`).then(r => r.json()),
-      fetch(`/api/msbiz/admin/users`).then(r => r.json()),
-    ]);
-    const userMod = (modRes.users ?? []).find((u: { id: string; modules: Record<string, boolean> }) => u.id === user.id);
-    const msbizEnabled = userMod?.modules?.msbiz ?? false;
-    const msbizUser = (permRes.users ?? []).find((u: { id: string }) => u.id === user.id);
-    const perms = msbizUser?.permissions ?? Object.fromEntries(ALL_MSBIZ_PERMS.map(p => [p, false]));
-    // User is enabled if user_modules says so OR if they already have a permissions row
-    const effectiveEnabled = msbizEnabled || !!msbizUser;
-    setMsbizDialog({ user, perms, role: msbizUser?.role_name ?? "operator", enabled: effectiveEnabled, saving: false });
+    // Show dialog immediately with loading state
+    setMsbizDialog({ user, perms: Object.fromEntries(ALL_MSBIZ_PERMS.map(p => [p, false])), role: "operator", enabled: false, saving: true });
+
+    try {
+      const [modRes, permRes] = await Promise.all([
+        fetch(`/api/admin/modules`).then(r => r.json()),
+        fetch(`/api/msbiz/admin/users`).then(r => r.json()),
+      ]);
+
+      const userMod = (modRes.users ?? []).find((u: { id: string; modules: Record<string, boolean> }) => u.id === user.id);
+      const msbizEnabled = userMod?.modules?.msbiz ?? false;
+      const msbizUser = (permRes.users ?? []).find((u: { id: string }) => u.id === user.id);
+      // Ensure permissions is a plain object (not undefined/null)
+      const rawPerms = msbizUser?.permissions;
+      const perms = rawPerms && typeof rawPerms === "object"
+        ? Object.fromEntries(ALL_MSBIZ_PERMS.map(p => [p, rawPerms[p] === true]))
+        : Object.fromEntries(ALL_MSBIZ_PERMS.map(p => [p, false]));
+      const effectiveEnabled = msbizEnabled || !!msbizUser;
+      setMsbizDialog({ user, perms, role: msbizUser?.role_name ?? "operator", enabled: effectiveEnabled, saving: false });
+    } catch (e) {
+      setCreditToast({ msg: `❌ Failed to load msbiz data: ${e}`, ok: false });
+      setMsbizDialog(null);
+    }
   };
 
   const saveMsbizPerms = async () => {
     if (!msbizDialog) return;
     setMsbizDialog(d => d ? { ...d, saving: true } : null);
 
-    // 1. Toggle module enable/disable in user_modules table
-    await fetch("/api/admin/modules", {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: msbizDialog.user.id, module: "msbiz", enabled: msbizDialog.enabled }),
-    });
+    try {
+      // 1. Toggle module enable/disable
+      const modRes = await fetch("/api/admin/modules", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: msbizDialog.user.id, module: "msbiz", enabled: msbizDialog.enabled }),
+      });
+      if (!modRes.ok) throw new Error(`modules toggle failed: ${modRes.status}`);
 
-    // 2. Always upsert permissions (enabled or disabled — so state is preserved for re-enable)
-    await fetch(`/api/msbiz/admin/users/${msbizDialog.user.id}`, {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ permissions: msbizDialog.perms, role_name: msbizDialog.role }),
-    });
+      // 2. Upsert permissions
+      const permRes = await fetch(`/api/msbiz/admin/users/${msbizDialog.user.id}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permissions: msbizDialog.perms, role_name: msbizDialog.role }),
+      });
+      const permData = await permRes.json();
+      if (!permRes.ok) throw new Error(`perms save failed: ${permData.error ?? permRes.status}`);
 
-    setMsbizDialog(null);
-    await fetchUsers();
+      setMsbizDialog(null);
+      setCreditToast({ msg: `✅ MS Business access updated for ${msbizDialog.user.email}`, ok: true });
+      setTimeout(() => setCreditToast(null), 3000);
+      await fetchUsers();
+    } catch (e) {
+      setCreditToast({ msg: `❌ Save failed: ${e}`, ok: false });
+      setMsbizDialog(d => d ? { ...d, saving: false } : null);
+    }
   };
 
   const fetchUsers = async () => {
