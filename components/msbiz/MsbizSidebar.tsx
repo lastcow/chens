@@ -63,7 +63,7 @@ export default function MsbizSidebar() {
     }`}>{text}</span>
   );
 
-  const navItem = (item: typeof NAV_MAIN[0]) => {
+  const navItem = (item: typeof NAV_BUSINESS[0]) => {
     const active = isActive(item.href, (item as { exact?: boolean }).exact);
     return (
       <Link key={item.href} href={item.href}
