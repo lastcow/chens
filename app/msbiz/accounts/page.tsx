@@ -109,7 +109,7 @@ export default function AccountsPage() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800 sticky top-[140px] bg-gray-900/95 backdrop-blur-md z-[5]">
+              <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
                 <th className="w-1.5 pl-2"></th>
                 <th className="text-left px-4 py-3">Account</th>
                 <th className="text-left px-3 py-3 w-36">Password</th>
