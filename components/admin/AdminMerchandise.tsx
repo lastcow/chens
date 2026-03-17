@@ -19,6 +19,13 @@ const STATUS_COLORS: Record<string, string> = {
   out_of_stock: "bg-amber-900/30 text-amber-400 border-amber-700/30",
 };
 
+const STATUS_BAR: Record<string, string> = {
+  active:       "bg-green-500",
+  inactive:     "bg-gray-600",
+  discontinued: "bg-red-500",
+  out_of_stock: "bg-amber-500",
+};
+
 
 export default function AdminMerchandise() {
   const [items, setItems]         = useState<Item[]>([]);
@@ -93,13 +100,13 @@ export default function AdminMerchandise() {
         <table className="w-full text-sm">
           <thead className="border-b border-gray-800 bg-gray-900">
             <tr className="text-xs text-gray-500 uppercase tracking-wider">
+              <th className="w-4 pl-2"></th>
               <th className="px-4 py-3 w-12"></th>
               <th className="text-left px-3 py-3">Item</th>
               <th className="text-center px-3 py-3">UPC</th>
               <th className="text-center px-3 py-3">Model</th>
               <th className="text-left px-3 py-3 w-36">Price / Cost</th>
               <th className="text-center px-3 py-3">Stock</th>
-              <th className="text-center px-3 py-3">Status</th>
               <th className="text-center px-3 py-3 w-20"></th>
             </tr>
           </thead>
@@ -110,6 +117,10 @@ export default function AdminMerchandise() {
               <tr><td colSpan={8} className="text-center py-10 text-gray-600">No items found.</td></tr>
             ) : items.map(item => (
               <tr key={item.id} className="hover:bg-gray-800/30 transition-colors group">
+                {/* Status bar */}
+                <td className="pl-2 pr-0 py-0 w-1.5">
+                  <div className={`w-1 rounded-full h-8 mx-auto ${STATUS_BAR[item.status] ?? "bg-gray-600"}`} title={item.status.replace(/_/g, " ")} />
+                </td>
                 {/* Image — natural aspect ratio, max 48px tall */}
                 <td className="px-4 py-2.5">
                   {item.image_url
@@ -177,11 +188,6 @@ export default function AdminMerchandise() {
                     {item.stock}
                   </span>
                   <span className="text-[10px] text-gray-600 ml-0.5">{item.unit}</span>
-                </td>
-                <td className="px-3 py-3 text-center">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full border ${STATUS_COLORS[item.status] ?? "bg-gray-800 text-gray-500 border-gray-700"}`}>
-                    {item.status.replace(/_/g, " ")}
-                  </span>
                 </td>
                 <td className="px-3 py-3">
                   <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
