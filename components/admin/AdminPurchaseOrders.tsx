@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import Select from "react-select";
 import {
   ShoppingCart, Plus, Search, Edit2, Trash2, X, Save,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Package, DollarSign
@@ -251,14 +252,30 @@ export default function AdminPurchaseOrders() {
   );
 }
 
+// react-select dark theme styles
+const selectStyles = {
+  control: (b: object) => ({ ...b, backgroundColor: "#1f2937", borderColor: "#374151", minHeight: "38px", boxShadow: "none", "&:hover": { borderColor: "#6b7280" } }),
+  menu: (b: object) => ({ ...b, backgroundColor: "#111827", border: "1px solid #374151", zIndex: 9999 }),
+  menuList: (b: object) => ({ ...b, maxHeight: "200px" }),
+  option: (b: object, s: { isFocused: boolean; isSelected: boolean }) => ({
+    ...b, backgroundColor: s.isSelected ? "#d97706" : s.isFocused ? "#1f2937" : "transparent",
+    color: s.isSelected ? "#fff" : "#e5e7eb", fontSize: "13px", cursor: "pointer",
+    "&:active": { backgroundColor: "#92400e" },
+  }),
+  singleValue: (b: object) => ({ ...b, color: "#f3f4f6", fontSize: "13px" }),
+  input: (b: object) => ({ ...b, color: "#f3f4f6", fontSize: "13px" }),
+  placeholder: (b: object) => ({ ...b, color: "#6b7280", fontSize: "13px" }),
+  indicatorSeparator: () => ({ display: "none" }),
+  dropdownIndicator: (b: object) => ({ ...b, color: "#6b7280", padding: "0 6px" }),
+  clearIndicator: (b: object) => ({ ...b, color: "#6b7280" }),
+};
+
 function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; onSaved: () => void }) {
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState("");
   const [allUsers, setAllUsers]     = useState<User[]>([]);
   const [allMerch, setAllMerch]     = useState<Merch[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [userSearch, setUserSearch] = useState("");
-  const [merchSearch, setMerchSearch] = useState("");
   const [form, setForm] = useState({
     requester_id: po?.requester_id ?? "",
     merchandise_id: po?.merchandise_id ?? "",
@@ -283,16 +300,6 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
   }, []);
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
-
-  const filteredUsers = allUsers.filter(u => {
-    const q = userSearch.toLowerCase();
-    return !q || u.email.toLowerCase().includes(q) || (u.name ?? "").toLowerCase().includes(q);
-  });
-
-  const filteredMerch = allMerch.filter(m => {
-    const q = merchSearch.toLowerCase();
-    return !q || m.name.toLowerCase().includes(q) || (m.upc ?? "").includes(q) || (m.model ?? "").toLowerCase().includes(q);
-  });
 
   const selectedMerch = allMerch.find(m => m.id === form.merchandise_id);
   const selectedWarehouse = warehouses.find(w => w.id === form.warehouse_id);
@@ -360,44 +367,34 @@ function POForm({ po, onClose, onSaved }: { po: PO | null; onClose: () => void; 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {error && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">{error}</div>}
 
-          {/* Requester — searchable list of msbiz users */}
+          {/* Requester — react-select searchable */}
           <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Requester * <span className="text-gray-600 normal-case font-normal">(MS Business users)</span></label>
-            <div className="relative mb-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
-              <input value={userSearch} onChange={e => setUserSearch(e.target.value)}
-                placeholder="Search users…"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" />
-            </div>
-            <select value={form.requester_id} onChange={e => set("requester_id", e.target.value)} size={4}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-amber-500 overflow-y-auto">
-              <option value="">— Select —</option>
-              {filteredUsers.map(u => (
-                <option key={u.id} value={u.id}>{u.name ? `${u.name} · ${u.email}` : u.email}</option>
-              ))}
-            </select>
-            {form.requester_id && (() => {
-              const u = allUsers.find(x => x.id === form.requester_id);
-              return u ? <div className="text-[10px] text-amber-400 mt-1 font-mono">{u.name || u.email}</div> : null;
-            })()}
+            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">
+              Requester * <span className="text-gray-600 normal-case font-normal">(MS Business users)</span>
+            </label>
+            <Select
+              styles={selectStyles}
+              options={allUsers.map(u => ({ value: u.id, label: u.name ? `${u.name} · ${u.email}` : u.email }))}
+              value={allUsers.filter(u => u.id === form.requester_id).map(u => ({ value: u.id, label: u.name ? `${u.name} · ${u.email}` : u.email }))[0] ?? null}
+              onChange={opt => set("requester_id", opt?.value ?? "")}
+              placeholder="Search MS Business users…"
+              isClearable
+              menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+            />
           </div>
 
-          {/* Merchandise — searchable */}
+          {/* Merchandise — react-select searchable */}
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Merchandise *</label>
-            <div className="relative mb-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
-              <input value={merchSearch} onChange={e => setMerchSearch(e.target.value)}
-                placeholder="Search by name, UPC, model…"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" />
-            </div>
-            <select value={form.merchandise_id} onChange={e => handleMerchChange(e.target.value)} size={4}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-amber-500">
-              <option value="">— Select —</option>
-              {filteredMerch.map(m => (
-                <option key={m.id} value={m.id}>{m.name}{m.upc ? ` · ${m.upc}` : ""}{m.model ? ` · ${m.model}` : ""}</option>
-              ))}
-            </select>
+            <Select
+              styles={selectStyles}
+              options={allMerch.map(m => ({ value: m.id, label: `${m.name}${m.upc ? ` · ${m.upc}` : ""}${m.model ? ` · ${m.model}` : ""}` }))}
+              value={allMerch.filter(m => m.id === form.merchandise_id).map(m => ({ value: m.id, label: `${m.name}${m.upc ? ` · ${m.upc}` : ""}${m.model ? ` · ${m.model}` : ""}` }))[0] ?? null}
+              onChange={opt => handleMerchChange(opt?.value ?? "")}
+              placeholder="Search by name, UPC, model…"
+              isClearable
+              menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+            />
             {selectedMerch && (
               <div className="mt-1.5 flex items-center gap-2 text-[11px] text-gray-500">
                 {selectedMerch.image_url && (
