@@ -178,7 +178,7 @@ export default function AdminPurchaseOrders() {
                       <div>
                         <div className="text-xs font-mono font-semibold text-green-400">${Number(po.required_price).toFixed(2)}</div>
                         {po.merchandise_price != null && (
-                          <div className="text-[10px] text-gray-600 font-mono">list ${Number(po.merchandise_price).toFixed(2)}</div>
+                          <div className="text-[10px] text-gray-600 font-mono">${Number(po.merchandise_price).toFixed(2)}</div>
                         )}
                       </div>
                     ) : <span className="text-gray-700 text-xs">—</span>}
