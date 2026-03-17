@@ -185,11 +185,18 @@ export default function AdminPurchaseOrders() {
                   </td>
                   {/* Deadline */}
                   <td className="px-3 py-2.5 w-36">
-                    {po.deadline ? (
-                      <span className={`text-xs font-mono ${new Date(po.deadline) < new Date() ? "text-red-400" : "text-gray-400"}`}>
-                        {new Date(po.deadline).toLocaleDateString()}
-                      </span>
-                    ) : <span className="text-gray-700 text-xs">—</span>}
+                    {po.deadline ? (() => {
+                      const days = Math.ceil((new Date(po.deadline).getTime() - Date.now()) / 86400000);
+                      const overdue = days < 0;
+                      const urgent  = days >= 0 && days <= 3;
+                      const label   = overdue ? `${Math.abs(days)}d overdue` : days === 0 ? "Today" : `in ${days}d`;
+                      return (
+                        <span className={`text-xs font-mono ${overdue ? "text-red-400" : urgent ? "text-amber-400" : "text-gray-400"}`}
+                          title={new Date(po.deadline).toLocaleDateString()}>
+                          {label}
+                        </span>
+                      );
+                    })() : <span className="text-gray-700 text-xs">—</span>}
                   </td>
                   {/* Warehouse */}
                   <td className="px-3 py-2.5 w-36">
