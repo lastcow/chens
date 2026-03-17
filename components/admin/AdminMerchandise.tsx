@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   ShoppingBag, Plus, Search, Edit2, Trash2, X, Save,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink, Copy, Check
 } from "lucide-react";
 
 interface Item {
@@ -32,6 +32,7 @@ export default function AdminMerchandise() {
   const [total, setTotal]         = useState(0);
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState("");
+  const [copiedId, setCopiedId]   = useState<string | null>(null);
 
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage]           = useState(1);
@@ -137,10 +138,24 @@ export default function AdminMerchandise() {
                     <span className="font-medium text-white text-sm truncate shrink min-w-0" title={item.name}>{item.name}</span>
 
                     {item.item_url && (
-                      <a href={item.item_url} target="_blank" rel="noopener noreferrer"
-                        className="text-gray-600 hover:text-blue-400 transition-colors shrink-0">
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
+                      <>
+                        <a href={item.item_url} target="_blank" rel="noopener noreferrer"
+                          className="text-gray-600 hover:text-blue-400 transition-colors shrink-0">
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.item_url!);
+                            setCopiedId(item.id);
+                            setTimeout(() => setCopiedId(null), 1500);
+                          }}
+                          className="text-gray-600 hover:text-green-400 transition-colors shrink-0"
+                          title="Copy URL">
+                          {copiedId === item.id
+                            ? <Check className="w-3 h-3 text-green-400" />
+                            : <Copy className="w-3 h-3" />}
+                        </button>
+                      </>
                     )}
                   </div>
                 </td>
