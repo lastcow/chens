@@ -13,6 +13,7 @@ interface PO {
   image_url: string | null; merchandise_price: number | null;
   qty: number; required_price: number | null; deadline: string | null;
   warehouse_id: string | null; warehouse_name: string | null;
+  warehouse_address: string | null; warehouse_contact_name: string | null; warehouse_contact_phone: string | null;
   status: string; notes: string | null; created_at: string;
 }
 
@@ -217,9 +218,17 @@ export default function AdminPurchaseOrders() {
                       );
                     })() : <span className="text-gray-700 text-xs">—</span>}
                   </td>
-                  {/* Warehouse */}
+                  {/* Warehouse — tooltip with full address + contact */}
                   <td className="px-3 py-2.5 w-32 shrink-0 whitespace-nowrap">
-                    <span className="text-xs text-gray-400 truncate block max-w-[120px]" title={po.warehouse_name ?? ""}>{po.warehouse_name || "—"}</span>
+                    <span className="text-xs text-gray-400 truncate block max-w-[120px]"
+                      title={[
+                        po.warehouse_name,
+                        po.warehouse_address,
+                        po.warehouse_contact_name,
+                        po.warehouse_contact_phone,
+                      ].filter(Boolean).join("\n")}>
+                      {po.warehouse_name || "—"}
+                    </span>
                   </td>
                   {/* Actions */}
                   <td className="px-3 py-2.5 w-16 shrink-0 whitespace-nowrap">
