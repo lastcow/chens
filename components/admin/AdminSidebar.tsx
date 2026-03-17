@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, Puzzle, ShoppingBag, Building2, MapPin } from "lucide-react";
+import { Home, Users, Puzzle, ShoppingBag, Building2, MapPin, ShoppingCart } from "lucide-react";
 
 const NAV = [
   {
@@ -16,8 +16,9 @@ const NAV = [
     section: "MS Business",
     icon: Building2,
     items: [
-      { href: "/admin/merchandise", label: "Merchandise", icon: ShoppingBag },
-      { href: "/admin/addresses",   label: "Addresses",   icon: MapPin },
+      { href: "/admin/merchandise",     label: "Merchandise",     icon: ShoppingBag },
+      { href: "/admin/purchase-orders", label: "Purchase Orders", icon: ShoppingCart },
+      { href: "/admin/addresses",       label: "Addresses",       icon: MapPin },
     ],
   },
 ];
