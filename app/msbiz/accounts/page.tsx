@@ -154,7 +154,10 @@ export default function AccountsPage() {
                       </button>
                     </div>
                     {acc.password && (
-                      <div className="text-[11px] font-mono text-gray-600 mt-0.5 truncate">••••••••</div>
+                      <div className="relative group/pw mt-0.5 w-fit">
+                        <span className="text-[11px] font-mono text-gray-600 group-hover/pw:invisible select-none">••••••••</span>
+                        <span className="text-[11px] font-mono text-gray-400 absolute inset-0 invisible group-hover/pw:visible whitespace-nowrap" title={acc.password}>{acc.password}</span>
+                      </div>
                     )}
                   </td>
                   {/* Balance progress bar */}
