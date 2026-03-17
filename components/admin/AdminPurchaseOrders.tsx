@@ -142,7 +142,9 @@ export default function AdminPurchaseOrders() {
                   </td>
                   {/* PO Number */}
                   <td className="px-3 py-2.5 w-36">
-                    <span className="text-xs font-mono text-amber-400 whitespace-nowrap">{po.po_number || "—"}</span>
+                    <span className="text-xs font-mono text-amber-400 whitespace-nowrap" title={po.po_number ?? ""}>
+                      {po.po_number ? po.po_number.slice(-4) : "—"}
+                    </span>
                   </td>
                   {/* Image */}
                   <td className="px-3 py-2.5 w-12">
