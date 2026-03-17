@@ -74,11 +74,16 @@ export default function AdminAddressesPage() {
                         <span className="text-xs font-semibold text-amber-400">{addr.label}</span>
                         <button
                           onClick={() => {
-                            navigator.clipboard.writeText(addr.full_address);
+                            const parts = [
+                              addr.full_address,
+                              addr.name,
+                              addr.phone,
+                            ].filter(Boolean).join(", ");
+                            navigator.clipboard.writeText(parts);
                             setCopiedId(addr.id);
                             setTimeout(() => setCopiedId(null), 1500);
                           }}
-                          title="Copy address"
+                          title="Copy address, name & phone"
                           className="text-gray-600 hover:text-green-400 transition-colors">
                           {copiedId === addr.id
                             ? <Check className="w-3 h-3 text-green-400" />
@@ -105,11 +110,16 @@ export default function AdminAddressesPage() {
                       <div className="flex items-center gap-1.5 mt-1">
                         <button
                           onClick={() => {
-                            navigator.clipboard.writeText(addr.full_address);
+                            const parts = [
+                              addr.full_address,
+                              addr.name,
+                              addr.phone,
+                            ].filter(Boolean).join(", ");
+                            navigator.clipboard.writeText(parts);
                             setCopiedId(addr.id);
                             setTimeout(() => setCopiedId(null), 1500);
                           }}
-                          title="Copy address"
+                          title="Copy address, name & phone"
                           className="text-gray-600 hover:text-green-400 transition-colors">
                           {copiedId === addr.id
                             ? <Check className="w-3 h-3 text-green-400" />
