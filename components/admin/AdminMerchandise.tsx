@@ -2,14 +2,14 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   ShoppingBag, Plus, Search, Edit2, Trash2, X, Save,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Tag
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Tag, ExternalLink
 } from "lucide-react";
 
 interface Item {
   id: string; name: string; upc: string | null; model: string | null;
   description: string | null; price: number; cost: number | null;
   stock: number; unit: string; status: string; image_url: string | null;
-  tags: string[]; created_at: string; updated_at: string;
+  item_url: string | null; tags: string[]; created_at: string; updated_at: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -112,7 +112,15 @@ export default function AdminMerchandise() {
             ) : items.map(item => (
               <tr key={item.id} className="hover:bg-gray-800/30 transition-colors group">
                 <td className="px-5 py-3">
-                  <div className="font-medium text-white text-sm">{item.name}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium text-white text-sm">{item.name}</span>
+                    {item.item_url && (
+                      <a href={item.item_url} target="_blank" rel="noopener noreferrer"
+                        className="text-gray-600 hover:text-blue-400 transition-colors flex-shrink-0">
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
                   {item.description && <div className="text-[10px] text-gray-600 truncate max-w-48">{item.description}</div>}
                   {item.tags?.length > 0 && (
                     <div className="flex gap-1 mt-1 flex-wrap">
@@ -223,7 +231,7 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
     description: item?.description ?? "", price: item?.price != null ? String(item.price) : "",
     cost: item?.cost != null ? String(item.cost) : "", stock: item?.stock != null ? String(item.stock) : "0",
     unit: item?.unit ?? "unit", status: item?.status ?? "active",
-    image_url: item?.image_url ?? "", tags: item?.tags ?? [],
+    image_url: item?.image_url ?? "", item_url: item?.item_url ?? "", tags: item?.tags ?? [],
   });
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
@@ -242,7 +250,8 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
       name: form.name, upc: form.upc || null, model: form.model || null,
       description: form.description || null, price: parseFloat(form.price) || 0,
       cost: form.cost ? parseFloat(form.cost) : null, stock: parseInt(form.stock, 10) || 0,
-      unit: form.unit, status: form.status, image_url: form.image_url || null, tags: form.tags,
+      unit: form.unit, status: form.status, image_url: form.image_url || null,
+      item_url: form.item_url || null, tags: form.tags,
     };
     const res = await fetch(item ? `/api/admin/merchandise/${item.id}` : "/api/admin/merchandise", {
       method: item ? "PUT" : "POST", headers: { "Content-Type": "application/json" },
@@ -295,19 +304,33 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
             </select>
           </div>
 
-          {/* Image URL with preview */}
-          <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Image URL</label>
-            <input value={form.image_url} onChange={e => set("image_url", e.target.value)}
-              placeholder="https://…"
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
-            {form.image_url && (
-              <div className="mt-2 flex items-center gap-3">
-                <img src={form.image_url} alt="Preview" className="w-16 h-16 object-cover rounded-lg border border-gray-700"
-                  onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                <span className="text-[10px] text-gray-600">Preview</span>
-              </div>
-            )}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Image URL with preview */}
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Image URL</label>
+              <input value={form.image_url} onChange={e => set("image_url", e.target.value)}
+                placeholder="https://…"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+              {form.image_url && (
+                <div className="mt-2 flex items-center gap-2">
+                  <img src={form.image_url} alt="Preview" className="w-12 h-12 object-cover rounded-lg border border-gray-700"
+                    onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  <span className="text-[10px] text-gray-600">Preview</span>
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Item URL</label>
+              <input value={form.item_url} onChange={e => set("item_url", e.target.value)}
+                placeholder="https://…"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+              {form.item_url && (
+                <a href={form.item_url} target="_blank" rel="noopener noreferrer"
+                  className="mt-1.5 flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 transition-colors">
+                  <ExternalLink className="w-2.5 h-2.5" /> Open link
+                </a>
+              )}
+            </div>
           </div>
 
           <div>
