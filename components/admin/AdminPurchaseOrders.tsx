@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 interface PO {
-  id: string;
+  id: string; po_number: string | null;
   requester_id: string; requester_name: string | null; requester_email: string | null;
   merchandise_id: string; merchandise_name: string | null; upc: string | null; model: string | null;
   image_url: string | null; merchandise_price: number | null;
@@ -111,6 +111,7 @@ export default function AdminPurchaseOrders() {
             <thead>
               <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
                 <th className="w-1.5 pl-2"></th>
+                <th className="text-left px-3 py-3 w-36">PO #</th>
                 <th className="text-left px-3 py-3 w-12"></th>
                 <th className="text-left px-3 py-3">Item</th>
                 <th className="text-left px-3 py-3 w-40">Requester</th>
@@ -138,6 +139,10 @@ export default function AdminPurchaseOrders() {
                   {/* Status bar */}
                   <td className="pl-2 pr-0 py-0 w-1.5">
                     <div className={`w-1 rounded-full h-7 mx-auto ${STATUS_BAR[po.status] ?? "bg-gray-600"}`} title={po.status} />
+                  </td>
+                  {/* PO Number */}
+                  <td className="px-3 py-2.5 w-36">
+                    <span className="text-xs font-mono text-amber-400 whitespace-nowrap">{po.po_number || "—"}</span>
                   </td>
                   {/* Image */}
                   <td className="px-3 py-2.5 w-12">
