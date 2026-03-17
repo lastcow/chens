@@ -46,6 +46,13 @@ export default function AccountsPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const copyAll = (acc: Account) => {
+    const text = `email: ${acc.email}, password: ${acc.password ?? ""}, balance $${Number(acc.balance ?? 0).toFixed(2)}`;
+    navigator.clipboard.writeText(text);
+    setCopiedId(`all-${acc.id}`);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   const doDelete = async (id: string) => {
     await fetch(`/api/msbiz/accounts/${id}`, { method: "DELETE" });
     setDeletingId(null);
@@ -150,6 +157,13 @@ export default function AccountsPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <button onClick={() => copyAll(acc)}
+                    title="Copy email, password & balance"
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                      copiedId === `all-${acc.id}` ? "text-green-400 bg-green-500/10" : "text-gray-500 hover:text-blue-400 hover:bg-blue-500/10"
+                    }`}>
+                    {copiedId === `all-${acc.id}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
                   <button onClick={() => { setEditId(acc.id); setShowForm(true); }}
                     className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
                     <Edit2 className="w-3.5 h-3.5" />
