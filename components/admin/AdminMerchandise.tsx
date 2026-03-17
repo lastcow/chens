@@ -2,14 +2,14 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   ShoppingBag, Plus, Search, Edit2, Trash2, X, Save,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Tag, ExternalLink
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink
 } from "lucide-react";
 
 interface Item {
   id: string; name: string; upc: string | null; model: string | null;
   description: string | null; price: number; cost: number | null;
   stock: number; unit: string; status: string; image_url: string | null;
-  item_url: string | null; tags: string[]; created_at: string; updated_at: string;
+  item_url: string | null; created_at: string; updated_at: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -135,9 +135,7 @@ export default function AdminMerchandise() {
                 <td className="px-3 py-2.5 w-full min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="font-medium text-white text-sm truncate shrink min-w-0" title={item.name}>{item.name}</span>
-                    {item.tags?.map(t => (
-                      <span key={t} title={t} className="text-[9px] bg-gray-800 text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">{t}</span>
-                    ))}
+
                     {item.item_url && (
                       <a href={item.item_url} target="_blank" rel="noopener noreferrer"
                         className="text-gray-600 hover:text-blue-400 transition-colors shrink-0">
@@ -256,23 +254,18 @@ export default function AdminMerchandise() {
 function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClose: () => void; onSaved: () => void }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [tagInput, setTagInput] = useState("");
+
   const [form, setForm] = useState({
     name: item?.name ?? "", upc: item?.upc ?? "", model: item?.model ?? "",
     description: item?.description ?? "", price: item?.price != null ? String(item.price) : "",
     cost: item?.cost != null ? String(item.cost) : "", stock: item?.stock != null ? String(item.stock) : "0",
     unit: item?.unit ?? "unit", status: item?.status ?? "active",
-    image_url: item?.image_url ?? "", item_url: item?.item_url ?? "", tags: item?.tags ?? [],
+    image_url: item?.image_url ?? "", item_url: item?.item_url ?? "",
   });
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
-  const addTag = () => {
-    const t = tagInput.trim();
-    if (t && !form.tags.includes(t)) setForm(f => ({ ...f, tags: [...f.tags, t] }));
-    setTagInput("");
-  };
-  const removeTag = (t: string) => setForm(f => ({ ...f, tags: f.tags.filter(x => x !== t) }));
+
 
   const submit = async () => {
     if (!form.name) { setError("Name is required"); return; }
@@ -282,7 +275,7 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
       description: form.description || null, price: parseFloat(form.price) || 0,
       cost: form.cost ? parseFloat(form.cost) : null, stock: parseInt(form.stock, 10) || 0,
       unit: form.unit, status: form.status, image_url: form.image_url || null,
-      item_url: form.item_url || null, tags: form.tags,
+      item_url: form.item_url || null,
     };
     const res = await fetch(item ? `/api/admin/merchandise/${item.id}` : "/api/admin/merchandise", {
       method: item ? "PUT" : "POST", headers: { "Content-Type": "application/json" },
@@ -419,28 +412,7 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
           </div>
 
           {/* Tags */}
-          <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1.5 block flex items-center gap-1">
-              <Tag className="w-3 h-3" /> Tags
-            </label>
-            <div className="flex gap-2 mb-2 flex-wrap">
-              {form.tags.map(t => (
-                <span key={t} className="flex items-center gap-1 text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">
-                  {t}
-                  <button onClick={() => removeTag(t)} className="hover:text-red-400 transition-colors"><X className="w-2.5 h-2.5" /></button>
-                </span>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input value={tagInput} onChange={e => setTagInput(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-                placeholder="Add tag… (Enter)"
-                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-              <button onClick={addTag} className="px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm transition-colors">
-                Add
-              </button>
-            </div>
-          </div>
+
         </div>
 
         <div className="border-t border-gray-800 px-6 py-4 flex gap-3 shrink-0">
