@@ -35,7 +35,7 @@ export default function AdminCustomerPricing() {
 
     const [mRes, uRes, cpRes] = await Promise.all([
       fetch(`/api/admin/merchandise?${p}`),
-      fetch("/api/admin/msbiz-users"),
+      fetch("/api/admin/msbiz-users?role=customer"),
       fetch(`/api/admin/customer-merchandise?limit=9999`),
     ]);
     const [mData, uData, cpData] = await Promise.all([mRes.json(), uRes.json(), cpRes.json()]);
