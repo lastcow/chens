@@ -212,7 +212,8 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
   const total = parseFloat(form.total) || 0;
   const balance = selectedAccount?.balance != null ? Number(selectedAccount.balance) : null;
   const insufficientBalance = form.account_id !== "" && balance !== null && balance < total;
-  const canSubmit = !saving && form.account_id !== "" && !insufficientBalance;
+  const hasItems = items.some(i => i.merchandise_id !== "");
+  const canSubmit = !saving && form.account_id !== "" && !insufficientBalance && hasItems;
 
   const accountOptions = accounts.map(a => ({
     value: a.id,
