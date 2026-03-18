@@ -4,6 +4,7 @@ import {
   UserCircle, Plus, Search, Edit2, Trash2, X,
   Copy, Check, DollarSign, Link2, Save,
   Eye, EyeOff, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
+  PlusCircle, MinusCircle,
 } from "lucide-react";
 
 interface Account {
@@ -42,6 +43,7 @@ export default function AccountsPage() {
   const [page, setPage]           = useState(1);
   const [showForm, setShowForm]   = useState(false);
   const [editId, setEditId]       = useState<string | null>(null);
+  const [adjustAcc, setAdjustAcc] = useState<Account | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedId, setCopiedId]   = useState<string | null>(null);
 
@@ -186,6 +188,10 @@ export default function AccountsPage() {
                   {/* Actions */}
                   <td className="px-3 py-3 w-20">
                     <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => setAdjustAcc(acc)} title="Adjust balance"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+                        <DollarSign className="w-3.5 h-3.5" />
+                      </button>
                       <button onClick={() => { setEditId(acc.id); setShowForm(true); }}
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
                         <Edit2 className="w-3.5 h-3.5" />
@@ -235,6 +241,17 @@ export default function AccountsPage() {
         <AccountForm accountId={editId}
           onClose={() => setShowForm(false)}
           onSaved={() => { setShowForm(false); fetchAccounts(); }} />
+      )}
+
+      {adjustAcc && (
+        <AdjustDialog
+          account={adjustAcc}
+          onClose={() => setAdjustAcc(null)}
+          onSaved={(updated) => {
+            setAccounts(prev => prev.map(a => a.id === updated.id ? { ...a, balance: updated.balance } : a));
+            setAdjustAcc(null);
+          }}
+        />
       )}
 
       {deletingId && (
@@ -456,6 +473,168 @@ function AccountForm({ accountId, onClose, onSaved }: { accountId: string | null
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-amber-500/90 hover:bg-amber-500 text-white text-sm font-medium disabled:opacity-50 transition-colors">
             <Save className="w-3.5 h-3.5" />
             {saving ? "Saving…" : accountId ? "Update Account" : "Add Account"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Adjust Balance Dialog ────────────────────────────────────────────────────
+
+function AdjustDialog({
+  account, onClose, onSaved,
+}: {
+  account: { id: string; email: string; display_name: string | null; balance: number };
+  onClose: () => void;
+  onSaved: (updated: { id: string; balance: number }) => void;
+}) {
+  const [mode, setMode]     = useState<"add" | "deduct">("add");
+  const [amount, setAmount] = useState("");
+  const [note, setNote]     = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState("");
+
+  const current = Number(account.balance ?? 0);
+  const delta   = parseFloat(amount.replace(/[^0-9.]/g, "")) || 0;
+  const preview = mode === "add" ? current + delta : current - delta;
+  const invalid = delta <= 0 || (mode === "deduct" && delta > current);
+
+  const submit = async () => {
+    if (invalid) return;
+    setSaving(true); setError("");
+    const newBalance = parseFloat(preview.toFixed(2));
+    const res = await fetch(`/api/msbiz/accounts/${account.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ balance: newBalance, notes: note || undefined }),
+    });
+    if (res.ok) {
+      onSaved({ id: account.id, balance: newBalance });
+    } else {
+      const d = await res.json();
+      setError(d.error || "Failed");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm flex flex-col">
+
+        {/* Bento header */}
+        <div className="relative overflow-hidden rounded-t-2xl shrink-0 border-b border-gray-800">
+          <div className="absolute inset-0 bg-gray-950">
+            <div className="absolute inset-0 opacity-[0.07]"
+              style={{ backgroundImage: `linear-gradient(#10b981 1px, transparent 1px), linear-gradient(90deg, #10b981 1px, transparent 1px)`, backgroundSize: "28px 28px" }} />
+            <div className="absolute inset-0 grid grid-cols-6 grid-rows-3 gap-1.5 p-3 opacity-[0.06]">
+              {[...Array(18)].map((_, i) => <div key={i} className="rounded-md bg-emerald-400" style={{ opacity: i % 3 === 0 ? 1 : 0.3 }} />)}
+            </div>
+            <div className="absolute -top-8 -left-8 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl" />
+            <div className="absolute -bottom-4 right-8 w-28 h-28 bg-emerald-400/10 rounded-full blur-xl" />
+          </div>
+          <div className="relative px-5 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-white">Adjust Balance</h2>
+                <p className="text-[11px] text-gray-500 mt-0.5 truncate max-w-[180px]">
+                  {account.display_name ?? account.email}
+                </p>
+              </div>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="px-5 py-4 space-y-4">
+          {error && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">{error}</div>}
+
+          {/* Current balance */}
+          <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5">
+            <span className="text-xs text-gray-500 uppercase tracking-wider">Current Balance</span>
+            <span className="font-mono font-semibold text-white">${current.toFixed(2)}</span>
+          </div>
+
+          {/* Add / Deduct toggle */}
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setMode("add")}
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                mode === "add"
+                  ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
+                  : "bg-gray-800 border-gray-700 text-gray-500 hover:text-gray-300"
+              }`}>
+              <PlusCircle className="w-4 h-4" /> Add
+            </button>
+            <button onClick={() => setMode("deduct")}
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                mode === "deduct"
+                  ? "bg-red-500/20 border-red-500/40 text-red-400"
+                  : "bg-gray-800 border-gray-700 text-gray-500 hover:text-gray-300"
+              }`}>
+              <MinusCircle className="w-4 h-4" /> Deduct
+            </button>
+          </div>
+
+          {/* Amount input — no spinners */}
+          <div>
+            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Amount ($)</label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+              <input
+                type="number"
+                inputMode="decimal"
+                value={amount}
+                onChange={e => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+                placeholder="0.00"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-8 pr-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+            {mode === "deduct" && delta > current && (
+              <p className="text-[11px] text-red-400 mt-1">Amount exceeds current balance</p>
+            )}
+          </div>
+
+          {/* Note */}
+          <div>
+            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Note (optional)</label>
+            <input value={note} onChange={e => setNote(e.target.value)} placeholder="Reason for adjustment…"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
+          </div>
+
+          {/* Live balance preview */}
+          {delta > 0 && !invalid && (
+            <div className={`flex items-center justify-between rounded-lg px-4 py-2.5 border ${
+              mode === "add"
+                ? "bg-emerald-500/10 border-emerald-500/20"
+                : "bg-amber-500/10 border-amber-500/20"
+            }`}>
+              <span className="text-xs text-gray-400">Balance after</span>
+              <div className="text-right">
+                <span className={`font-mono font-bold text-base ${mode === "add" ? "text-emerald-400" : "text-amber-400"}`}>
+                  ${preview.toFixed(2)}
+                </span>
+                <span className={`text-[10px] ml-2 ${mode === "add" ? "text-emerald-600" : "text-amber-600"}`}>
+                  {mode === "add" ? `+$${delta.toFixed(2)}` : `-$${delta.toFixed(2)}`}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-gray-800 px-5 py-4 flex gap-3">
+          <button onClick={onClose}
+            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors">
+            <X className="w-3.5 h-3.5" /> Cancel
+          </button>
+          <button onClick={submit} disabled={saving || invalid || delta === 0}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-emerald-500/90 hover:bg-emerald-500 text-white">
+            <Save className="w-3.5 h-3.5" />
+            {saving ? "Saving…" : mode === "add" ? "Add Funds" : "Deduct Funds"}
           </button>
         </div>
       </div>
