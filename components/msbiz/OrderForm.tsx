@@ -1,120 +1,184 @@
 "use client";
-import { useEffect, useState } from "react";
-import { X, Search, Package } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import Select from "react-select";
+import { X, Package, Plus, Trash2, Save } from "lucide-react";
 
 interface Account { id: string; email: string; display_name: string | null; }
 interface Address { id: string; label: string | null; full_address: string; }
-interface AddressSuggestion { place_id: string; description: string; }
+interface Merch  { id: string; name: string; upc: string | null; model: string | null; image_url: string | null; price: number; }
+
+interface OrderItem {
+  _key: string;           // local-only UUID for React keys
+  merchandise_id: string;
+  name: string;
+  qty: number;
+  unit_price: string;
+}
 
 interface Props { onClose: () => void; onSaved: () => void; orderId?: string; }
 
+// ─── react-select dark styles ─────────────────────────────────────────────────
+const selectStyles = {
+  control: (b: object) => ({ ...b, backgroundColor: "#1f2937", borderColor: "#374151", minHeight: "38px", boxShadow: "none", "&:hover": { borderColor: "#6b7280" } }),
+  menu: (b: object) => ({ ...b, backgroundColor: "#111827", border: "1px solid #374151", zIndex: 9999 }),
+  menuList: (b: object) => ({ ...b, maxHeight: "200px" }),
+  option: (b: object, s: { isFocused: boolean; isSelected: boolean }) => ({
+    ...b, backgroundColor: s.isSelected ? "#d97706" : s.isFocused ? "#1f2937" : "transparent",
+    color: s.isSelected ? "#fff" : "#e5e7eb", fontSize: "13px", cursor: "pointer",
+    "&:active": { backgroundColor: "#92400e" },
+  }),
+  singleValue: (b: object) => ({ ...b, color: "#f3f4f6", fontSize: "13px" }),
+  input: (b: object) => ({ ...b, color: "#f3f4f6", fontSize: "13px" }),
+  placeholder: (b: object) => ({ ...b, color: "#6b7280", fontSize: "13px" }),
+  indicatorSeparator: () => ({ display: "none" }),
+  dropdownIndicator: (b: object) => ({ ...b, color: "#6b7280", padding: "0 6px" }),
+  clearIndicator: (b: object) => ({ ...b, color: "#6b7280" }),
+};
+
+let _keyCounter = 0;
+const newKey = () => `item_${++_keyCounter}_${Date.now()}`;
+
+const emptyItem = (): OrderItem => ({ _key: newKey(), merchandise_id: "", name: "", qty: 1, unit_price: "" });
+
 export default function OrderForm({ onClose, onSaved, orderId }: Props) {
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accounts, setAccounts]   = useState<Account[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [addrSearch, setAddrSearch] = useState("");
-  const [addrSuggestions, setAddrSuggestions] = useState<AddressSuggestion[]>([]);
+  const [merch, setMerch]         = useState<Merch[]>([]);
+  const [saving, setSaving]       = useState(false);
+  const [error, setError]         = useState("");
 
   const [form, setForm] = useState({
-    account_id: "", ms_order_number: "", order_date: new Date().toISOString().split("T")[0],
+    account_id: "", ms_order_number: "",
+    order_date: new Date().toISOString().split("T")[0],
     subtotal: "", tax: "", shipping_cost: "", total: "",
     shipping_address_id: "", tracking_number: "", carrier: "UPS", notes: "",
   });
 
+  const [items, setItems] = useState<OrderItem[]>([emptyItem()]);
+
   useEffect(() => {
-    fetch("/api/msbiz/accounts").then(r => r.json()).then(d => setAccounts(d.accounts ?? []));
-    fetch("/api/msbiz/addresses").then(r => r.json()).then(d => setAddresses(d.addresses ?? []));
+    Promise.all([
+      fetch("/api/msbiz/accounts").then(r => r.json()),
+      fetch("/api/msbiz/addresses").then(r => r.json()),
+      fetch("/api/msbiz/merchandise?limit=500").then(r => r.json()),
+    ]).then(([a, ad, m]) => {
+      setAccounts(a.accounts ?? []);
+      setAddresses(ad.addresses ?? []);
+      setMerch(m.items ?? []);
+    });
+
     if (orderId) {
       fetch(`/api/msbiz/orders/${orderId}`).then(r => r.json()).then(d => {
         const o = d.order;
-        if (o) setForm({ account_id: o.account_id, ms_order_number: o.ms_order_number,
-          order_date: o.order_date?.split("T")[0] ?? "", subtotal: o.subtotal ?? "",
-          tax: o.tax ?? "", shipping_cost: o.shipping_cost ?? "", total: o.total ?? "",
-          shipping_address_id: o.shipping_address_id ?? "", tracking_number: o.tracking_number ?? "",
-          carrier: o.carrier ?? "UPS", notes: o.notes ?? "" });
+        if (!o) return;
+        setForm({
+          account_id: o.account_id, ms_order_number: o.ms_order_number,
+          order_date: o.order_date?.split("T")[0] ?? "",
+          subtotal: o.subtotal ?? "", tax: o.tax ?? "",
+          shipping_cost: o.shipping_cost ?? "", total: o.total ?? "",
+          shipping_address_id: o.shipping_address_id ?? "",
+          tracking_number: o.tracking_number ?? "",
+          carrier: o.carrier ?? "UPS", notes: o.notes ?? "",
+        });
+        if (Array.isArray(o.items) && o.items.length > 0) {
+          setItems(o.items.map((it: Record<string, unknown>) => ({
+            _key: newKey(),
+            merchandise_id: String(it.merchandise_id ?? ""),
+            name: String(it.name ?? ""),
+            qty: Number(it.qty ?? 1),
+            unit_price: String(it.unit_price ?? ""),
+          })));
+        }
       });
     }
   }, [orderId]);
 
-  // Address autocomplete
-  const [googleError, setGoogleError] = useState("");
-
-  useEffect(() => {
-    if (addrSearch.length < 3) { setAddrSuggestions([]); return; }
-    const t = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/msbiz/addresses/lookup?q=${encodeURIComponent(addrSearch)}`);
-        const d = await res.json();
-        if (d.google_error || d.error) { setGoogleError(d.google_error || d.error); setAddrSuggestions([]); }
-        else { setGoogleError(""); setAddrSuggestions(d.predictions ?? []); }
-      } catch { setGoogleError("Search unavailable"); }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [addrSearch]);
-
-  const handleAddrSelect = async (pred: AddressSuggestion) => {
-    setAddrSearch(pred.description);
-    setAddrSuggestions([]);
-    // Fetch details + save as address
-    const res = await fetch("/api/msbiz/addresses/lookup", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ place_id: pred.place_id }),
-    });
-    const d = await res.json();
-    if (d.place) {
-      const saveRes = await fetch("/api/msbiz/addresses", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...d.place, label: "Shipping" }),
-      });
-      const saved = await saveRes.json();
-      if (saved.address) {
-        setAddresses(prev => [...prev, saved.address]);
-        setForm(f => ({ ...f, shipping_address_id: saved.address.id }));
-        setAddrSearch(saved.address.full_address);
-      }
-    }
-  };
-
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
+  // ── auto-total from subtotal + tax + shipping ─────────────────────────────
   const autoTotal = () => {
     const t = (parseFloat(form.subtotal) || 0) + (parseFloat(form.tax) || 0) + (parseFloat(form.shipping_cost) || 0);
-    setForm(f => ({ ...f, total: t.toFixed(2) }));
+    if (t > 0) setForm(f => ({ ...f, total: t.toFixed(2) }));
   };
 
-  const submit = async () => {
-    if (!form.account_id || !form.ms_order_number || !form.order_date) {
-      setError("Account, order number, and date are required"); return;
-    }
-    setSaving(true); setError("");
-    const method = orderId ? "PUT" : "POST";
-    const url = orderId ? `/api/msbiz/orders/${orderId}` : "/api/msbiz/orders";
-    const res = await fetch(url, {
-      method, headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, subtotal: parseFloat(form.subtotal) || 0, tax: parseFloat(form.tax) || 0,
-        shipping_cost: parseFloat(form.shipping_cost) || 0, total: parseFloat(form.total) || 0,
-        shipping_address_id: form.shipping_address_id || null, tracking_number: form.tracking_number || null,
-        carrier: form.carrier || null }),
-    });
-    if (res.ok) { onSaved(); } else {
-      const d = await res.json(); setError(d.error || "Failed to save"); setSaving(false);
-    }
+  // ── items helpers ─────────────────────────────────────────────────────────
+  const addItem = () => setItems(prev => [...prev, emptyItem()]);
+
+  const removeItem = (key: string) => {
+    setItems(prev => prev.length > 1 ? prev.filter(i => i._key !== key) : prev);
   };
+
+  const updateItem = (key: string, patch: Partial<OrderItem>) =>
+    setItems(prev => prev.map(i => i._key === key ? { ...i, ...patch } : i));
+
+  const handleMerchChange = (key: string, merchandiseId: string) => {
+    const m = merch.find(x => x.id === merchandiseId);
+    updateItem(key, {
+      merchandise_id: merchandiseId,
+      name: m?.name ?? "",
+      unit_price: m ? String(Number(m.price).toFixed(2)) : "",
+    });
+  };
+
+  // ── submit ────────────────────────────────────────────────────────────────
+  const submit = async () => {
+    if (!form.account_id) { setError("MS Account is required"); return; }
+    if (!form.ms_order_number) { setError("Order number is required"); return; }
+    if (!form.order_date) { setError("Order date is required"); return; }
+    const validItems = items.filter(i => i.merchandise_id);
+    if (validItems.length === 0) { setError("At least one merchandise item is required"); return; }
+
+    setSaving(true); setError("");
+    const payload = {
+      ...form,
+      subtotal: parseFloat(form.subtotal) || 0,
+      tax: parseFloat(form.tax) || 0,
+      shipping_cost: parseFloat(form.shipping_cost) || 0,
+      total: parseFloat(form.total) || 0,
+      shipping_address_id: form.shipping_address_id || null,
+      tracking_number: form.tracking_number || null,
+      carrier: form.carrier || null,
+      items: validItems.map(({ _key, ...rest }) => ({
+        ...rest,
+        qty: Number(rest.qty) || 1,
+        unit_price: parseFloat(rest.unit_price) || 0,
+      })),
+    };
+
+    const res = await fetch(orderId ? `/api/msbiz/orders/${orderId}` : "/api/msbiz/orders", {
+      method: orderId ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) { onSaved(); }
+    else { const d = await res.json(); setError(d.error || "Failed to save"); setSaving(false); }
+  };
+
+  const merchOptions = merch.map(m => ({
+    value: m.id,
+    label: `${m.name}${m.upc ? ` · ${m.upc}` : ""}${m.model ? ` · ${m.model}` : ""}`,
+    price: m.price,
+  }));
+
+  const addrOptions = [
+    { value: "", label: "— No shipping address —" },
+    ...addresses.map(a => ({ value: a.id, label: a.label ? `[${a.label}] ${a.full_address}` : a.full_address })),
+  ];
+
+  const accountOptions = accounts.map(a => ({
+    value: a.id,
+    label: a.display_name ? `${a.display_name} · ${a.email}` : a.email,
+  }));
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        {/* Bento grid header */}
+
+        {/* Header */}
         <div className="relative overflow-hidden rounded-t-2xl shrink-0 border-b border-gray-800">
           <div className="absolute inset-0 bg-gray-950">
             <div className="absolute inset-0 opacity-[0.07]"
               style={{ backgroundImage: `linear-gradient(#3b82f6 1px, transparent 1px), linear-gradient(90deg, #3b82f6 1px, transparent 1px)`, backgroundSize: "32px 32px" }} />
-            <div className="absolute inset-0 grid grid-cols-6 grid-rows-3 gap-1.5 p-3 opacity-[0.06]">
-              {[...Array(18)].map((_, i) => (
-                <div key={i} className="rounded-md bg-blue-400" style={{ opacity: i % 3 === 0 ? 1 : 0.3 }} />
-              ))}
-            </div>
             <div className="absolute -top-8 -left-8 w-40 h-40 bg-blue-500/20 rounded-full blur-2xl" />
             <div className="absolute -bottom-6 right-10 w-32 h-32 bg-blue-400/10 rounded-full blur-xl" />
           </div>
@@ -137,73 +201,142 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {error && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">{error}</div>}
 
+          {/* MS Account — searchable */}
+          <div>
+            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">MS Account *</label>
+            <Select
+              styles={selectStyles}
+              options={accountOptions}
+              value={accountOptions.find(o => o.value === form.account_id) ?? null}
+              onChange={opt => set("account_id", opt?.value ?? "")}
+              placeholder="Search accounts…"
+              isClearable
+              menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+            />
+          </div>
+
+          {/* Order number + date */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">MS Account *</label>
-              <select value={form.account_id} onChange={e => set("account_id", e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-                <option value="">Select account…</option>
-                {accounts.map(a => <option key={a.id} value={a.id}>{a.display_name || a.email}</option>)}
-              </select>
-            </div>
             <div>
               <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Order Number *</label>
               <input value={form.ms_order_number} onChange={e => set("ms_order_number", e.target.value)}
-                placeholder="e.g., 1234567890" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 font-mono" />
+                placeholder="e.g., 1234567890"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 font-mono" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Order Date *</label>
+              <input type="date" value={form.order_date} onChange={e => set("order_date", e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
             </div>
           </div>
 
+          {/* ── Merchandise items ───────────────────────────────────────── */}
           <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Order Date *</label>
-            <input type="date" value={form.order_date} onChange={e => set("order_date", e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs text-gray-500 uppercase tracking-wider">Items *</label>
+              <button onClick={addItem}
+                className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-400/50 rounded-md px-2 py-1 transition-colors">
+                <Plus className="w-3 h-3" /> Add item
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {items.map((item, idx) => {
+                const selectedMerch = merch.find(m => m.id === item.merchandise_id);
+                return (
+                  <div key={item._key} className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-gray-600 w-4 shrink-0">{idx + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <Select
+                          styles={selectStyles}
+                          options={merchOptions}
+                          value={merchOptions.find(o => o.value === item.merchandise_id) ?? null}
+                          onChange={opt => handleMerchChange(item._key, opt?.value ?? "")}
+                          placeholder="Search merchandise…"
+                          isClearable
+                          menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+                        />
+                      </div>
+                      <button onClick={() => removeItem(item._key)} disabled={items.length === 1}
+                        className="w-7 h-7 shrink-0 flex items-center justify-center rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-900/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Image + price preview */}
+                    {selectedMerch && (
+                      <div className="flex items-center gap-2 pl-6 text-[11px] text-gray-500">
+                        {selectedMerch.image_url && (
+                          <img src={selectedMerch.image_url} className="w-7 h-7 object-contain rounded border border-gray-700 shrink-0" alt=""
+                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                        )}
+                        <span className="text-green-400 font-mono">List ${Number(selectedMerch.price).toFixed(2)}</span>
+                        {selectedMerch.model && <span className="text-gray-600">· {selectedMerch.model}</span>}
+                      </div>
+                    )}
+
+                    {/* Qty + unit price */}
+                    <div className="flex items-center gap-3 pl-6">
+                      <div className="w-20">
+                        <label className="text-[10px] text-gray-600 mb-0.5 block">Qty</label>
+                        <input type="number" min="1" value={item.qty}
+                          onChange={e => updateItem(item._key, { qty: parseInt(e.target.value) || 1 })}
+                          className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-[10px] text-gray-600 mb-0.5 block">Unit Price ($)</label>
+                        <input type="text" inputMode="decimal" value={item.unit_price}
+                          onChange={e => updateItem(item._key, { unit_price: e.target.value.replace(/[^0-9.]/g, "") })}
+                          placeholder={selectedMerch ? Number(selectedMerch.price).toFixed(2) : "0.00"}
+                          className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+                      </div>
+                      {item.unit_price && item.qty > 0 && (
+                        <div className="shrink-0 text-right">
+                          <div className="text-[10px] text-gray-600 mb-0.5">Line total</div>
+                          <div className="text-sm font-mono text-white">
+                            ${(parseFloat(item.unit_price) * item.qty).toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
+          {/* Financials */}
           <div className="grid grid-cols-3 gap-3">
-            {[["subtotal","Subtotal"],["tax","Tax"],["shipping_cost","Shipping"]].map(([k, label]) => (
+            {([["subtotal","Subtotal"],["tax","Tax"],["shipping_cost","Shipping"]] as [string,string][]).map(([k, label]) => (
               <div key={k}>
                 <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">{label}</label>
-                <input type="number" step="0.01" value={form[k as keyof typeof form]} onChange={e => set(k, e.target.value)} onBlur={autoTotal}
+                <input type="number" step="0.01" value={form[k as keyof typeof form] as string}
+                  onChange={e => set(k, e.target.value)} onBlur={autoTotal}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 font-mono" />
               </div>
             ))}
           </div>
-
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Total</label>
             <input type="number" step="0.01" value={form.total} onChange={e => set("total", e.target.value)}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 font-mono" />
           </div>
 
-          {/* Address with Google autocomplete */}
+          {/* Shipping address — searchable dropdown only */}
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Shipping Address</label>
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2"><Search className="w-4 h-4 text-gray-500" /></div>
-              <input value={addrSearch} onChange={e => { setAddrSearch(e.target.value); setGoogleError(""); }}
-                placeholder="Start typing to search (Google Places)…"
-                className={`w-full bg-gray-800 border rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none transition-colors ${googleError ? "border-red-700" : "border-gray-700 focus:border-amber-500"}`} />
-              {googleError && <p className="absolute -bottom-5 left-0 text-[10px] text-red-400">⚠ {googleError}</p>}
-              {addrSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-10 max-h-48 overflow-y-auto">
-                  {addrSuggestions.map(s => (
-                    <button key={s.place_id} onClick={() => handleAddrSelect(s)}
-                      className="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">
-                      {s.description}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {addresses.length > 0 && (
-              <select value={form.shipping_address_id} onChange={e => { set("shipping_address_id", e.target.value); setAddrSearch(addresses.find(a => a.id === e.target.value)?.full_address ?? ""); }}
-                className="mt-2 w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-amber-500">
-                <option value="">— Or pick saved address —</option>
-                {addresses.map(a => <option key={a.id} value={a.id}>{a.label ? `[${a.label}] ` : ""}{a.full_address}</option>)}
-              </select>
-            )}
+            <Select
+              styles={selectStyles}
+              options={addrOptions}
+              value={addrOptions.find(o => o.value === form.shipping_address_id) ?? addrOptions[0]}
+              onChange={opt => set("shipping_address_id", opt?.value ?? "")}
+              placeholder="Search saved addresses…"
+              menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+            />
           </div>
 
+          {/* Tracking + carrier */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Tracking Number</label>
@@ -219,6 +352,7 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
             </div>
           </div>
 
+          {/* Notes */}
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Notes</label>
             <textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={2}
@@ -227,9 +361,13 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
         </div>
 
         <div className="border-t border-gray-800 px-6 py-4 flex gap-3 shrink-0">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors">Cancel</button>
+          <button onClick={onClose}
+            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors">
+            <X className="w-3.5 h-3.5" /> Cancel
+          </button>
           <button onClick={submit} disabled={saving}
-            className="flex-1 py-2 rounded-lg bg-amber-500/90 hover:bg-amber-500 text-white text-sm font-medium transition-colors disabled:opacity-50">
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-amber-500/90 hover:bg-amber-500 text-white text-sm font-medium disabled:opacity-50 transition-colors">
+            <Save className="w-3.5 h-3.5" />
             {saving ? "Saving…" : orderId ? "Update Order" : "Create Order"}
           </button>
         </div>
