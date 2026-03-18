@@ -1,11 +1,10 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Select from "react-select";
 import { X, Package, Plus, Trash2, Save } from "lucide-react";
 
 interface Account { id: string; email: string; display_name: string | null; balance: number | null; }
-interface Address { id: string; label: string | null; full_address: string; }
-interface Merch  { id: string; name: string; upc: string | null; model: string | null; image_url: string | null; price: number; }
+interface Merch   { id: string; name: string; upc: string | null; model: string | null; image_url: string | null; price: number; }
 
 interface OrderItem {
   _key: string;           // local-only UUID for React keys
@@ -41,9 +40,8 @@ const newKey = () => `item_${++_keyCounter}_${Date.now()}`;
 const emptyItem = (): OrderItem => ({ _key: newKey(), merchandise_id: "", name: "", qty: 1, unit_price: "" });
 
 export default function OrderForm({ onClose, onSaved, orderId }: Props) {
-  const [accounts, setAccounts]   = useState<Account[]>([]);
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [merch, setMerch]         = useState<Merch[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [merch, setMerch]       = useState<Merch[]>([]);
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState("");
 
@@ -51,7 +49,7 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
     account_id: "", ms_order_number: "",
     order_date: new Date().toISOString().split("T")[0],
     subtotal: "", tax: "", total: "",
-    shipping_address_id: "", tracking_number: "", carrier: "UPS", notes: "",
+    notes: "",
   });
 
   const [items, setItems] = useState<OrderItem[]>([emptyItem()]);
@@ -59,11 +57,9 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
   useEffect(() => {
     Promise.all([
       fetch("/api/msbiz/accounts").then(r => r.json()),
-      fetch("/api/msbiz/addresses").then(r => r.json()),
       fetch("/api/msbiz/merchandise?limit=500").then(r => r.json()),
-    ]).then(([a, ad, m]) => {
+    ]).then(([a, m]) => {
       setAccounts(a.accounts ?? []);
-      setAddresses(ad.addresses ?? []);
       setMerch(m.items ?? []);
     });
 
@@ -76,9 +72,7 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
           order_date: o.order_date?.split("T")[0] ?? "",
           subtotal: o.subtotal ?? "", tax: o.tax ?? "",
           total: o.total ?? "",
-          shipping_address_id: o.shipping_address_id ?? "",
-          tracking_number: o.tracking_number ?? "",
-          carrier: o.carrier ?? "UPS", notes: o.notes ?? "",
+          notes: o.notes ?? "",
         });
         if (Array.isArray(o.items) && o.items.length > 0) {
           setItems(o.items.map((it: Record<string, unknown>) => ({
@@ -163,9 +157,9 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
       tax: parseFloat(form.tax) || 0,
       shipping_cost: 0,
       total: parseFloat(form.total) || 0,
-      shipping_address_id: form.shipping_address_id || null,
-      tracking_number: form.tracking_number || null,
-      carrier: form.carrier || null,
+      shipping_address_id: null,
+      tracking_number: null,
+      carrier: null,
       items: validItems.map(({ _key, ...rest }) => ({
         ...rest,
         qty: Number(rest.qty) || 1,
@@ -187,11 +181,6 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
     label: `${m.name}${m.upc ? ` · ${m.upc}` : ""}${m.model ? ` · ${m.model}` : ""}`,
     price: m.price,
   }));
-
-  const addrOptions = [
-    { value: "", label: "— No shipping address —" },
-    ...addresses.map(a => ({ value: a.id, label: a.label ? `[${a.label}] ${a.full_address}` : a.full_address })),
-  ];
 
   const accountOptions = accounts.map(a => ({
     value: a.id,
@@ -353,35 +342,6 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
               <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Total</label>
               <input type="number" step="0.01" value={form.total} readOnly
                 className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400 font-mono cursor-default" />
-            </div>
-          </div>
-
-          {/* Shipping address — searchable dropdown only */}
-          <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Shipping Address</label>
-            <Select
-              styles={selectStyles}
-              options={addrOptions}
-              value={addrOptions.find(o => o.value === form.shipping_address_id) ?? addrOptions[0]}
-              onChange={opt => set("shipping_address_id", opt?.value ?? "")}
-              placeholder="Search saved addresses…"
-              menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
-            />
-          </div>
-
-          {/* Tracking + carrier */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Tracking Number</label>
-              <input value={form.tracking_number} onChange={e => set("tracking_number", e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 font-mono" />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Carrier</label>
-              <select value={form.carrier} onChange={e => set("carrier", e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-                {["UPS","FedEx","USPS","DHL","Other"].map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
             </div>
           </div>
 
