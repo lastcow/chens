@@ -7,6 +7,7 @@ import {
   ChevronsLeft, ChevronsRight, User
 } from "lucide-react";
 
+interface SharedUser { id: string; name: string | null; email: string; }
 interface Address {
   id: string; label: string | null; full_address: string;
   street1: string | null; city: string | null; state: string | null;
@@ -14,6 +15,7 @@ interface Address {
   contact_name: string | null; contact_phone: string | null;
   is_warehouse: boolean; is_shared: boolean;
   user_id: string | null; owner_name: string | null; owner_email: string | null;
+  shared_users: SharedUser[];
   created_at: string;
 }
 
@@ -179,16 +181,26 @@ export default function AdminAddressesPage() {
                       </div>
                     ) : <span className="text-gray-700">—</span>}
                   </td>
-                  {/* Owner */}
-                  <td className="px-3 py-3 whitespace-nowrap">
+                  {/* Owner + Shared Users */}
+                  <td className="px-3 py-3 whitespace-nowrap max-w-[180px]">
                     {addr.owner_name || addr.owner_email ? (
-                      <div>
-                        <div className="text-gray-300 text-xs">{addr.owner_name ?? addr.owner_email}</div>
-                        {addr.owner_name && addr.owner_email && (
-                          <div className="text-gray-600 text-[10px]">{addr.owner_email}</div>
-                        )}
+                      <div className="text-xs text-gray-300 truncate" title={addr.owner_email ?? ""}>
+                        {addr.owner_name ?? addr.owner_email}
                       </div>
                     ) : <span className="text-gray-600 text-xs italic">No owner</span>}
+                    {addr.shared_users?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {addr.shared_users.slice(0, 3).map(u => (
+                          <span key={u.id} title={u.email}
+                            className="inline-block text-[10px] bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full px-1.5 py-0.5 truncate max-w-[80px]">
+                            {u.name ?? u.email.split("@")[0]}
+                          </span>
+                        ))}
+                        {addr.shared_users.length > 3 && (
+                          <span className="text-[10px] text-gray-600">+{addr.shared_users.length - 3}</span>
+                        )}
+                      </div>
+                    )}
                   </td>
                   {/* Visibility */}
                   <td className="px-3 py-3 text-center whitespace-nowrap">
@@ -314,6 +326,9 @@ function AddressForm({
   const [searchQ, setSearchQ] = useState(address?.full_address ?? "");
   const [suggestions, setSuggestions] = useState<{ place_id: string; description: string }[]>([]);
   const [googleError, setGoogleError] = useState("");
+  const [sharedUserIds, setSharedUserIds] = useState<string[]>(
+    address?.shared_users?.map(u => u.id) ?? []
+  );
   const [form, setForm] = useState({
     label:        address?.label ?? "",
     contact_name: address?.contact_name ?? "",
@@ -366,7 +381,11 @@ function AddressForm({
   const submit = async () => {
     if (!form.full_address) { setError("Address required"); return; }
     setSaving(true); setError("");
-    const body = { ...form, user_id: form.owner_id || null };
+    const body = {
+      ...form,
+      user_id: form.owner_id || null,
+      shared_user_ids: sharedUserIds.filter(id => id !== form.owner_id),
+    };
     const res = await fetch(address ? `/api/admin/addresses/${address.id}` : "/api/admin/addresses", {
       method: address ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
@@ -427,6 +446,32 @@ function AddressForm({
               menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
             />
             <p className="text-[10px] text-gray-600 mt-1">If set, only this user can see it (unless shared). Leave blank for admin-only.</p>
+          </div>
+
+          {/* Shared with users */}
+          <div>
+            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">
+              Shared With <span className="text-gray-600 normal-case font-normal">(specific users, excluding owner)</span>
+            </label>
+            <Select
+              isMulti
+              styles={{
+                ...selectStyles,
+                multiValue: (b: object) => ({ ...b, backgroundColor: "#1e3a5f", borderRadius: "4px" }),
+                multiValueLabel: (b: object) => ({ ...b, color: "#93c5fd", fontSize: "12px" }),
+                multiValueRemove: (b: object) => ({ ...b, color: "#93c5fd", ":hover": { backgroundColor: "#2563eb", color: "#fff" } }),
+              }}
+              options={msbizUsers
+                .filter(u => u.id !== form.owner_id)
+                .map(u => ({ value: u.id, label: u.name ? `${u.name} · ${u.email}` : u.email }))}
+              value={msbizUsers
+                .filter(u => sharedUserIds.includes(u.id) && u.id !== form.owner_id)
+                .map(u => ({ value: u.id, label: u.name ? `${u.name} · ${u.email}` : u.email }))}
+              onChange={opts => setSharedUserIds(opts.map((o: { value: string }) => o.value))}
+              placeholder="Add users who can see this address…"
+              menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+            />
+            <p className="text-[10px] text-gray-600 mt-1">These users can see this address even if it's private. Owner is excluded automatically.</p>
           </div>
 
           {/* Visibility + Type toggles */}
