@@ -364,7 +364,7 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
             <div>
               <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Subtotal</label>
               <input type="number" step="0.01" value={form.subtotal} readOnly
-                className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400 font-mono cursor-default" />
+                className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400 font-mono cursor-default [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             </div>
             <div>
               <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Tax</label>
@@ -375,7 +375,7 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
             <div>
               <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Total</label>
               <input type="number" step="0.01" value={form.total} readOnly
-                className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400 font-mono cursor-default" />
+                className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400 font-mono cursor-default [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             </div>
           </div>
 
