@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import Select from "react-select";
 import { X, Package, Plus, Trash2, Save } from "lucide-react";
 
-interface Account { id: string; email: string; display_name: string | null; }
+interface Account { id: string; email: string; display_name: string | null; balance: number | null; }
 interface Address { id: string; label: string | null; full_address: string; }
 interface Merch  { id: string; name: string; upc: string | null; model: string | null; image_url: string | null; price: number; }
 
@@ -50,7 +50,7 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
   const [form, setForm] = useState({
     account_id: "", ms_order_number: "",
     order_date: new Date().toISOString().split("T")[0],
-    subtotal: "", tax: "", shipping_cost: "", total: "",
+    subtotal: "", tax: "", total: "",
     shipping_address_id: "", tracking_number: "", carrier: "UPS", notes: "",
   });
 
@@ -75,7 +75,7 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
           account_id: o.account_id, ms_order_number: o.ms_order_number,
           order_date: o.order_date?.split("T")[0] ?? "",
           subtotal: o.subtotal ?? "", tax: o.tax ?? "",
-          shipping_cost: o.shipping_cost ?? "", total: o.total ?? "",
+          total: o.total ?? "",
           shipping_address_id: o.shipping_address_id ?? "",
           tracking_number: o.tracking_number ?? "",
           carrier: o.carrier ?? "UPS", notes: o.notes ?? "",
@@ -95,28 +95,56 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
-  // ── auto-total from subtotal + tax + shipping ─────────────────────────────
+  // ── auto-recalc subtotal + total from items ──────────────────────────────
+  const recalcFromItems = (updatedItems: OrderItem[]) => {
+    const sub = updatedItems.reduce((acc, i) => acc + (parseFloat(i.unit_price) || 0) * (i.qty || 1), 0);
+    setForm(f => {
+      const total = sub + (parseFloat(f.tax) || 0);
+      return { ...f, subtotal: sub.toFixed(2), total: total.toFixed(2) };
+    });
+  };
+
+  // recalc when tax changes
   const autoTotal = () => {
-    const t = (parseFloat(form.subtotal) || 0) + (parseFloat(form.tax) || 0) + (parseFloat(form.shipping_cost) || 0);
-    if (t > 0) setForm(f => ({ ...f, total: t.toFixed(2) }));
+    const sub = parseFloat(form.subtotal) || 0;
+    const total = sub + (parseFloat(form.tax) || 0);
+    setForm(f => ({ ...f, total: total.toFixed(2) }));
   };
 
   // ── items helpers ─────────────────────────────────────────────────────────
-  const addItem = () => setItems(prev => [...prev, emptyItem()]);
-
-  const removeItem = (key: string) => {
-    setItems(prev => prev.length > 1 ? prev.filter(i => i._key !== key) : prev);
+  const addItem = () => {
+    const next = (prev: OrderItem[]) => [...prev, emptyItem()];
+    setItems(prev => { const n = next(prev); recalcFromItems(n); return n; });
   };
 
-  const updateItem = (key: string, patch: Partial<OrderItem>) =>
-    setItems(prev => prev.map(i => i._key === key ? { ...i, ...patch } : i));
+  const removeItem = (key: string) => {
+    setItems(prev => {
+      if (prev.length <= 1) return prev;
+      const n = prev.filter(i => i._key !== key);
+      recalcFromItems(n);
+      return n;
+    });
+  };
+
+  const updateItem = (key: string, patch: Partial<OrderItem>) => {
+    setItems(prev => {
+      const n = prev.map(i => i._key === key ? { ...i, ...patch } : i);
+      recalcFromItems(n);
+      return n;
+    });
+  };
 
   const handleMerchChange = (key: string, merchandiseId: string) => {
     const m = merch.find(x => x.id === merchandiseId);
-    updateItem(key, {
-      merchandise_id: merchandiseId,
-      name: m?.name ?? "",
-      unit_price: m ? String(Number(m.price).toFixed(2)) : "",
+    setItems(prev => {
+      const n = prev.map(i => i._key === key ? {
+        ...i,
+        merchandise_id: merchandiseId,
+        name: m?.name ?? "",
+        unit_price: m ? String(Number(m.price).toFixed(2)) : "",
+      } : i);
+      recalcFromItems(n);
+      return n;
     });
   };
 
@@ -133,7 +161,7 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
       ...form,
       subtotal: parseFloat(form.subtotal) || 0,
       tax: parseFloat(form.tax) || 0,
-      shipping_cost: parseFloat(form.shipping_cost) || 0,
+      shipping_cost: 0,
       total: parseFloat(form.total) || 0,
       shipping_address_id: form.shipping_address_id || null,
       tracking_number: form.tracking_number || null,
@@ -167,7 +195,9 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
 
   const accountOptions = accounts.map(a => ({
     value: a.id,
-    label: a.display_name ? `${a.display_name} · ${a.email}` : a.email,
+    label: a.display_name
+      ? `${a.display_name} · ${a.email}${a.balance != null ? ` · $${Number(a.balance).toFixed(2)}` : ""}`
+      : `${a.email}${a.balance != null ? ` · $${Number(a.balance).toFixed(2)}` : ""}`,
   }));
 
   return (
@@ -306,21 +336,24 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
             </div>
           </div>
 
-          {/* Financials */}
+          {/* Financials — subtotal auto-computed from items, tax manual, total = subtotal + tax */}
           <div className="grid grid-cols-3 gap-3">
-            {([["subtotal","Subtotal"],["tax","Tax"],["shipping_cost","Shipping"]] as [string,string][]).map(([k, label]) => (
-              <div key={k}>
-                <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">{label}</label>
-                <input type="number" step="0.01" value={form[k as keyof typeof form] as string}
-                  onChange={e => set(k, e.target.value)} onBlur={autoTotal}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 font-mono" />
-              </div>
-            ))}
-          </div>
-          <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Total</label>
-            <input type="number" step="0.01" value={form.total} onChange={e => set("total", e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 font-mono" />
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Subtotal</label>
+              <input type="number" step="0.01" value={form.subtotal} readOnly
+                className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400 font-mono cursor-default" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Tax</label>
+              <input type="number" step="0.01" value={form.tax}
+                onChange={e => set("tax", e.target.value)} onBlur={autoTotal}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 font-mono" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Total</label>
+              <input type="number" step="0.01" value={form.total} readOnly
+                className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400 font-mono cursor-default" />
+            </div>
           </div>
 
           {/* Shipping address — searchable dropdown only */}
