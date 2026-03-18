@@ -4,7 +4,7 @@ import Select from "react-select";
 import {
   MapPin, Plus, Search, Edit2, Trash2, X, Save, Copy, Check,
   ExternalLink, Globe, Lock, Warehouse, ChevronLeft, ChevronRight,
-  ChevronsLeft, ChevronsRight, User
+  ChevronsLeft, ChevronsRight, User, Users
 } from "lucide-react";
 
 interface SharedUser { id: string; name: string | null; email: string; }
@@ -50,6 +50,7 @@ export default function AdminAddressesPage() {
   const [editAddr, setEditAddr]     = useState<Address | null>(null);
   const [deletingId, setDeletingId] = useState("");
   const [copiedId, setCopiedId]     = useState<string | null>(null);
+  const [shareAddr, setShareAddr]   = useState<Address | null>(null);
   const [msbizUsers, setMsbizUsers] = useState<MsbizUser[]>([]);
 
   const fetchAddresses = useCallback(() => {
@@ -238,6 +239,10 @@ export default function AdminAddressesPage() {
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
                         <ExternalLink className="w-3.5 h-3.5" />
                       </a>
+                      <button onClick={() => setShareAddr(addr)} title="Manage shared users"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-purple-400 hover:bg-purple-500/10 transition-colors">
+                        <Users className="w-3.5 h-3.5" />
+                      </button>
                       <button onClick={() => { setEditAddr(addr); setShowForm(true); }}
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
                         <Edit2 className="w-3.5 h-3.5" />
@@ -273,6 +278,19 @@ export default function AdminAddressesPage() {
           msbizUsers={msbizUsers}
           onClose={() => setShowForm(false)}
           onSaved={() => { setShowForm(false); setEditAddr(null); fetchAddresses(); }}
+        />
+      )}
+
+      {/* Share modal */}
+      {shareAddr && (
+        <ShareModal
+          address={shareAddr}
+          msbizUsers={msbizUsers}
+          onClose={() => setShareAddr(null)}
+          onSaved={(updated) => {
+            setAddresses(prev => prev.map(a => a.id === updated.id ? { ...a, shared_users: updated.shared_users } : a));
+            setShareAddr(null);
+          }}
         />
       )}
 
@@ -566,6 +584,142 @@ function AddressForm({
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-500/90 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50 transition-colors">
             <Save className="w-3.5 h-3.5" />
             {saving ? "Saving…" : address ? "Update" : "Save Address"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Share Modal ──────────────────────────────────────────────────────────────
+
+function ShareModal({
+  address, msbizUsers, onClose, onSaved,
+}: {
+  address: Address;
+  msbizUsers: MsbizUser[];
+  onClose: () => void;
+  onSaved: (updated: { id: string; shared_users: SharedUser[] }) => void;
+}) {
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState("");
+  const [ids, setIds]         = useState<string[]>(address.shared_users?.map(u => u.id) ?? []);
+
+  // users eligible to share: not the owner
+  const eligible = msbizUsers.filter(u => u.id !== address.user_id);
+
+  const toggle = (uid: string) =>
+    setIds(prev => prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]);
+
+  const submit = async () => {
+    setSaving(true); setError("");
+    const res = await fetch(`/api/admin/addresses/${address.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ shared_user_ids: ids, owner_id: address.user_id }),
+    });
+    if (res.ok) {
+      const newSharedUsers = eligible
+        .filter(u => ids.includes(u.id))
+        .map(u => ({ id: u.id, name: u.name, email: u.email }));
+      onSaved({ id: address.id, shared_users: newSharedUsers });
+    } else {
+      const d = await res.json();
+      setError(d.error || "Failed to save");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md flex flex-col max-h-[80vh]">
+
+        {/* Header */}
+        <div className="relative overflow-hidden rounded-t-2xl shrink-0 border-b border-gray-800">
+          <div className="absolute inset-0 bg-gray-950">
+            <div className="absolute inset-0 opacity-[0.07]"
+              style={{ backgroundImage: `linear-gradient(#a855f7 1px, transparent 1px), linear-gradient(90deg, #a855f7 1px, transparent 1px)`, backgroundSize: "32px 32px" }} />
+            <div className="absolute -top-8 -left-8 w-40 h-40 bg-purple-500/20 rounded-full blur-2xl" />
+            <div className="absolute -bottom-6 right-10 w-32 h-32 bg-purple-400/10 rounded-full blur-xl" />
+          </div>
+          <div className="relative px-6 py-5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
+                <Users className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">Shared Access</h2>
+                <p className="text-[11px] text-gray-500 mt-0.5 truncate max-w-[220px]">{address.label ?? address.full_address}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Owner info */}
+        <div className="px-5 pt-4 pb-2 shrink-0">
+          <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5">
+            <User className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <div className="min-w-0">
+              <span className="text-[10px] text-gray-500 uppercase tracking-wider">Owner</span>
+              <div className="text-xs text-gray-300 truncate">
+                {address.owner_name ?? address.owner_email ?? <span className="text-gray-600 italic">No owner</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* User list */}
+        <div className="px-5 pb-1 shrink-0">
+          <p className="text-xs text-gray-500 mb-2">
+            {ids.length === 0 ? "No users have access yet." : `${ids.length} user${ids.length !== 1 ? "s" : ""} with access`}
+          </p>
+        </div>
+
+        {error && <div className="mx-5 mb-2 bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400 shrink-0">{error}</div>}
+
+        <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-1.5">
+          {eligible.length === 0 ? (
+            <div className="text-center py-6 text-gray-600 text-sm">No MS Business users available.</div>
+          ) : eligible.map(u => {
+            const checked = ids.includes(u.id);
+            return (
+              <button key={u.id} onClick={() => toggle(u.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors text-left ${
+                  checked
+                    ? "bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/15"
+                    : "bg-gray-800 border-gray-700 hover:bg-gray-750 hover:border-gray-600"
+                }`}>
+                {/* checkbox */}
+                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                  checked ? "bg-purple-500 border-purple-500" : "border-gray-600"
+                }`}>
+                  {checked && <Check className="w-2.5 h-2.5 text-white" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  {u.name && <div className="text-sm text-white truncate">{u.name}</div>}
+                  <div className={`text-[11px] truncate ${u.name ? "text-gray-500" : "text-gray-300"}`}>{u.email}</div>
+                </div>
+                {checked && (
+                  <span className="text-[10px] text-purple-400 shrink-0">✓ shared</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-800 px-5 py-4 flex gap-3 shrink-0">
+          <button onClick={onClose}
+            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors">
+            <X className="w-3.5 h-3.5" /> Cancel
+          </button>
+          <button onClick={submit} disabled={saving}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-purple-500/90 hover:bg-purple-500 text-white text-sm font-medium disabled:opacity-50 transition-colors">
+            <Save className="w-3.5 h-3.5" />
+            {saving ? "Saving…" : "Save Access"}
           </button>
         </div>
       </div>
