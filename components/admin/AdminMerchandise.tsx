@@ -2,8 +2,9 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   ShoppingBag, Plus, Search, Edit2, Trash2, X, Save,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink, Copy, Check
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink, Copy, Check, ShoppingCart
 } from "lucide-react";
+import POFormDialog from "./POFormDialog";
 
 interface Item {
   id: string; name: string; upc: string | null; model: string | null;
@@ -33,6 +34,7 @@ export default function AdminMerchandise() {
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState("");
   const [copiedId, setCopiedId]   = useState<string | null>(null);
+  const [poItem, setPoItem]       = useState<Item | null>(null);
 
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage]           = useState(1);
@@ -206,6 +208,11 @@ export default function AdminMerchandise() {
                 </td>
                 <td className="px-3 py-3">
                   <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setPoItem(item)}
+                      title="Create Purchase Order"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+                      <ShoppingCart className="w-3.5 h-3.5" />
+                    </button>
                     <button onClick={() => { setEditItem(item); setShowForm(true); }}
                       className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
                       <Edit2 className="w-3.5 h-3.5" />
@@ -244,6 +251,14 @@ export default function AdminMerchandise() {
 
       {showForm && (
         <MerchandiseForm item={editItem} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); fetchItems(); }} />
+      )}
+
+      {poItem && (
+        <POFormDialog
+          lockedMerchandise={{ id: poItem.id, name: poItem.name, upc: poItem.upc, model: poItem.model, image_url: poItem.image_url, price: poItem.price }}
+          onClose={() => setPoItem(null)}
+          onSaved={() => setPoItem(null)}
+        />
       )}
 
       {deletingId && (
