@@ -1,165 +1,270 @@
 "use client";
-import { useEffect, useState } from "react";
-import { MapPin, Plus, Search, Edit2, Trash2, X, Copy, Check, ExternalLink } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import Select from "react-select";
+import {
+  MapPin, Plus, Search, Edit2, Trash2, X, Save, Copy, Check,
+  ExternalLink, Globe, Lock, Warehouse, ChevronLeft, ChevronRight,
+  ChevronsLeft, ChevronsRight, User
+} from "lucide-react";
 
 interface Address {
-  id: string; label: string | null; full_address: string; street: string | null;
-  city: string | null; state: string | null; zip: string | null; country: string | null;
-  name: string | null; phone: string | null; created_at: string;
+  id: string; label: string | null; full_address: string;
+  street1: string | null; city: string | null; state: string | null;
+  zip: string | null; country: string | null;
+  contact_name: string | null; contact_phone: string | null;
+  is_warehouse: boolean; is_shared: boolean;
+  user_id: string | null; owner_name: string | null; owner_email: string | null;
+  created_at: string;
 }
 
+interface MsbizUser { id: string; name: string | null; email: string; }
+
+const selectStyles = {
+  control: (b: object) => ({ ...b, backgroundColor: "#1f2937", borderColor: "#374151", minHeight: "38px", boxShadow: "none", "&:hover": { borderColor: "#6b7280" } }),
+  menu: (b: object) => ({ ...b, backgroundColor: "#111827", border: "1px solid #374151", zIndex: 9999 }),
+  menuList: (b: object) => ({ ...b, maxHeight: "200px" }),
+  option: (b: object, s: { isFocused: boolean; isSelected: boolean }) => ({
+    ...b, backgroundColor: s.isSelected ? "#059669" : s.isFocused ? "#1f2937" : "transparent",
+    color: s.isSelected ? "#fff" : "#e5e7eb", fontSize: "13px", cursor: "pointer",
+    "&:active": { backgroundColor: "#065f46" },
+  }),
+  singleValue: (b: object) => ({ ...b, color: "#f3f4f6", fontSize: "13px" }),
+  input: (b: object) => ({ ...b, color: "#f3f4f6", fontSize: "13px" }),
+  placeholder: (b: object) => ({ ...b, color: "#6b7280", fontSize: "13px" }),
+  indicatorSeparator: () => ({ display: "none" }),
+  dropdownIndicator: (b: object) => ({ ...b, color: "#6b7280", padding: "0 6px" }),
+  clearIndicator: (b: object) => ({ ...b, color: "#6b7280" }),
+};
+
 export default function AdminAddressesPage() {
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [showForm, setShowForm] = useState(false);
-  const [editAddr, setEditAddr] = useState<Address | null>(null);
+  const [addresses, setAddresses]   = useState<Address[]>([]);
+  const [total, setTotal]           = useState(0);
+  const [pages, setPages]           = useState(1);
+  const [page, setPage]             = useState(1);
+  const [loading, setLoading]       = useState(true);
+  const [search, setSearch]         = useState("");
+  const [sharedFilter, setShared]   = useState("");   // "" | "true" | "false"
+  const [showForm, setShowForm]     = useState(false);
+  const [editAddr, setEditAddr]     = useState<Address | null>(null);
   const [deletingId, setDeletingId] = useState("");
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedId, setCopiedId]     = useState<string | null>(null);
+  const [msbizUsers, setMsbizUsers] = useState<MsbizUser[]>([]);
 
-  const fetchAddresses = () => {
-    const q = search ? `?search=${encodeURIComponent(search)}` : "";
-    fetch(`/api/msbiz/addresses${q}`)
+  const fetchAddresses = useCallback(() => {
+    setLoading(true);
+    const p = new URLSearchParams({ page: String(page) });
+    if (search.length >= 3) p.set("search", search);
+    if (sharedFilter) p.set("shared", sharedFilter);
+    fetch(`/api/admin/addresses?${p}`)
       .then(r => r.json())
-      .then(d => { setAddresses(d.addresses ?? []); setLoading(false); })
+      .then(d => { setAddresses(d.addresses ?? []); setTotal(d.total ?? 0); setPages(d.pages ?? 1); setLoading(false); })
       .catch(() => setLoading(false));
-  };
+  }, [page, search, sharedFilter]);
 
-  useEffect(() => { fetchAddresses(); }, [search]);
+  useEffect(() => { fetchAddresses(); }, [fetchAddresses]);
+  useEffect(() => { setPage(1); }, [search, sharedFilter]);
+
+  useEffect(() => {
+    fetch("/api/admin/msbiz-users")
+      .then(r => r.json())
+      .then(d => setMsbizUsers(d.users ?? []))
+      .catch(() => {});
+  }, []);
 
   const doDelete = async (id: string) => {
-    await fetch(`/api/msbiz/addresses/${id}`, { method: "DELETE" });
+    await fetch(`/api/admin/addresses/${id}`, { method: "DELETE" });
     setDeletingId("");
     fetchAddresses();
   };
 
-  const filtered = addresses.filter(a =>
-    !search || a.full_address.toLowerCase().includes(search.toLowerCase()) || (a.label?.toLowerCase().includes(search.toLowerCase()))
-  );
+  const copy = (addr: Address) => {
+    const parts = [addr.full_address, addr.contact_name, addr.contact_phone].filter(Boolean).join(", ");
+    navigator.clipboard.writeText(parts);
+    setCopiedId(addr.id);
+    setTimeout(() => setCopiedId(null), 1500);
+  };
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2"><MapPin className="w-5 h-5 text-amber-400" /> Addresses</h2>
-        <button onClick={() => { setEditAddr(null); setShowForm(true); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-700 bg-transparent hover:bg-gray-800 text-gray-300 hover:text-white text-sm font-medium transition-colors">
-          <Plus className="w-4 h-4" /> Add Address
-        </button>
-      </div>
-
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search addresses…"
-          className="w-full bg-gray-900 border border-gray-800 rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50" />
-      </div>
-
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {Array(4).fill(0).map((_,i) => <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl h-24 animate-pulse" />)}
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-2xl border border-gray-800">
+        <div className="absolute inset-0 bg-gray-950">
+          <div className="absolute inset-0 opacity-[0.07]"
+            style={{ backgroundImage: `linear-gradient(#34d399 1px, transparent 1px), linear-gradient(90deg, #34d399 1px, transparent 1px)`, backgroundSize: "32px 32px" }} />
+          <div className="absolute -top-8 -left-8 w-40 h-40 bg-emerald-500/20 rounded-full blur-2xl" />
+          <div className="absolute -bottom-6 right-10 w-32 h-32 bg-emerald-400/10 rounded-full blur-xl" />
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-10 text-gray-600">No addresses found.</div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {filtered.map(addr => (
-            <div key={addr.id} className="bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-4 transition-colors group">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <MapPin className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <div className="min-w-0">
-                    {addr.label && (
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-xs font-semibold text-amber-400">{addr.label}</span>
-                        <button
-                          onClick={() => {
-                            const parts = [
-                              addr.full_address,
-                              addr.name,
-                              addr.phone,
-                            ].filter(Boolean).join(", ");
-                            navigator.clipboard.writeText(parts);
-                            setCopiedId(addr.id);
-                            setTimeout(() => setCopiedId(null), 1500);
-                          }}
-                          title="Copy address, name & phone"
-                          className="text-gray-600 hover:text-green-400 transition-colors">
-                          {copiedId === addr.id
-                            ? <Check className="w-3 h-3 text-green-400" />
-                            : <Copy className="w-3 h-3" />}
-                        </button>
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr.full_address)}`}
-                          target="_blank" rel="noopener noreferrer"
-                          title="Open in Google Maps"
-                          className="text-gray-600 hover:text-blue-400 transition-colors">
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    )}
-                    <div className="text-sm text-white leading-snug">{addr.full_address}</div>
-                    {(addr.name || addr.phone) && (
-                      <div className="flex items-center gap-2 mt-1 text-[11px] text-gray-500">
-                        {addr.name && <span>{addr.name}</span>}
-                        {addr.name && addr.phone && <span className="text-gray-700">·</span>}
-                        {addr.phone && <span className="font-mono">{addr.phone}</span>}
-                      </div>
-                    )}
-                    {!addr.label && (
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <button
-                          onClick={() => {
-                            const parts = [
-                              addr.full_address,
-                              addr.name,
-                              addr.phone,
-                            ].filter(Boolean).join(", ");
-                            navigator.clipboard.writeText(parts);
-                            setCopiedId(addr.id);
-                            setTimeout(() => setCopiedId(null), 1500);
-                          }}
-                          title="Copy address, name & phone"
-                          className="text-gray-600 hover:text-green-400 transition-colors">
-                          {copiedId === addr.id
-                            ? <Check className="w-3 h-3 text-green-400" />
-                            : <Copy className="w-3 h-3" />}
-                        </button>
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr.full_address)}`}
-                          target="_blank" rel="noopener noreferrer"
-                          title="Open in Google Maps"
-                          className="text-gray-600 hover:text-blue-400 transition-colors">
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
-                  <button onClick={() => { setEditAddr(addr); setShowForm(true); }}
-                    className="w-7 h-7 rounded-md hover:bg-gray-800 text-gray-500 hover:text-gray-300 flex items-center justify-center">
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button onClick={() => setDeletingId(addr.id)}
-                    className="w-7 h-7 rounded-md hover:bg-red-900/20 text-gray-500 hover:text-red-400 flex items-center justify-center">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
+        <div className="relative px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+              <MapPin className="w-5 h-5 text-emerald-400" />
             </div>
-          ))}
+            <div>
+              <h1 className="text-lg font-bold text-white">Addresses</h1>
+              <p className="text-xs text-gray-500">{total} address{total !== 1 ? "es" : ""} · owner-scoped visibility</p>
+            </div>
+          </div>
+          <button onClick={() => { setEditAddr(null); setShowForm(true); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-700 bg-transparent hover:bg-gray-800 text-gray-300 hover:text-white text-sm font-medium transition-colors">
+            <Plus className="w-4 h-4" /> Add Address
+          </button>
         </div>
-      )}
+      </div>
 
+      {/* Filters */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search addresses, label, contact…"
+            className="w-full bg-gray-900 border border-gray-800 rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
+        </div>
+        <select value={sharedFilter} onChange={e => setShared(e.target.value)}
+          className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-emerald-500/50">
+          <option value="">All visibility</option>
+          <option value="true">Shared (public)</option>
+          <option value="false">Private</option>
+        </select>
+      </div>
+
+      {/* Table */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left w-2"></th>
+                <th className="px-3 py-3 text-left">Address</th>
+                <th className="px-3 py-3 text-left whitespace-nowrap">Contact</th>
+                <th className="px-3 py-3 text-left whitespace-nowrap">Owner</th>
+                <th className="px-3 py-3 text-center whitespace-nowrap">Visibility</th>
+                <th className="px-3 py-3 text-center whitespace-nowrap">Type</th>
+                <th className="px-3 py-3 text-center whitespace-nowrap">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {loading ? (
+                Array(5).fill(0).map((_, i) => (
+                  <tr key={i}><td colSpan={7} className="px-4 py-3"><div className="h-4 bg-gray-800 rounded animate-pulse" /></td></tr>
+                ))
+              ) : addresses.length === 0 ? (
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-600">No addresses found.</td></tr>
+              ) : addresses.map(addr => (
+                <tr key={addr.id} className="hover:bg-gray-800/40 group transition-colors">
+                  {/* visibility bar */}
+                  <td className="px-2 py-3">
+                    <div className={`w-1 h-7 rounded-full mx-auto ${addr.is_shared ? "bg-emerald-500" : "bg-gray-600"}`} />
+                  </td>
+                  {/* Address */}
+                  <td className="px-3 py-3 w-full min-w-0 max-w-0">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <div className="min-w-0">
+                        {addr.label && (
+                          <div className="text-xs font-semibold text-emerald-400 mb-0.5 truncate">{addr.label}</div>
+                        )}
+                        <div className="text-white text-sm truncate" title={addr.full_address}>{addr.full_address}</div>
+                        {(addr.city || addr.state || addr.zip) && (
+                          <div className="text-[10px] text-gray-500 font-mono">
+                            {[addr.city, addr.state, addr.zip].filter(Boolean).join(", ")}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  {/* Contact */}
+                  <td className="px-3 py-3 whitespace-nowrap">
+                    {(addr.contact_name || addr.contact_phone) ? (
+                      <div>
+                        {addr.contact_name && <div className="text-gray-300 text-xs">{addr.contact_name}</div>}
+                        {addr.contact_phone && <div className="text-gray-500 font-mono text-[11px]">{addr.contact_phone}</div>}
+                      </div>
+                    ) : <span className="text-gray-700">—</span>}
+                  </td>
+                  {/* Owner */}
+                  <td className="px-3 py-3 whitespace-nowrap">
+                    {addr.owner_name || addr.owner_email ? (
+                      <div>
+                        <div className="text-gray-300 text-xs">{addr.owner_name ?? addr.owner_email}</div>
+                        {addr.owner_name && addr.owner_email && (
+                          <div className="text-gray-600 text-[10px]">{addr.owner_email}</div>
+                        )}
+                      </div>
+                    ) : <span className="text-gray-600 text-xs italic">No owner</span>}
+                  </td>
+                  {/* Visibility */}
+                  <td className="px-3 py-3 text-center whitespace-nowrap">
+                    {addr.is_shared ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full px-2 py-0.5">
+                        <Globe className="w-2.5 h-2.5" /> Shared
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-gray-800 border border-gray-700 text-gray-500 rounded-full px-2 py-0.5">
+                        <Lock className="w-2.5 h-2.5" /> Private
+                      </span>
+                    )}
+                  </td>
+                  {/* Type */}
+                  <td className="px-3 py-3 text-center whitespace-nowrap">
+                    {addr.is_warehouse ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full px-2 py-0.5">
+                        <Warehouse className="w-2.5 h-2.5" /> Warehouse
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-gray-800 border border-gray-700 text-gray-500 rounded-full px-2 py-0.5">
+                        <User className="w-2.5 h-2.5" /> Address
+                      </span>
+                    )}
+                  </td>
+                  {/* Actions */}
+                  <td className="px-3 py-3">
+                    <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => copy(addr)} title="Copy"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+                        {copiedId === addr.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr.full_address)}`}
+                        target="_blank" rel="noopener noreferrer" title="Google Maps"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                      <button onClick={() => { setEditAddr(addr); setShowForm(true); }}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => setDeletingId(addr.id)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-900/20 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="border-t border-gray-800 px-4 py-3 flex items-center justify-between text-xs text-gray-500">
+          <span>{total} total · page {page} of {pages}</span>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setPage(1)} disabled={page === 1} className="w-7 h-7 rounded flex items-center justify-center hover:bg-gray-800 disabled:opacity-30"><ChevronsLeft className="w-3.5 h-3.5" /></button>
+            <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1} className="w-7 h-7 rounded flex items-center justify-center hover:bg-gray-800 disabled:opacity-30"><ChevronLeft className="w-3.5 h-3.5" /></button>
+            <button onClick={() => setPage(p => Math.min(pages, p+1))} disabled={page >= pages} className="w-7 h-7 rounded flex items-center justify-center hover:bg-gray-800 disabled:opacity-30"><ChevronRight className="w-3.5 h-3.5" /></button>
+            <button onClick={() => setPage(pages)} disabled={page >= pages} className="w-7 h-7 rounded flex items-center justify-center hover:bg-gray-800 disabled:opacity-30"><ChevronsRight className="w-3.5 h-3.5" /></button>
+          </div>
+        </div>
+      </div>
+
+      {/* Form */}
       {showForm && (
         <AddressForm
           address={editAddr}
+          msbizUsers={msbizUsers}
           onClose={() => setShowForm(false)}
           onSaved={() => { setShowForm(false); setEditAddr(null); fetchAddresses(); }}
         />
       )}
 
+      {/* Delete confirm */}
       {deletingId && (() => {
         const addr = addresses.find(a => a.id === deletingId);
         return (
@@ -176,22 +281,12 @@ export default function AdminAddressesPage() {
               </div>
               {addr && (
                 <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-1">
-                  {addr.label && <div className="text-xs font-semibold text-amber-400">{addr.label}</div>}
+                  {addr.label && <div className="text-xs font-semibold text-emerald-400">{addr.label}</div>}
                   <div className="text-sm text-white">{addr.full_address}</div>
-                  {(addr.city || addr.state || addr.zip) && (
-                    <div className="text-xs text-gray-500">
-                      {[addr.city, addr.state, addr.zip].filter(Boolean).join(", ")}
-                    </div>
-                  )}
-                  {(addr.name || addr.phone) && (
-                    <div className="text-xs text-gray-500 mt-1 flex gap-2">
-                      {addr.name && <span>{addr.name}</span>}
-                      {addr.phone && <span className="font-mono">{addr.phone}</span>}
-                    </div>
-                  )}
+                  {addr.owner_email && <div className="text-xs text-gray-500">Owner: {addr.owner_name ?? addr.owner_email}</div>}
                 </div>
               )}
-              <p className="text-xs text-gray-500">This may affect warehouses or orders linked to this address.</p>
+              <p className="text-xs text-gray-500">May affect warehouses or orders linked to this address.</p>
               <div className="flex gap-3">
                 <button onClick={() => setDeletingId("")} className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm">Cancel</button>
                 <button onClick={() => doDelete(deletingId)} className="flex-1 px-4 py-2 rounded-lg bg-red-500/90 hover:bg-red-500 text-white text-sm font-medium">Delete</button>
@@ -204,24 +299,35 @@ export default function AdminAddressesPage() {
   );
 }
 
-function AddressForm({ address, onClose, onSaved }: { address: Address | null; onClose: () => void; onSaved: () => void }) {
+// ─── Address Form ─────────────────────────────────────────────────────────────
+
+function AddressForm({
+  address, msbizUsers, onClose, onSaved
+}: {
+  address: Address | null;
+  msbizUsers: MsbizUser[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError]   = useState("");
   const [searchQ, setSearchQ] = useState(address?.full_address ?? "");
   const [suggestions, setSuggestions] = useState<{ place_id: string; description: string }[]>([]);
-  const [form, setForm] = useState({
-    label: address?.label ?? "",
-    name: address?.name ?? "",
-    phone: address?.phone ?? "",
-    full_address: address?.full_address ?? "",
-    street: address?.street ?? "",
-    city: address?.city ?? "",
-    state: address?.state ?? "",
-    zip: address?.zip ?? "",
-    country: address?.country ?? "US",
-  });
-
   const [googleError, setGoogleError] = useState("");
+  const [form, setForm] = useState({
+    label:        address?.label ?? "",
+    contact_name: address?.contact_name ?? "",
+    contact_phone: address?.contact_phone ?? "",
+    full_address: address?.full_address ?? "",
+    street1:      address?.street1 ?? "",
+    city:         address?.city ?? "",
+    state:        address?.state ?? "",
+    zip:          address?.zip ?? "",
+    country:      address?.country ?? "US",
+    is_warehouse: address?.is_warehouse ?? false,
+    is_shared:    address?.is_shared ?? false,
+    owner_id:     address?.user_id ?? "",
+  });
 
   useEffect(() => {
     if (searchQ.length < 3) { setSuggestions([]); return; }
@@ -229,43 +335,42 @@ function AddressForm({ address, onClose, onSaved }: { address: Address | null; o
       try {
         const res = await fetch(`/api/msbiz/addresses/lookup?q=${encodeURIComponent(searchQ)}`);
         const d = await res.json();
-        if (d.google_error || d.error) {
-          setGoogleError(d.google_error || d.error);
-          setSuggestions([]);
-        } else {
-          setGoogleError("");
-          setSuggestions(d.predictions ?? []);
-        }
+        if (d.google_error || d.error) { setGoogleError(d.google_error || d.error); setSuggestions([]); }
+        else { setGoogleError(""); setSuggestions(d.predictions ?? []); }
       } catch { setGoogleError("Search unavailable"); }
     }, 300);
     return () => clearTimeout(t);
   }, [searchQ]);
 
   const selectPlace = async (pred: { place_id: string; description: string }) => {
-    setSearchQ(pred.description);
-    setSuggestions([]);
+    setSearchQ(pred.description); setSuggestions([]);
     const res = await fetch("/api/msbiz/addresses/lookup", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ place_id: pred.place_id }),
     });
     const d = await res.json();
     if (d.place) {
-      setForm(f => ({ ...f, full_address: d.place.full_address, street: d.place.street ?? f.street,
-        city: d.place.city ?? f.city, state: d.place.state ?? f.state,
-        zip: d.place.zip ?? f.zip, country: d.place.country ?? f.country }));
+      setForm(f => ({ ...f,
+        full_address: d.place.full_address,
+        street1: d.place.street ?? f.street1,
+        city: d.place.city ?? f.city,
+        state: d.place.state ?? f.state,
+        zip: d.place.zip ?? f.zip,
+        country: d.place.country ?? f.country,
+      }));
     }
   };
 
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
 
   const submit = async () => {
     if (!form.full_address) { setError("Address required"); return; }
     setSaving(true); setError("");
-    const method = address ? "PUT" : "POST";
-    const url = address ? `/api/msbiz/addresses/${address.id}` : "/api/msbiz/addresses";
-    const res = await fetch(url, {
-      method, headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+    const body = { ...form, user_id: form.owner_id || null };
+    const res = await fetch(address ? `/api/admin/addresses/${address.id}` : "/api/admin/addresses", {
+      method: address ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
     if (res.ok) { onSaved(); } else { const d = await res.json(); setError(d.error || "Failed"); setSaving(false); }
   };
@@ -273,19 +378,11 @@ function AddressForm({ address, onClose, onSaved }: { address: Address | null; o
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
-        {/* Bento grid header */}
+        {/* Bento header */}
         <div className="relative overflow-hidden rounded-t-2xl shrink-0 border-b border-gray-800">
           <div className="absolute inset-0 bg-gray-950">
             <div className="absolute inset-0 opacity-[0.07]"
-              style={{
-                backgroundImage: `linear-gradient(#34d399 1px, transparent 1px), linear-gradient(90deg, #34d399 1px, transparent 1px)`,
-                backgroundSize: "32px 32px",
-              }} />
-            <div className="absolute inset-0 grid grid-cols-6 grid-rows-3 gap-1.5 p-3 opacity-[0.06]">
-              {[...Array(18)].map((_, i) => (
-                <div key={i} className="rounded-md bg-emerald-400" style={{ opacity: i % 3 === 0 ? 1 : 0.3 }} />
-              ))}
-            </div>
+              style={{ backgroundImage: `linear-gradient(#34d399 1px, transparent 1px), linear-gradient(90deg, #34d399 1px, transparent 1px)`, backgroundSize: "32px 32px" }} />
             <div className="absolute -top-8 -left-8 w-40 h-40 bg-emerald-500/20 rounded-full blur-2xl" />
             <div className="absolute -bottom-6 right-10 w-32 h-32 bg-emerald-400/10 rounded-full blur-xl" />
           </div>
@@ -296,7 +393,7 @@ function AddressForm({ address, onClose, onSaved }: { address: Address | null; o
               </div>
               <div>
                 <h2 className="text-base font-bold text-white">{address ? "Edit Address" : "Add Address"}</h2>
-                <p className="text-[11px] text-gray-500 mt-0.5">{address ? (address.label ?? address.full_address) : "Add a new address"}</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">{address ? (address.label ?? address.full_address) : "New address with owner + visibility"}</p>
               </div>
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors">
@@ -304,36 +401,86 @@ function AddressForm({ address, onClose, onSaved }: { address: Address | null; o
             </button>
           </div>
         </div>
+
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {error && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">{error}</div>}
+
+          {/* Label */}
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Label</label>
-            <input value={form.label} onChange={e => set("label", e.target.value)} placeholder="e.g., Warehouse A, HQ, Customer"
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
+            <input value={form.label} onChange={e => set("label", e.target.value)} placeholder="e.g., Warehouse A, HQ, Home"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
           </div>
+
+          {/* Owner */}
+          <div>
+            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">
+              Owner <span className="text-gray-600 normal-case font-normal">(MS Business user)</span>
+            </label>
+            <Select
+              styles={selectStyles}
+              options={msbizUsers.map(u => ({ value: u.id, label: u.name ? `${u.name} · ${u.email}` : u.email }))}
+              value={msbizUsers.filter(u => u.id === form.owner_id).map(u => ({ value: u.id, label: u.name ? `${u.name} · ${u.email}` : u.email }))[0] ?? null}
+              onChange={opt => set("owner_id", opt?.value ?? "")}
+              placeholder="No owner (unassigned)…"
+              isClearable
+              menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+            />
+            <p className="text-[10px] text-gray-600 mt-1">If set, only this user can see it (unless shared). Leave blank for admin-only.</p>
+          </div>
+
+          {/* Visibility + Type toggles */}
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 cursor-pointer hover:border-gray-600 transition-colors">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm text-gray-300">Shared (public)</span>
+              </div>
+              <div className="relative">
+                <input type="checkbox" className="sr-only" checked={form.is_shared} onChange={e => set("is_shared", e.target.checked)} />
+                <div className={`w-9 h-5 rounded-full transition-colors ${form.is_shared ? "bg-emerald-500" : "bg-gray-700"}`}>
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${form.is_shared ? "translate-x-4" : "translate-x-0"}`} />
+                </div>
+              </div>
+            </label>
+            <label className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 cursor-pointer hover:border-gray-600 transition-colors">
+              <div className="flex items-center gap-2">
+                <Warehouse className="w-4 h-4 text-blue-400" />
+                <span className="text-sm text-gray-300">Warehouse</span>
+              </div>
+              <div className="relative">
+                <input type="checkbox" className="sr-only" checked={form.is_warehouse} onChange={e => set("is_warehouse", e.target.checked)} />
+                <div className={`w-9 h-5 rounded-full transition-colors ${form.is_warehouse ? "bg-blue-500" : "bg-gray-700"}`}>
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${form.is_warehouse ? "translate-x-4" : "translate-x-0"}`} />
+                </div>
+              </div>
+            </label>
+          </div>
+
+          {/* Contact */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Contact Name</label>
-              <input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Full name"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
+              <input value={form.contact_name} onChange={e => set("contact_name", e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
             </div>
             <div>
               <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Phone</label>
-              <input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+1 (xxx) xxx-xxxx"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+              <input value={form.contact_phone} onChange={e => set("contact_phone", e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-emerald-500" />
             </div>
           </div>
+
+          {/* Google Places search */}
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">
-              Search Address
-              <span className="text-gray-600 normal-case font-normal ml-1">(Google Places)</span>
+              Search Address <span className="text-gray-600 normal-case font-normal">(Google Places)</span>
             </label>
             <div className="relative">
               <input value={searchQ} onChange={e => { setSearchQ(e.target.value); setGoogleError(""); }}
                 placeholder="Start typing to search…"
                 className={`w-full bg-gray-800 border rounded-lg px-3 py-2 text-sm text-white focus:outline-none transition-colors ${
-                  googleError ? "border-red-700 focus:border-red-500" : "border-gray-700 focus:border-amber-500"
-                }`} />
+                  googleError ? "border-red-700" : "border-gray-700 focus:border-emerald-500"}`} />
               {suggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-10 max-h-48 overflow-y-auto">
                   {suggestions.map(s => (
@@ -345,31 +492,35 @@ function AddressForm({ address, onClose, onSaved }: { address: Address | null; o
                 </div>
               )}
             </div>
-            {googleError ? (
-              <p className="text-[10px] text-red-400 mt-1">⚠ {googleError} — fill in the fields manually below.</p>
-            ) : (
-              <p className="text-[10px] text-gray-600 mt-1">Type 3+ characters to search. Select a result to auto-fill fields below.</p>
-            )}
+            {googleError && <p className="text-[10px] text-red-400 mt-1">⚠ {googleError} — fill in manually below.</p>}
           </div>
+
+          {/* Fields */}
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Full Address *</label>
             <input value={form.full_address} onChange={e => set("full_address", e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {[["street","Street"],["city","City"],["state","State"],["zip","ZIP"]].map(([k,l]) => (
+            {([["street1","Street"], ["city","City"], ["state","State"], ["zip","ZIP"]] as [string, string][]).map(([k, l]) => (
               <div key={k}>
                 <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">{l}</label>
-                <input value={form[k as keyof typeof form]} onChange={e => set(k, e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
+                <input value={form[k as keyof typeof form] as string} onChange={e => set(k, e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
               </div>
             ))}
           </div>
         </div>
+
         <div className="border-t border-gray-800 px-6 py-4 flex gap-3 shrink-0">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm">Cancel</button>
-          <button onClick={submit} disabled={saving} className="flex-1 py-2 rounded-lg bg-amber-500/90 hover:bg-amber-500 text-white text-sm font-medium disabled:opacity-50">
-            {saving ? "Saving…" : "Save"}
+          <button onClick={onClose}
+            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors">
+            <X className="w-3.5 h-3.5" /> Cancel
+          </button>
+          <button onClick={submit} disabled={saving}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-500/90 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50 transition-colors">
+            <Save className="w-3.5 h-3.5" />
+            {saving ? "Saving…" : address ? "Update" : "Save Address"}
           </button>
         </div>
       </div>
