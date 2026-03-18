@@ -208,6 +208,12 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
     ...addresses.map(a => ({ value: a.id, label: a.label ? `[${a.label}] ${a.full_address}` : a.full_address })),
   ];
 
+  const selectedAccount = accounts.find(a => a.id === form.account_id) ?? null;
+  const total = parseFloat(form.total) || 0;
+  const balance = selectedAccount?.balance != null ? Number(selectedAccount.balance) : null;
+  const insufficientBalance = form.account_id !== "" && balance !== null && balance < total;
+  const canSubmit = !saving && form.account_id !== "" && !insufficientBalance;
+
   const accountOptions = accounts.map(a => ({
     value: a.id,
     label: a.display_name
@@ -393,16 +399,30 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
           </div>
         </div>
 
-        <div className="border-t border-gray-800 px-6 py-4 flex gap-3 shrink-0">
-          <button onClick={onClose}
-            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors">
-            <X className="w-3.5 h-3.5" /> Cancel
-          </button>
-          <button onClick={submit} disabled={saving}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-amber-500/90 hover:bg-amber-500 text-white text-sm font-medium disabled:opacity-50 transition-colors">
-            <Save className="w-3.5 h-3.5" />
-            {saving ? "Saving…" : orderId ? "Update Order" : "Create Order"}
-          </button>
+        <div className="border-t border-gray-800 px-6 py-4 space-y-3 shrink-0">
+          {/* Balance warning */}
+          {insufficientBalance && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-xs text-red-400 flex items-center justify-between">
+              <span>Insufficient balance — account has <span className="font-mono font-semibold">${Number(balance).toFixed(2)}</span>, order total is <span className="font-mono font-semibold">${total.toFixed(2)}</span></span>
+            </div>
+          )}
+          {form.account_id && !insufficientBalance && balance !== null && total > 0 && (
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2 text-xs text-emerald-400 flex items-center justify-between">
+              <span>Balance after order: <span className="font-mono font-semibold">${(balance - total).toFixed(2)}</span></span>
+              <span className="text-gray-600 font-mono">${Number(balance).toFixed(2)} − ${total.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="flex gap-3">
+            <button onClick={onClose}
+              className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors">
+              <X className="w-3.5 h-3.5" /> Cancel
+            </button>
+            <button onClick={submit} disabled={!canSubmit}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-amber-500/90 hover:bg-amber-500 disabled:bg-gray-700 disabled:text-gray-500 text-white">
+              <Save className="w-3.5 h-3.5" />
+              {saving ? "Saving…" : orderId ? "Update Order" : "Create Order"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
