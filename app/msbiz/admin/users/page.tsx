@@ -79,6 +79,9 @@ export default function AdminUsersPage() {
     } else if (preset === "customer") {
       const customerSet = new Set(["accounts.view","orders.view","orders.create","invoices.view","exceptions.view","tracking.view"]);
       setPerms(Object.fromEntries(allFlat.map(p => [p, customerSet.has(p)])));
+    } else if (preset === "warehouse") {
+      const warehouseSet = new Set(["warehouse.view","inbound.view","inbound.create","inbound.receive","outbound.view","outbound.create","exceptions.view","exceptions.create","tracking.view"]);
+      setPerms(Object.fromEntries(allFlat.map(p => [p, warehouseSet.has(p)])));
     }
   };
 
@@ -161,7 +164,7 @@ export default function AdminUsersPage() {
             {/* Presets */}
             <div className="px-6 py-3 border-b border-gray-800 flex items-center gap-2">
               <span className="text-xs text-gray-500 mr-1">Preset:</span>
-              {["customer","viewer","pmer","operator","admin"].map(p => (
+              {["customer","viewer","pmer","warehouse","operator","admin"].map(p => (
                 <button key={p} onClick={() => applyPreset(p)}
                   className="px-3 py-1 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-xs capitalize transition-colors">
                   {p}
