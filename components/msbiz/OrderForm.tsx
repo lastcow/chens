@@ -185,7 +185,23 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
     value: m.id,
     label: `${m.name}${m.upc ? ` · ${m.upc}` : ""}${m.model ? ` · ${m.model}` : ""}`,
     price: m.price,
+    upc: m.upc ?? "",
+    model: m.model ?? "",
+    name: m.name,
   }));
+
+  const filterMerch = (
+    option: { label: string; data: { name: string; upc: string; model: string } },
+    input: string
+  ) => {
+    if (!input) return true;
+    const q = input.toLowerCase();
+    return (
+      option.data.name.toLowerCase().includes(q) ||
+      option.data.upc.toLowerCase().includes(q) ||
+      option.data.model.toLowerCase().includes(q)
+    );
+  };
 
   const addrOptions = [
     { value: "", label: "— No shipping address —" },
@@ -282,7 +298,8 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
                           options={merchOptions}
                           value={merchOptions.find(o => o.value === item.merchandise_id) ?? null}
                           onChange={opt => handleMerchChange(item._key, opt?.value ?? "")}
-                          placeholder="Search merchandise…"
+                          filterOption={filterMerch}
+                          placeholder="Search by name, UPC, model…"
                           isClearable
                           menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
                         />
