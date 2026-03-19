@@ -163,7 +163,7 @@ export default function OrdersPage() {
               <>
               <tr key={o.id} className="hover:bg-gray-800/30 transition-colors group">
                 {/* Status square */}
-                <td className="px-3 pt-3 pb-0 w-6">
+                <td className="px-3 py-3 w-6">
                   <div className={`w-6 h-6 rounded flex items-center justify-center text-[11px] font-bold shrink-0 ${STATUS_SQUARE[o.status] ?? "bg-gray-700 text-gray-400"}`}
                     title={o.status}>
                     {STATUS_LETTER[o.status] ?? "?"}
@@ -171,7 +171,7 @@ export default function OrdersPage() {
                 </td>
 
                 {/* Order # + relative date + account — no wrap */}
-                <td className="px-3 pt-3 pb-0 whitespace-nowrap">
+                <td className="px-3 py-3 whitespace-nowrap">
                   <div className="flex items-baseline gap-2">
                     <span className="font-mono text-amber-400 text-sm font-semibold leading-tight">{o.ms_order_number}</span>
                     <span className="text-[11px] text-gray-500">{relDate(o.order_date)}</span>
@@ -185,7 +185,7 @@ export default function OrdersPage() {
                 </td>
 
                 {/* Items */}
-                <td className="px-3 pt-3 pb-0 w-full min-w-0 max-w-0">
+                <td className="px-3 py-3 w-full min-w-0 max-w-0">
                   <div className="space-y-0.5">
                     {itemList.length === 0 ? (
                       <span className="text-gray-600 text-xs">—</span>
@@ -200,7 +200,7 @@ export default function OrdersPage() {
                 </td>
 
                 {/* Shipping label */}
-                <td className="px-3 pt-3 pb-0 whitespace-nowrap">
+                <td className="px-3 py-3 whitespace-nowrap">
                   {hasShipping ? (
                     <div>
                       <div className="text-[11px] text-gray-400">{INBOUND_LABEL[o.inbound_status] ?? o.inbound_status}</div>
@@ -212,7 +212,7 @@ export default function OrdersPage() {
                 </td>
 
                 {/* PM indicator */}
-                <td className="px-3 pt-3 pb-0 text-center whitespace-nowrap">
+                <td className="px-3 py-3 text-center whitespace-nowrap">
                   <div className="flex flex-col items-center gap-1">
                     <div className={`w-2.5 h-2.5 rounded-full ${PM_DOT[o.pm_status] ?? "bg-gray-700"}`}
                       title={o.pm_status} />
@@ -221,7 +221,7 @@ export default function OrdersPage() {
                 </td>
 
                 {/* Detail link */}
-                <td className="px-3 pt-3 pb-0 text-center">
+                <td className="px-3 py-3 text-center">
                   <a href={`/msbiz/orders/${o.id}`}
                     className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-gray-600 hover:text-amber-400 hover:bg-amber-500/10 transition-colors opacity-0 group-hover:opacity-100">
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -231,7 +231,7 @@ export default function OrdersPage() {
 
               {/* Full-width shipping progress bar — same style as admin PO */}
               <tr key={`${o.id}-bar`}>
-                <td colSpan={6} className="p-0">
+                <td colSpan={6} className="px-0 pt-0 pb-3">
                   <div className="h-[3px] w-full bg-gray-800"
                     title={hasShipping ? `${INBOUND_LABEL[o.inbound_status] ?? o.inbound_status} (${shipPct}%)` : "No shipping info"}>
                     <div className={`h-full transition-all duration-500 ${shipColor}`} style={{ width: `${hasShipping ? Math.max(shipPct, 4) : 0}%` }} />
