@@ -180,8 +180,8 @@ export default function AccountsPage() {
                       )}
                     </div>
                   </td>
-                  {/* Actions — w-0 hidden, expands on hover → table reflows, all cols compress */}
-                  <td className="w-0 overflow-hidden group-hover:w-32 transition-all duration-150 py-1 pr-2">
+                  {/* Actions — fixed width always, buttons invisible at rest, fade in on hover — no layout shift */}
+                  <td className="w-32 py-1 pr-2 shrink-0">
                     <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                       <button onClick={() => setAdjustAcc(acc)} title="Adjust balance"
                         className="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
