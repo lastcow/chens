@@ -277,14 +277,24 @@ export default function OrdersPage() {
                 {/* Actions */}
                 <td className="px-3 py-3 text-center whitespace-nowrap">
                   <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setPmOrder(o)} title="Assign to PM Queue"
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-                        o.pm_status === "unpmed"
-                          ? "text-amber-400 bg-amber-500/10"
-                          : "text-gray-600 hover:text-amber-400 hover:bg-amber-500/10"
-                      }`}>
-                      <Tag className="w-3.5 h-3.5" />
-                    </button>
+                    {(() => {
+                      const pmActive = ["submitted","approved","rejected"].includes(o.pm_status);
+                      return (
+                        <button
+                          onClick={() => !pmActive && setPmOrder(o)}
+                          disabled={pmActive}
+                          title={pmActive ? `PM already ${o.pm_status}` : "Assign to PM Queue"}
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                            pmActive
+                              ? "text-gray-700 cursor-not-allowed opacity-40"
+                              : o.pm_status === "unpmed"
+                                ? "text-amber-400 bg-amber-500/10 hover:bg-amber-500/20"
+                                : "text-gray-600 hover:text-amber-400 hover:bg-amber-500/10"
+                          }`}>
+                          <Tag className="w-3.5 h-3.5" />
+                        </button>
+                      );
+                    })()}
                     <button onClick={() => setShipping(o)} title="Add/Edit Shipping"
                       className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
                       <Truck className="w-3.5 h-3.5" />
