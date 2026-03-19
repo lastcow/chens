@@ -78,7 +78,6 @@ export default function AssignPMDialog({ order, onClose, onSaved }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           order_id:       order.id,
-          order_item_id:  item.id,
           original_price: Number(item.unit_price),
           match_price:    Number(item.unit_price),  // placeholder, pmer will update
           expires_at:     deadline || null,
