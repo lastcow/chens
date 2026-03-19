@@ -66,7 +66,7 @@ function PmBars({ status }: { status: string }) {
       {PM_BAR_COLORS.map((color, i) => {
         const filled = isError || i < step;
         const barColor = isError ? "bg-red-500" : (filled ? color : "bg-gray-800");
-        return <div key={i} className={`w-[5px] h-[5px] rounded-sm ${barColor}`} />;
+        return <div key={i} className={`w-[5px] h-[7px] rounded-sm ${barColor}`} />;
       })}
     </div>
   );
