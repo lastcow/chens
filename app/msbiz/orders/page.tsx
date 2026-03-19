@@ -8,7 +8,7 @@ interface Order {
   id: string; ms_order_number: string; order_date: string; status: string;
   items: OrderItem[]; total: number; pm_status: string; pm_deadline_at: string | null;
   account_email: string; account_name: string | null;
-  tracking_number: string | null; inbound_status: string; exception_count: number;
+  tracking_number: string | null; carrier: string | null; inbound_status: string; exception_count: number;
 }
 
 const STATUS_LETTER: Record<string, string> = {
@@ -36,10 +36,47 @@ function relDate(dateStr: string) {
   const now = new Date();
   const diff = Math.round((now.getTime() - d.getTime()) / 86400000);
   if (diff === 0) return "Today";
-  if (diff === 1) return "Yesterday";
-  if (diff < 30)  return `${diff}d ago`;
+  if (diff === 1) return "1 day ago";
+  if (diff < 30)  return `${diff} days ago`;
   if (diff < 365) return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" });
+}
+
+// Shipping progress — steps with labels
+const SHIPPING_STEPS = ["pending", "ordered", "in_transit", "out_for_delivery", "delivered"];
+const INBOUND_LABEL: Record<string, string> = {
+  pending:           "Pending",
+  ordered:           "Ordered",
+  in_transit:        "In Transit",
+  out_for_delivery:  "Out for Delivery",
+  delivered:         "Delivered",
+};
+function ShippingProgress({ tracking, carrier, inboundStatus }: { tracking: string | null; carrier: string | null; inboundStatus: string }) {
+  if (!tracking && !carrier && inboundStatus === "pending") {
+    return <span className="text-gray-700 text-xs">—</span>;
+  }
+  const idx = SHIPPING_STEPS.indexOf(inboundStatus);
+  const step = idx < 0 ? 0 : idx;
+  const total = SHIPPING_STEPS.length - 1;
+  const pct = Math.round((step / total) * 100);
+  const done = inboundStatus === "delivered";
+  const barColor = done ? "bg-green-500" : step >= 2 ? "bg-blue-500" : "bg-amber-500";
+  return (
+    <div className="min-w-[100px]">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[10px] text-gray-500">{INBOUND_LABEL[inboundStatus] ?? inboundStatus}</span>
+        {tracking && <span className="text-[9px] text-gray-700 font-mono truncate max-w-[60px]">{tracking.slice(-6)}</span>}
+      </div>
+      <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+      </div>
+      <div className="flex justify-between mt-0.5">
+        {SHIPPING_STEPS.map((s, i) => (
+          <div key={s} className={`w-1 h-1 rounded-full ${i <= step ? barColor : "bg-gray-700"}`} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 
@@ -124,17 +161,18 @@ export default function OrdersPage() {
           <thead className="sticky top-[140px] z-[9] bg-gray-900 border-b border-gray-800">
             <tr className="text-xs text-gray-500 uppercase tracking-wider">
               <th className="text-left px-3 py-3 w-6"></th>
-              <th className="text-left px-3 py-3">Order</th>
+              <th className="text-left px-3 py-3 whitespace-nowrap">Order</th>
               <th className="text-left px-3 py-3">Items</th>
+              <th className="text-left px-3 py-3 whitespace-nowrap">Shipping</th>
               <th className="text-center px-3 py-3 whitespace-nowrap">PM</th>
               <th className="text-center px-3 py-3 w-8"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800/50">
             {loading ? (
-              <tr><td colSpan={5} className="text-center text-gray-600 py-10 animate-pulse">Loading…</td></tr>
+              <tr><td colSpan={6} className="text-center text-gray-600 py-10 animate-pulse">Loading…</td></tr>
             ) : orders.length === 0 ? (
-              <tr><td colSpan={5} className="text-center text-gray-600 py-10">No orders found.</td></tr>
+              <tr><td colSpan={6} className="text-center text-gray-600 py-10">No orders found.</td></tr>
             ) : orders.map(o => {
               const itemList: OrderItem[] = Array.isArray(o.items) ? o.items : [];
               return (
@@ -147,11 +185,11 @@ export default function OrdersPage() {
                   </div>
                 </td>
 
-                {/* Order # + account + date */}
-                <td className="px-3 py-3 min-w-0">
+                {/* Order # + relative date + account */}
+                <td className="px-3 py-3 min-w-0 whitespace-nowrap">
                   <div className="font-mono text-amber-400 text-sm font-semibold leading-tight">{o.ms_order_number}</div>
-                  <div className="text-[11px] text-gray-500 mt-0.5 truncate max-w-[140px]">{o.account_name || o.account_email}</div>
-                  <div className="text-[10px] text-gray-600 mt-0.5">{relDate(o.order_date)}</div>
+                  <div className="text-[11px] text-gray-500 mt-0.5">{relDate(o.order_date)}</div>
+                  <div className="text-[11px] text-gray-600 mt-0.5 truncate max-w-[140px]">{o.account_name || o.account_email}</div>
                   {o.exception_count > 0 && (
                     <div className="flex items-center gap-1 text-[10px] text-red-400 mt-0.5">
                       <AlertTriangle className="w-3 h-3" /> {o.exception_count}
@@ -172,6 +210,11 @@ export default function OrdersPage() {
                       </div>
                     ))}
                   </div>
+                </td>
+
+                {/* Shipping progress */}
+                <td className="px-3 py-3">
+                  <ShippingProgress tracking={o.tracking_number} carrier={o.carrier} inboundStatus={o.inbound_status} />
                 </td>
 
                 {/* PM indicator */}
