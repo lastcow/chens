@@ -201,6 +201,10 @@ export default function AccountsPage() {
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
                         <DollarSign className="w-3.5 h-3.5" />
                       </button>
+                      <button onClick={() => setOrdersAcc(acc)} title="View orders"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+                        <Package className="w-3.5 h-3.5" />
+                      </button>
                       <button onClick={() => { setEditId(acc.id); setShowForm(true); }}
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
                         <Edit2 className="w-3.5 h-3.5" />
@@ -674,30 +678,70 @@ interface OrderRow {
   items: { name: string; qty: number; unit_price: number }[];
 }
 
-const PM_LABEL: Record<string, string> = { unpmed: "Pending PM", submitted: "PM Submitted", approved: "PM Approved", rejected: "PM Rejected", ineligible: "Not Eligible", expired: "PM Expired" };
-const PM_COLOR: Record<string, string> = { unpmed: "text-amber-400", submitted: "text-blue-400", approved: "text-green-400", rejected: "text-red-400", ineligible: "text-gray-500", expired: "text-red-600" };
-const STATUS_COLOR: Record<string, string> = { pending: "text-gray-400", processing: "text-blue-400", shipped: "text-amber-400", delivered: "text-green-400", cancelled: "text-gray-600", exception: "text-red-400", confirmed: "text-green-300" };
+const PM_LABEL: Record<string, string> = {
+  unpmed: "Pending PM", submitted: "PM Submitted", approved: "PM Approved",
+  rejected: "PM Rejected", ineligible: "Not Eligible", expired: "PM Expired",
+};
 
-function AccountOrdersDialog({ account, onClose }: { account: { id: string; email: string; display_name: string | null }; onClose: () => void }) {
-  const [orders, setOrders] = useState<OrderRow[]>([]);
+// Static lookup objects — no dynamic class interpolation (Turbopack constraint)
+const PM_BADGE_BG: Record<string, string> = {
+  unpmed: "bg-amber-900 border-amber-700 text-amber-300",
+  submitted: "bg-blue-900 border-blue-700 text-blue-300",
+  approved: "bg-green-900 border-green-700 text-green-300",
+  rejected: "bg-red-900 border-red-700 text-red-300",
+  ineligible: "bg-gray-800 border-gray-700 text-gray-400",
+  expired: "bg-red-950 border-red-800 text-red-500",
+};
+
+const ORD_LIMIT = 10;
+
+function AccountOrdersDialog({
+  account, onClose,
+}: {
+  account: { id: string; email: string; display_name: string | null; balance: number };
+  onClose: () => void;
+}) {
+  const [orders, setOrders]   = useState<OrderRow[]>([]);
+  const [total, setTotal]     = useState(0);
   const [loading, setLoading] = useState(true);
+  const [page, setPage]       = useState(1);
+  const [search, setSearch]   = useState("");
+  const [pmFilter, setPm]     = useState("");
 
-  useEffect(() => {
-    fetch(`/api/msbiz/orders?account_id=${account.id}&limit=50`)
-      .then(r => r.json())
-      .then(d => { setOrders(d.orders ?? []); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [account.id]);
+  const fetchOrders = useCallback(async () => {
+    setLoading(true);
+    const p = new URLSearchParams({
+      account_id: account.id,
+      limit: String(ORD_LIMIT),
+      page: String(page),
+    });
+    if (search) p.set("search", search);
+    if (pmFilter) p.set("pm_status", pmFilter);
+    const res = await fetch(`/api/msbiz/orders?${p}`);
+    const d = await res.json();
+    setOrders(d.orders ?? []);
+    setTotal(d.total ?? 0);
+    setLoading(false);
+  }, [account.id, page, search, pmFilter]);
+
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => { setPage(1); }, [search, pmFilter]);
+
+  const pages = Math.max(1, Math.ceil(total / ORD_LIMIT));
+  const bal = Number(account.balance ?? 0);
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-xl max-h-[85vh] flex flex-col">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
 
-        {/* Bento header */}
+        {/* Bento header — amber theme */}
         <div className="relative overflow-hidden rounded-t-2xl shrink-0 border-b border-gray-800">
           <div className="absolute inset-0 bg-gray-950">
             <div className="absolute inset-0 opacity-[0.07]"
               style={{ backgroundImage: `linear-gradient(#f59e0b 1px, transparent 1px), linear-gradient(90deg, #f59e0b 1px, transparent 1px)`, backgroundSize: "28px 28px" }} />
+            <div className="absolute inset-0 grid grid-cols-6 grid-rows-3 gap-1.5 p-3 opacity-[0.06]">
+              {[...Array(18)].map((_, i) => <div key={i} className="rounded-md bg-amber-400" style={{ opacity: i % 3 === 0 ? 1 : 0.3 }} />)}
+            </div>
             <div className="absolute -top-8 -left-8 w-36 h-36 bg-amber-500/20 rounded-full blur-2xl" />
             <div className="absolute -bottom-4 right-8 w-28 h-28 bg-amber-400/10 rounded-full blur-xl" />
           </div>
@@ -707,70 +751,131 @@ function AccountOrdersDialog({ account, onClose }: { account: { id: string; emai
                 <Package className="w-5 h-5 text-amber-400" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-white">Orders</h2>
-                <p className="text-[11px] text-gray-500 mt-0.5 truncate max-w-[200px]">{account.display_name ?? account.email}</p>
+                <h2 className="text-sm font-bold text-white">{account.display_name ?? account.email}</h2>
+                {account.display_name && (
+                  <p className="text-[11px] text-gray-500 mt-0.5 font-mono truncate max-w-[220px]">{account.email}</p>
+                )}
               </div>
             </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors">
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <div className="text-[10px] text-gray-600 uppercase tracking-wider">Balance</div>
+                <div className="text-sm font-mono font-bold text-amber-400">${bal.toFixed(2)}</div>
+              </div>
+              <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Orders list */}
-        <div className="flex-1 overflow-y-auto divide-y divide-gray-800">
-          {loading ? (
-            <div className="py-10 text-center text-gray-600 animate-pulse">Loading…</div>
-          ) : orders.length === 0 ? (
-            <div className="py-10 text-center text-gray-600">No orders found.</div>
-          ) : orders.map(o => (
-            <div key={o.id} className="px-5 py-4 space-y-2.5">
-              {/* Order header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-amber-400 text-sm font-semibold">{o.ms_order_number}</span>
-                  <span className="text-[11px] text-gray-600">
-                    {new Date(o.order_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs font-medium capitalize ${STATUS_COLOR[o.status] ?? "text-gray-400"}`}>{o.status}</span>
-                  <span className={`text-xs ${PM_COLOR[o.pm_status] ?? "text-gray-500"}`}>{PM_LABEL[o.pm_status] ?? o.pm_status}</span>
-                </div>
-              </div>
-
-              {/* Items */}
-              <div className="space-y-1">
-                {Array.isArray(o.items) && o.items.length > 0 ? o.items.map((it, i) => (
-                  <div key={i} className="flex items-baseline justify-between gap-3 text-xs">
-                    <div className="flex items-baseline gap-1.5 min-w-0">
-                      <span className="text-gray-500 font-mono shrink-0">{it.qty}×</span>
-                      <span className="text-gray-300 truncate">{it.name}</span>
-                    </div>
-                    <span className="text-gray-500 font-mono shrink-0">${(Number(it.unit_price) * it.qty).toFixed(2)}</span>
-                  </div>
-                )) : (
-                  <span className="text-xs text-gray-600">No items recorded</span>
-                )}
-              </div>
-
-              {/* Totals */}
-              <div className="flex items-center justify-between pt-1 border-t border-gray-800/60">
-                <div className="flex items-center gap-4 text-[11px] text-gray-600">
-                  {o.subtotal > 0 && <span>Subtotal <span className="font-mono text-gray-500">${Number(o.subtotal).toFixed(2)}</span></span>}
-                  {o.tax > 0 && <span>Tax <span className="font-mono text-gray-500">${Number(o.tax).toFixed(2)}</span></span>}
-                </div>
-                <span className="text-sm font-mono font-semibold text-white">${Number(o.total).toFixed(2)}</span>
-              </div>
-            </div>
-          ))}
+        {/* Filters */}
+        <div className="px-5 py-3 border-b border-gray-800 flex gap-3 shrink-0">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search order # or item name…"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-1.5 text-sm text-white focus:outline-none focus:border-amber-500"
+            />
+          </div>
+          <select
+            value={pmFilter}
+            onChange={e => setPm(e.target.value)}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-amber-500"
+          >
+            <option value="">All PM Status</option>
+            {["unpmed","submitted","approved","rejected","ineligible","expired"].map(s => (
+              <option key={s} value={s}>{PM_LABEL[s]}</option>
+            ))}
+          </select>
         </div>
 
-        <div className="border-t border-gray-800 px-5 py-3 flex justify-end shrink-0">
-          <button onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors">
-            Close
-          </button>
+        {/* Table */}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="py-12 text-center text-gray-600 animate-pulse text-sm">Loading…</div>
+          ) : orders.length === 0 ? (
+            <div className="py-12 text-center">
+              <Package className="w-8 h-8 text-gray-700 mx-auto mb-2" />
+              <p className="text-gray-500 text-sm">No orders found.</p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="text-[10px] text-gray-600 uppercase tracking-wider border-b border-gray-800">
+                  <th className="text-left px-5 py-2.5">Order #</th>
+                  <th className="text-left px-4 py-2.5">Items</th>
+                  <th className="text-center px-4 py-2.5">PM Status</th>
+                  <th className="text-right px-5 py-2.5">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {orders.map(o => {
+                  const pmClass = PM_BADGE_BG[o.pm_status] ?? "bg-gray-800 border-gray-700 text-gray-400";
+                  return (
+                    <tr key={o.id} className="hover:bg-gray-800/30 transition-colors">
+                      {/* Order # */}
+                      <td className="px-5 py-3 align-top w-32">
+                        <span className="font-mono text-amber-400 text-xs font-semibold">{o.ms_order_number}</span>
+                      </td>
+                      {/* Items stacked */}
+                      <td className="px-4 py-3 align-top">
+                        <div className="space-y-0.5">
+                          {Array.isArray(o.items) && o.items.length > 0 ? o.items.map((it, i) => (
+                            <div key={i} className="text-xs text-gray-300 whitespace-nowrap">
+                              <span className="font-mono text-gray-500 mr-1">{it.qty}×</span>
+                              {it.name}
+                              <span className="text-gray-600 font-mono ml-1">${Number(it.unit_price).toFixed(2)}/ea</span>
+                            </div>
+                          )) : (
+                            <span className="text-xs text-gray-600">—</span>
+                          )}
+                        </div>
+                      </td>
+                      {/* PM Status badge */}
+                      <td className="px-4 py-3 align-top text-center">
+                        <span className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded-full border ${pmClass}`}>
+                          {PM_LABEL[o.pm_status] ?? o.pm_status}
+                        </span>
+                      </td>
+                      {/* Total */}
+                      <td className="px-5 py-3 align-top text-right">
+                        <span className="font-mono text-sm font-semibold text-white">${Number(o.total).toFixed(2)}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Pagination */}
+        <div className="border-t border-gray-800 px-5 py-3 flex items-center justify-between shrink-0">
+          <span className="text-xs text-gray-600">
+            {total === 0 ? "0 orders" : `${(page - 1) * ORD_LIMIT + 1}–${Math.min(page * ORD_LIMIT, total)} of ${total}`}
+          </span>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setPage(1)} disabled={page === 1}
+              className="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              <ChevronsLeft className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+              className="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span className="px-2 text-xs text-gray-400">{page} / {pages}</span>
+            <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page >= pages}
+              className="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => setPage(pages)} disabled={page >= pages}
+              className="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              <ChevronsRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
