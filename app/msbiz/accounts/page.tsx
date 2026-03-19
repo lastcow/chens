@@ -669,6 +669,14 @@ function AccountOrdersDialog({
   const [page, setPage]       = useState(1);
   const [search, setSearch]   = useState("");
   const [pmFilter, setPm]     = useState("");
+  const [copiedOrd, setCopiedOrd] = useState<string | null>(null);
+
+  const copyOrder = (o: OrderRow) => {
+    const text = `Email: ${account.email}  Order# ${o.ms_order_number}  Total: $${Number(o.total).toFixed(2)}`;
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopiedOrd(o.id);
+    setTimeout(() => setCopiedOrd(null), 1500);
+  };
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -694,7 +702,7 @@ function AccountOrdersDialog({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
 
         {/* Bento header — amber theme */}
         <div className="relative overflow-hidden rounded-t-2xl shrink-0 border-b border-gray-800">
@@ -776,10 +784,19 @@ function AccountOrdersDialog({
               <tbody className="divide-y divide-gray-800">
                 {orders.map(o => {
                   return (
-                    <tr key={o.id} className="hover:bg-gray-800/30 transition-colors">
-                      {/* Order # */}
-                      <td className="px-5 py-3 align-top w-32">
-                        <span className="font-mono text-amber-400 text-xs font-semibold">{o.ms_order_number}</span>
+                    <tr key={o.id} className="hover:bg-gray-800/30 transition-colors whitespace-nowrap">
+                      {/* Order # + copy */}
+                      <td className="px-5 py-3 align-top w-40">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-amber-400 text-xs font-semibold">{o.ms_order_number}</span>
+                          <button
+                            onClick={() => copyOrder(o)}
+                            title="Copy email, order#, total"
+                            className="w-5 h-5 rounded flex items-center justify-center text-gray-600 hover:text-amber-400 transition-colors"
+                          >
+                            {copiedOrd === o.id ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                          </button>
+                        </div>
                       </td>
                       {/* Items stacked */}
                       <td className="px-4 py-3 align-top">
