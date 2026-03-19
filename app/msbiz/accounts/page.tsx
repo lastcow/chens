@@ -182,18 +182,24 @@ export default function AccountsPage() {
                     })()}
                   </td>
                   {/* Orders — clickable */}
-                  <td className="px-3 py-3 w-20 text-center">
-                    {(acc.order_count ?? 0) > 0 ? (
-                      <button onClick={() => setOrdersAcc(acc)}
-                        className="flex flex-col items-center leading-tight hover:opacity-70 transition-opacity">
-                        <span className="text-xs text-gray-300 font-mono font-medium underline decoration-dotted underline-offset-2">{acc.order_count}</span>
-                        {(acc.pm_count ?? 0) > 0 && (
-                          <span className="text-[10px] text-blue-400 font-mono">{acc.pm_count} PM</span>
-                        )}
-                      </button>
-                    ) : (
-                      <span className="text-gray-700 text-xs">—</span>
-                    )}
+                  <td className="px-3 py-3 w-20 align-middle">
+                    <div className="flex items-center justify-center">
+                      {(acc.order_count ?? 0) > 0 ? (
+                        <button onClick={() => setOrdersAcc(acc)}
+                          className="flex items-center gap-1 hover:opacity-70 transition-opacity">
+                          <span className="text-xs text-gray-300 font-mono font-medium underline decoration-dotted underline-offset-2">{acc.order_count}</span>
+                          <span className="text-gray-600 text-xs">/</span>
+                          <span className="text-[11px] font-mono">
+                            {(acc.pm_count ?? 0) > 0
+                              ? <span className="text-blue-400">{acc.pm_count}</span>
+                              : <span className="text-gray-600">—</span>
+                            }
+                          </span>
+                        </button>
+                      ) : (
+                        <span className="text-gray-700 text-xs">—</span>
+                      )}
+                    </div>
                   </td>
                   {/* Actions */}
                   <td className="px-3 py-3 w-20">
