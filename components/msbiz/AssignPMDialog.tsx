@@ -60,7 +60,7 @@ export default function AssignPMDialog({ order, onClose, onSaved }: Props) {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        pm_status: "unpmed",
+        pm_status: "submitted",
         pm_deadline_at: deadline || null,
       }),
     });
