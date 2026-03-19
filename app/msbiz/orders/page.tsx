@@ -18,6 +18,7 @@ interface Order {
   pm_status_label: string | null; // 'Submitted'
   pm_status_color: string | null; // '#3b82f6'
   pm_deadline_at: string | null;
+  all_pm_ineligible: boolean;
   account_email: string; account_name: string | null;
   tracking_number: string | null; carrier: string | null; inbound_status: string; exception_count: number;
 }
@@ -64,12 +65,13 @@ const PM_STEP: Record<string, number> = {
 // Fixed hex colors: amber=step1, blue=step2, green=step3
 const PM_BAR_HEX = ["#f59e0b", "#3b82f6", "#22c55e"];
 
-function PmBars({ statusValue }: { statusValue: string | null }) {
-  const step = PM_STEP[statusValue ?? "unpmed"] ?? 1;
+function PmBars({ statusValue, allIneligible }: { statusValue: string | null; allIneligible?: boolean }) {
+  const step = allIneligible ? 0 : (PM_STEP[statusValue ?? "unpmed"] ?? 1);
   const isError = step === -1;
   const isGray = step === 0;
+  const title = allIneligible ? "No items PM eligible" : (statusValue ?? "unpmed");
   return (
-    <div className="flex flex-col-reverse gap-[2px] items-center" title={statusValue ?? "unpmed"}>
+    <div className="flex flex-col-reverse gap-[2px] items-center" title={title}>
       {PM_BAR_HEX.map((hex, i) => {
         const filled = isError || (!isGray && i < step);
         const color = isError ? "#ef4444" : (isGray ? "#1f2937" : (filled ? hex : "#1f2937"));
@@ -275,7 +277,7 @@ export default function OrdersPage() {
                 {/* PM indicator — 3-bar vertical */}
                 <td className="px-3 py-3 text-center whitespace-nowrap">
                   <div className="flex flex-col items-center gap-1">
-                    <PmBars statusValue={o.pm_status_value ?? null} />
+                    <PmBars statusValue={o.pm_status_value ?? null} allIneligible={o.all_pm_ineligible} />
                     {pmDeadlineBadge(o)}
                   </div>
                 </td>
@@ -285,13 +287,19 @@ export default function OrdersPage() {
                   <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     {(() => {
                       const pmActive = ["submitted","approved","rejected"].includes(o.pm_status_value ?? "");
+                      const pmDisabled = pmActive || o.all_pm_ineligible;
+                      const pmTitle = pmActive
+                        ? `PM already ${o.pm_status_label ?? o.pm_status_value}`
+                        : o.all_pm_ineligible
+                          ? "No items eligible for PM"
+                          : "Assign to PM Queue";
                       return (
                         <button
-                          onClick={() => !pmActive && setPmOrder(o)}
-                          disabled={pmActive}
-                          title={pmActive ? `PM already ${o.pm_status_label ?? o.pm_status_value}` : "Assign to PM Queue"}
+                          onClick={() => !pmDisabled && setPmOrder(o)}
+                          disabled={pmDisabled}
+                          title={pmTitle}
                           className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-                            pmActive
+                            pmDisabled
                               ? "text-gray-700 cursor-not-allowed opacity-40"
                               : o.pm_status_value === "unpmed"
                                 ? "text-amber-400 bg-amber-500/10 hover:bg-amber-500/20"
