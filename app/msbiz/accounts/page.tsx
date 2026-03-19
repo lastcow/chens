@@ -4,7 +4,7 @@ import {
   UserCircle, Plus, Search, Edit2, Trash2, X,
   Copy, Check, DollarSign, Link2, Save,
   Eye, EyeOff, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-  PlusCircle, MinusCircle,
+  PlusCircle, MinusCircle, Package,
 } from "lucide-react";
 
 interface Account {
@@ -44,7 +44,8 @@ export default function AccountsPage() {
   const [page, setPage]           = useState(1);
   const [showForm, setShowForm]   = useState(false);
   const [editId, setEditId]       = useState<string | null>(null);
-  const [adjustAcc, setAdjustAcc] = useState<Account | null>(null);
+  const [adjustAcc, setAdjustAcc]   = useState<Account | null>(null);
+  const [ordersAcc, setOrdersAcc]   = useState<Account | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedId, setCopiedId]   = useState<string | null>(null);
 
@@ -180,15 +181,16 @@ export default function AccountsPage() {
                       );
                     })()}
                   </td>
-                  {/* Orders */}
+                  {/* Orders — clickable */}
                   <td className="px-3 py-3 w-20 text-center">
                     {(acc.order_count ?? 0) > 0 ? (
-                      <div className="flex flex-col items-center leading-tight">
-                        <span className="text-xs text-gray-300 font-mono font-medium">{acc.order_count}</span>
+                      <button onClick={() => setOrdersAcc(acc)}
+                        className="flex flex-col items-center leading-tight hover:opacity-70 transition-opacity">
+                        <span className="text-xs text-gray-300 font-mono font-medium underline decoration-dotted underline-offset-2">{acc.order_count}</span>
                         {(acc.pm_count ?? 0) > 0 && (
                           <span className="text-[10px] text-blue-400 font-mono">{acc.pm_count} PM</span>
                         )}
-                      </div>
+                      </button>
                     ) : (
                       <span className="text-gray-700 text-xs">—</span>
                     )}
@@ -249,6 +251,13 @@ export default function AccountsPage() {
         <AccountForm accountId={editId}
           onClose={() => setShowForm(false)}
           onSaved={() => { setShowForm(false); fetchAccounts(); }} />
+      )}
+
+      {ordersAcc && (
+        <AccountOrdersDialog
+          account={ordersAcc}
+          onClose={() => setOrdersAcc(null)}
+        />
       )}
 
       {adjustAcc && (
@@ -643,6 +652,117 @@ function AdjustDialog({
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-emerald-500/90 hover:bg-emerald-500 text-white">
             <Save className="w-3.5 h-3.5" />
             {saving ? "Saving…" : mode === "add" ? "Add Funds" : "Deduct Funds"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Account Orders Dialog ────────────────────────────────────────────────────
+
+interface OrderRow {
+  id: string; ms_order_number: string; order_date: string; status: string;
+  pm_status: string; total: number; subtotal: number; tax: number;
+  items: { name: string; qty: number; unit_price: number }[];
+}
+
+const PM_LABEL: Record<string, string> = { unpmed: "Pending PM", submitted: "PM Submitted", approved: "PM Approved", rejected: "PM Rejected", ineligible: "Not Eligible", expired: "PM Expired" };
+const PM_COLOR: Record<string, string> = { unpmed: "text-amber-400", submitted: "text-blue-400", approved: "text-green-400", rejected: "text-red-400", ineligible: "text-gray-500", expired: "text-red-600" };
+const STATUS_COLOR: Record<string, string> = { pending: "text-gray-400", processing: "text-blue-400", shipped: "text-amber-400", delivered: "text-green-400", cancelled: "text-gray-600", exception: "text-red-400", confirmed: "text-green-300" };
+
+function AccountOrdersDialog({ account, onClose }: { account: { id: string; email: string; display_name: string | null }; onClose: () => void }) {
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/msbiz/orders?account_id=${account.id}&limit=50`)
+      .then(r => r.json())
+      .then(d => { setOrders(d.orders ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [account.id]);
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-xl max-h-[85vh] flex flex-col">
+
+        {/* Bento header */}
+        <div className="relative overflow-hidden rounded-t-2xl shrink-0 border-b border-gray-800">
+          <div className="absolute inset-0 bg-gray-950">
+            <div className="absolute inset-0 opacity-[0.07]"
+              style={{ backgroundImage: `linear-gradient(#f59e0b 1px, transparent 1px), linear-gradient(90deg, #f59e0b 1px, transparent 1px)`, backgroundSize: "28px 28px" }} />
+            <div className="absolute -top-8 -left-8 w-36 h-36 bg-amber-500/20 rounded-full blur-2xl" />
+            <div className="absolute -bottom-4 right-8 w-28 h-28 bg-amber-400/10 rounded-full blur-xl" />
+          </div>
+          <div className="relative px-5 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                <Package className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-white">Orders</h2>
+                <p className="text-[11px] text-gray-500 mt-0.5 truncate max-w-[200px]">{account.display_name ?? account.email}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Orders list */}
+        <div className="flex-1 overflow-y-auto divide-y divide-gray-800">
+          {loading ? (
+            <div className="py-10 text-center text-gray-600 animate-pulse">Loading…</div>
+          ) : orders.length === 0 ? (
+            <div className="py-10 text-center text-gray-600">No orders found.</div>
+          ) : orders.map(o => (
+            <div key={o.id} className="px-5 py-4 space-y-2.5">
+              {/* Order header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-amber-400 text-sm font-semibold">{o.ms_order_number}</span>
+                  <span className="text-[11px] text-gray-600">
+                    {new Date(o.order_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs font-medium capitalize ${STATUS_COLOR[o.status] ?? "text-gray-400"}`}>{o.status}</span>
+                  <span className={`text-xs ${PM_COLOR[o.pm_status] ?? "text-gray-500"}`}>{PM_LABEL[o.pm_status] ?? o.pm_status}</span>
+                </div>
+              </div>
+
+              {/* Items */}
+              <div className="space-y-1">
+                {Array.isArray(o.items) && o.items.length > 0 ? o.items.map((it, i) => (
+                  <div key={i} className="flex items-baseline justify-between gap-3 text-xs">
+                    <div className="flex items-baseline gap-1.5 min-w-0">
+                      <span className="text-gray-500 font-mono shrink-0">{it.qty}×</span>
+                      <span className="text-gray-300 truncate">{it.name}</span>
+                    </div>
+                    <span className="text-gray-500 font-mono shrink-0">${(Number(it.unit_price) * it.qty).toFixed(2)}</span>
+                  </div>
+                )) : (
+                  <span className="text-xs text-gray-600">No items recorded</span>
+                )}
+              </div>
+
+              {/* Totals */}
+              <div className="flex items-center justify-between pt-1 border-t border-gray-800/60">
+                <div className="flex items-center gap-4 text-[11px] text-gray-600">
+                  {o.subtotal > 0 && <span>Subtotal <span className="font-mono text-gray-500">${Number(o.subtotal).toFixed(2)}</span></span>}
+                  {o.tax > 0 && <span>Tax <span className="font-mono text-gray-500">${Number(o.tax).toFixed(2)}</span></span>}
+                </div>
+                <span className="text-sm font-mono font-semibold text-white">${Number(o.total).toFixed(2)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="border-t border-gray-800 px-5 py-3 flex justify-end shrink-0">
+          <button onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors">
+            Close
           </button>
         </div>
       </div>
