@@ -121,7 +121,7 @@ export default function AccountsPage() {
                 <th className="text-center px-3 py-3 w-20"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800/50">
+            <tbody className="">
               {loading ? (
                 Array(5).fill(0).map((_, i) => (
                   <tr key={i}>
@@ -137,7 +137,13 @@ export default function AccountsPage() {
                     <p className="text-gray-500 text-sm">No accounts found.</p>
                   </td>
                 </tr>
-              ) : accounts.map(acc => (
+              ) : accounts.map(acc => {
+                const _b = Number(acc.balance ?? 0);
+                const _bpct = (Math.min(Math.max(_b / 10, 0), 100)).toString() + "%";
+                const _bcol = _b <= 0 ? "#374151" : _b < 100 ? "#ef4444" : _b < 400 ? "#f59e0b" : "#22c55e";
+                const _btcol = _b <= 0 ? "#4b5563" : _b < 100 ? "#f87171" : _b < 400 ? "#fb923c" : "#4ade80";
+                return (
+                <>
                 <tr key={acc.id} className="hover:bg-gray-800/30 transition-colors group">
                   {/* Status bar */}
                   <td className="pl-2 pr-0 py-0 w-1.5">
@@ -164,22 +170,9 @@ export default function AccountsPage() {
                       </div>
                     )}
                   </td>
-                  {/* Balance progress bar */}
+                  {/* Balance */}
                   <td className="px-3 py-3 w-36">
-                    {(() => {
-                      const bal = Number(acc.balance ?? 0);
-                      const max = 1000;
-                      const pct = Math.min((bal / max) * 100, 100);
-                      const color = bal <= 0 ? "bg-gray-700" : bal < 100 ? "bg-red-500/70" : bal < 400 ? "bg-amber-500/70" : "bg-green-500/70";
-                      return (
-                        <div title={`$${bal.toFixed(2)}`}>
-                          <div className="text-xs font-mono font-semibold text-green-400 mb-1">${bal.toFixed(2)}</div>
-                          <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    <span style={{fontFamily:"monospace",fontSize:"0.875rem",fontWeight:600,color:_btcol}}>{"$" + _b.toFixed(2)}</span>
                   </td>
                   {/* Orders — clickable */}
                   <td className="px-3 py-3 w-20 align-middle">
@@ -219,14 +212,23 @@ export default function AccountsPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                <tr>
+                  <td colSpan={5} className="p-0">
+                    <div className="h-[3px] w-full" style={{backgroundColor:"#1f2937"}}>
+                      <div className="h-full transition-all duration-500" style={{width:_bpct,backgroundColor:_bcol}} />
+                    </div>
+                  </td>
+                </tr>
+                </>
+                );
+              })
+            }
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
-        {pages > 1 && (
-          <div className="border-t border-gray-800 px-4 py-3 flex items-center justify-between">
+        <div className="border-t border-gray-800 px-4 py-3 flex items-center justify-between">
             <span className="text-xs text-gray-600">
               {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of {total}
             </span>
@@ -249,8 +251,7 @@ export default function AccountsPage() {
                 <ChevronsRight className="w-3.5 h-3.5" />
               </button>
             </div>
-          </div>
-        )}
+        </div>
       </div>
 
       {showForm && (
