@@ -4,7 +4,7 @@ import Select from "react-select";
 import { X, Save, Tag, RefreshCw } from "lucide-react";
 
 interface PMUser { id: string; name: string | null; email: string; }
-interface OrderItem { name: string; qty: number; unit_price: number; }
+interface OrderItem { id: string; name: string; qty: number; unit_price: number; merchandise_id?: string; }
 
 interface Props {
   order: {
@@ -78,7 +78,7 @@ export default function AssignPMDialog({ order, onClose, onSaved }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           order_id:       order.id,
-          product_name:   item.name,
+          order_item_id:  item.id,
           original_price: Number(item.unit_price),
           match_price:    Number(item.unit_price),  // placeholder, pmer will update
           expires_at:     deadline || null,

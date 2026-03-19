@@ -5,7 +5,7 @@ import OrderForm from "@/components/msbiz/OrderForm";
 import ShippingDialog from "@/components/msbiz/ShippingDialog";
 import AssignPMDialog from "@/components/msbiz/AssignPMDialog";
 
-interface OrderItem { merchandise_id: string; name: string; qty: number; unit_price: number; }
+interface OrderItem { id: string; merchandise_id: string; name: string; qty: number; unit_price: number; }
 interface Order {
   id: string; ms_order_number: string; order_date: string; status: string;
   items: OrderItem[]; total: number; pm_status: string; pm_deadline_at: string | null;
