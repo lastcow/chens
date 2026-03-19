@@ -383,29 +383,27 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
             </div>
           </div>
 
-          <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Status</label>
-            <select value={form.status} onChange={e => set("status", e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-              {["active","inactive","out_of_stock","discontinued"].map(s => (
-                <option key={s} value={s}>{s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* PM Eligible toggle */}
-          <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5">
-            <div>
-              <div className="text-sm text-white font-medium">PM Eligible</div>
-              <div className="text-[11px] text-gray-500 mt-0.5">Allow price match requests for this item</div>
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Status</label>
+              <select value={form.status} onChange={e => set("status", e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                {["active","inactive","out_of_stock","discontinued"].map(s => (
+                  <option key={s} value={s}>{s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</option>
+                ))}
+              </select>
             </div>
-            <button
-              type="button"
-              onClick={() => set("pm_eligible", !form.pm_eligible)}
-              className={`relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none ${form.pm_eligible ? "bg-amber-500" : "bg-gray-600"}`}
-            >
-              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${form.pm_eligible ? "translate-x-5" : "translate-x-0.5"}`} />
-            </button>
+            <div className="flex flex-col items-center gap-1 pt-5">
+              <button
+                type="button"
+                onClick={() => set("pm_eligible", !form.pm_eligible)}
+                title="PM Eligible"
+                className={`relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none ${form.pm_eligible ? "bg-amber-500" : "bg-gray-600"}`}
+              >
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${form.pm_eligible ? "translate-x-5" : "translate-x-0.5"}`} />
+              </button>
+              <span className="text-[10px] text-gray-500 whitespace-nowrap">PM Eligible</span>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
