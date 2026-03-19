@@ -129,7 +129,7 @@ export default function AccountsPage() {
                 const _btcol = _b <= 0 ? "#4b5563" : _b < 100 ? "#f87171" : _b < 400 ? "#fb923c" : "#4ade80";
                 return (
                 <>
-                <tr key={acc.id} className="hover:bg-gray-800/30 transition-colors group relative">
+                <tr key={acc.id} className="hover:bg-gray-800/30 transition-colors group">
                   {/* Status bar */}
                   <td className="pl-2 pr-0 py-1 w-1.5">
                     <div className="w-1 rounded-full h-7 mx-auto"
@@ -161,7 +161,7 @@ export default function AccountsPage() {
                     <span style={{fontFamily:"monospace",fontSize:"0.875rem",fontWeight:600,color:_btcol}}>{"$" + _b.toFixed(2)}</span>
                   </td>
                   {/* Orders — clickable, rightmost visible column */}
-                  <td className="px-3 py-1 w-20 align-middle">
+                  <td className="px-3 py-1 w-20 align-middle relative">
                     <div className="flex items-center justify-center">
                       {(acc.order_count ?? 0) > 0 ? (
                         <button onClick={() => setOrdersAcc(acc)}
@@ -180,7 +180,7 @@ export default function AccountsPage() {
                       )}
                     </div>
                     {/* Gmail-style action overlay — appears on row hover, floats over content */}
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5 bg-gray-800 border border-gray-700 rounded-lg px-1 py-0.5 shadow-lg z-10">
+                    <div className="absolute right-0 top-0 bottom-0 hidden group-hover:flex items-center gap-0.5 bg-gray-800 border border-gray-700 rounded-lg px-1 my-0.5 shadow-lg z-10">
                       <button onClick={() => setAdjustAcc(acc)} title="Adjust balance"
                         className="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
                         <DollarSign className="w-3.5 h-3.5" />
