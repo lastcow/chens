@@ -12,17 +12,41 @@ interface Order {
   tracking_number: string | null; carrier: string | null; inbound_status: string; exception_count: number;
 }
 
-const STATUS_LETTER: Record<string, string> = {
-  pending: "P", processing: "R", shipped: "S", delivered: "D", cancelled: "C", exception: "!",
+// 5-bar stacked status indicator
+// bars from bottom→top: placed, processing, shipped, delivered, confirmed
+// exception: all red; cancelled: all gray
+const STATUS_STEP: Record<string, number> = {
+  pending:    1,
+  processing: 2,
+  shipped:    3,
+  delivered:  4,
+  confirmed:  5,
+  cancelled:  0,
+  exception:  -1, // special: all red
 };
-const STATUS_SQUARE: Record<string, string> = {
-  pending:    "bg-gray-700 text-gray-300",
-  processing: "bg-blue-600 text-white",
-  shipped:    "bg-amber-500 text-white",
-  delivered:  "bg-green-600 text-white",
-  cancelled:  "bg-gray-800 text-gray-600",
-  exception:  "bg-red-600 text-white",
-};
+const STATUS_BAR_COLORS = [
+  "bg-amber-400",   // bar 1 — placed
+  "bg-blue-400",    // bar 2 — processing
+  "bg-blue-500",    // bar 3 — shipped
+  "bg-green-500",   // bar 4 — delivered
+  "bg-green-400",   // bar 5 — confirmed
+];
+
+function StatusBars({ status }: { status: string }) {
+  const step = STATUS_STEP[status] ?? 1;
+  const isException = step === -1;
+  return (
+    <div className="flex flex-col-reverse gap-[2px] items-center" title={status}>
+      {STATUS_BAR_COLORS.map((color, i) => {
+        const filled = isException || i < step;
+        const barColor = isException ? "bg-red-500" : (filled ? color : "bg-gray-800");
+        return (
+          <div key={i} className={`w-[5px] h-[5px] rounded-sm ${barColor}`} />
+        );
+      })}
+    </div>
+  );
+}
 // 3-bar PM indicator: [bar1, bar2, bar3] colors
 // pending/unpmed:  top 1 yellow, rest gray
 // submitted:       top 2 blue,   rest gray
@@ -183,12 +207,9 @@ export default function OrdersPage() {
               return (
               <>
               <tr key={o.id} className="hover:bg-gray-800/30 transition-colors group">
-                {/* Status square — full cell height */}
-                <td className="pl-3 pr-1 py-0 w-8 align-middle">
-                  <div className={`w-6 h-full min-h-[52px] rounded flex items-center justify-center text-[11px] font-bold ${STATUS_SQUARE[o.status] ?? "bg-gray-700 text-gray-400"}`}
-                    title={o.status}>
-                    {STATUS_LETTER[o.status] ?? "?"}
-                  </div>
+                {/* Status bars — narrow, full height */}
+                <td className="pl-3 pr-1 py-3 w-5 align-middle">
+                  <StatusBars status={o.status} />
                 </td>
 
                 {/* Order # + relative date + account — no wrap */}
