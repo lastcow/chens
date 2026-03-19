@@ -172,8 +172,10 @@ export default function OrdersPage() {
 
                 {/* Order # + relative date + account — no wrap */}
                 <td className="px-3 pt-3 pb-0 whitespace-nowrap">
-                  <div className="font-mono text-amber-400 text-sm font-semibold leading-tight">{o.ms_order_number}</div>
-                  <div className="text-[11px] text-gray-500 mt-0.5">{relDate(o.order_date)}</div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-mono text-amber-400 text-sm font-semibold leading-tight">{o.ms_order_number}</span>
+                    <span className="text-[11px] text-gray-500">{relDate(o.order_date)}</span>
+                  </div>
                   <div className="text-[11px] text-gray-600 mt-0.5">{o.account_name || o.account_email}</div>
                   {o.exception_count > 0 && (
                     <div className="flex items-center gap-1 text-[10px] text-red-400 mt-0.5">
