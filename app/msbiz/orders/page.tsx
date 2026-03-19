@@ -51,33 +51,7 @@ const INBOUND_LABEL: Record<string, string> = {
   out_for_delivery:  "Out for Delivery",
   delivered:         "Delivered",
 };
-function ShippingProgress({ tracking, carrier, inboundStatus }: { tracking: string | null; carrier: string | null; inboundStatus: string }) {
-  if (!tracking && !carrier && inboundStatus === "pending") {
-    return <span className="text-gray-700 text-xs">—</span>;
-  }
-  const idx = SHIPPING_STEPS.indexOf(inboundStatus);
-  const step = idx < 0 ? 0 : idx;
-  const total = SHIPPING_STEPS.length - 1;
-  const pct = Math.round((step / total) * 100);
-  const done = inboundStatus === "delivered";
-  const barColor = done ? "bg-green-500" : step >= 2 ? "bg-blue-500" : "bg-amber-500";
-  return (
-    <div className="min-w-[100px]">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-gray-500">{INBOUND_LABEL[inboundStatus] ?? inboundStatus}</span>
-        {tracking && <span className="text-[9px] text-gray-700 font-mono truncate max-w-[60px]">{tracking.slice(-6)}</span>}
-      </div>
-      <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
-      </div>
-      <div className="flex justify-between mt-0.5">
-        {SHIPPING_STEPS.map((s, i) => (
-          <div key={s} className={`w-1 h-1 rounded-full ${i <= step ? barColor : "bg-gray-700"}`} />
-        ))}
-      </div>
-    </div>
-  );
-}
+
 
 
 export default function OrdersPage() {
@@ -175,21 +149,32 @@ export default function OrdersPage() {
               <tr><td colSpan={6} className="text-center text-gray-600 py-10">No orders found.</td></tr>
             ) : orders.map(o => {
               const itemList: OrderItem[] = Array.isArray(o.items) ? o.items : [];
+              const shipStep = SHIPPING_STEPS.indexOf(o.inbound_status);
+              const shipPct  = shipStep < 0 ? 0 : Math.round((shipStep / (SHIPPING_STEPS.length - 1)) * 100);
+              const hasShipping = !!(o.tracking_number || (o.inbound_status && o.inbound_status !== "pending"));
+              const shipColor =
+                !hasShipping               ? "bg-gray-700" :
+                o.inbound_status === "delivered" ? "bg-green-500" :
+                shipStep >= 2              ? "bg-blue-500" :
+                shipStep >= 1              ? "bg-amber-500" :
+                                             "bg-gray-600";
+
               return (
+              <>
               <tr key={o.id} className="hover:bg-gray-800/30 transition-colors group">
                 {/* Status square */}
-                <td className="px-3 py-3 w-6">
+                <td className="px-3 pt-3 pb-0 w-6">
                   <div className={`w-6 h-6 rounded flex items-center justify-center text-[11px] font-bold shrink-0 ${STATUS_SQUARE[o.status] ?? "bg-gray-700 text-gray-400"}`}
                     title={o.status}>
                     {STATUS_LETTER[o.status] ?? "?"}
                   </div>
                 </td>
 
-                {/* Order # + relative date + account */}
-                <td className="px-3 py-3 min-w-0 whitespace-nowrap">
+                {/* Order # + relative date + account — no wrap */}
+                <td className="px-3 pt-3 pb-0 whitespace-nowrap">
                   <div className="font-mono text-amber-400 text-sm font-semibold leading-tight">{o.ms_order_number}</div>
                   <div className="text-[11px] text-gray-500 mt-0.5">{relDate(o.order_date)}</div>
-                  <div className="text-[11px] text-gray-600 mt-0.5 truncate max-w-[140px]">{o.account_name || o.account_email}</div>
+                  <div className="text-[11px] text-gray-600 mt-0.5">{o.account_name || o.account_email}</div>
                   {o.exception_count > 0 && (
                     <div className="flex items-center gap-1 text-[10px] text-red-400 mt-0.5">
                       <AlertTriangle className="w-3 h-3" /> {o.exception_count}
@@ -198,7 +183,7 @@ export default function OrdersPage() {
                 </td>
 
                 {/* Items */}
-                <td className="px-3 py-3 w-full min-w-0 max-w-0">
+                <td className="px-3 pt-3 pb-0 w-full min-w-0 max-w-0">
                   <div className="space-y-0.5">
                     {itemList.length === 0 ? (
                       <span className="text-gray-600 text-xs">—</span>
@@ -212,13 +197,20 @@ export default function OrdersPage() {
                   </div>
                 </td>
 
-                {/* Shipping progress */}
-                <td className="px-3 py-3">
-                  <ShippingProgress tracking={o.tracking_number} carrier={o.carrier} inboundStatus={o.inbound_status} />
+                {/* Shipping label */}
+                <td className="px-3 pt-3 pb-0 whitespace-nowrap">
+                  {hasShipping ? (
+                    <div>
+                      <div className="text-[11px] text-gray-400">{INBOUND_LABEL[o.inbound_status] ?? o.inbound_status}</div>
+                      {o.tracking_number && <div className="text-[10px] text-gray-600 font-mono">···{o.tracking_number.slice(-6)}</div>}
+                    </div>
+                  ) : (
+                    <span className="text-gray-700 text-xs">—</span>
+                  )}
                 </td>
 
                 {/* PM indicator */}
-                <td className="px-3 py-3 text-center whitespace-nowrap">
+                <td className="px-3 pt-3 pb-0 text-center whitespace-nowrap">
                   <div className="flex flex-col items-center gap-1">
                     <div className={`w-2.5 h-2.5 rounded-full ${PM_DOT[o.pm_status] ?? "bg-gray-700"}`}
                       title={o.pm_status} />
@@ -227,13 +219,24 @@ export default function OrdersPage() {
                 </td>
 
                 {/* Detail link */}
-                <td className="px-3 py-3 text-center">
+                <td className="px-3 pt-3 pb-0 text-center">
                   <a href={`/msbiz/orders/${o.id}`}
                     className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-gray-600 hover:text-amber-400 hover:bg-amber-500/10 transition-colors opacity-0 group-hover:opacity-100">
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 </td>
               </tr>
+
+              {/* Full-width shipping progress bar */}
+              <tr key={`${o.id}-bar`} className="group">
+                <td colSpan={6} className="px-0 pt-1.5 pb-0">
+                  <div className="h-[3px] w-full bg-gray-800 rounded-none"
+                    title={hasShipping ? `${INBOUND_LABEL[o.inbound_status] ?? o.inbound_status} (${shipPct}%)` : "No shipping info"}>
+                    <div className={`h-full transition-all ${shipColor}`} style={{ width: `${hasShipping ? Math.max(shipPct, 4) : 0}%` }} />
+                  </div>
+                </td>
+              </tr>
+              </>
               );
             })}
           </tbody>
