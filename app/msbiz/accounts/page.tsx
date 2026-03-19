@@ -12,6 +12,7 @@ interface Account {
   status: string; notes: string | null; balance: number;
   owner_id: string | null; owner_name: string | null; owner_email: string | null;
   order_ids: string[]; last_used_at: string | null; created_at: string;
+  order_count: number; pm_count: number;
 }
 
 interface Order { id: string; ms_order_number: string; status: string; }
@@ -181,9 +182,16 @@ export default function AccountsPage() {
                   </td>
                   {/* Orders */}
                   <td className="px-3 py-3 w-20 text-center">
-                    {acc.order_ids?.length > 0
-                      ? <span className="text-xs text-purple-300 font-mono">{acc.order_ids.length}</span>
-                      : <span className="text-gray-700 text-xs">—</span>}
+                    {(acc.order_count ?? 0) > 0 ? (
+                      <div className="flex flex-col items-center leading-tight">
+                        <span className="text-xs text-gray-300 font-mono font-medium">{acc.order_count}</span>
+                        {(acc.pm_count ?? 0) > 0 && (
+                          <span className="text-[10px] text-blue-400 font-mono">{acc.pm_count} PM</span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-700 text-xs">—</span>
+                    )}
                   </td>
                   {/* Actions */}
                   <td className="px-3 py-3 w-20">
