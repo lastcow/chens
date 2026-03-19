@@ -45,15 +45,15 @@ export default function ShippingDialog({ orderId, initialTracking, initialCarrie
     if (!carrier)          { setError("Carrier is required"); return; }
     setSaving(true); setError(""); setResult(null);
 
-    // 1. Update order with tracking + carrier
-    const upd = await fetch(`/api/msbiz/orders/${orderId}`, {
-      method: "PUT",
+    // 1. Upsert shipping record
+    const upd = await fetch(`/api/msbiz/orders/${orderId}/shipping`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tracking_number: tracking.trim(), carrier }),
     });
     if (!upd.ok) {
       const d = await upd.json();
-      setError(d.error || "Failed to update order");
+      setError(d.error || "Failed to save shipping");
       setSaving(false); return;
     }
 
