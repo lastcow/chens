@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   UserCircle, Plus, Search, Edit2, Trash2, X,
-  Copy, Check, DollarSign, Link2, Save,
+  Copy, Check, DollarSign, Save,
   Eye, EyeOff, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
   PlusCircle, MinusCircle, Package,
 } from "lucide-react";
@@ -11,11 +11,9 @@ interface Account {
   id: string; email: string; display_name: string | null; password?: string;
   status: string; notes: string | null; balance: number;
   owner_id: string | null; owner_name: string | null; owner_email: string | null;
-  order_ids: string[]; last_used_at: string | null; created_at: string;
+  last_used_at: string | null; created_at: string;
   order_count: number; pm_count: number;
 }
-
-interface Order { id: string; ms_order_number: string; status: string; }
 
 const STATUS_COLORS: Record<string, string> = {
   Ready:     "bg-green-900/30 text-green-400 border-green-700/30",
@@ -325,15 +323,13 @@ function AccountForm({ accountId, onClose, onSaved }: { accountId: string | null
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [orders, setOrders] = useState<Order[]>([]);
   const [form, setForm] = useState({
     email: "", password: "", display_name: "", status: "Ready",
-    notes: "", balance: "", order_ids: [] as string[],
+    notes: "", balance: "",
   });
 
   useEffect(() => {
     if (!accountId) return;
-    fetch("/api/msbiz/orders?limit=200").then(r => r.json()).then(d => setOrders(d.orders ?? [])).catch(() => {});
     fetch(`/api/msbiz/accounts/${accountId}`)
       .then(r => r.json())
       .then(d => {
@@ -343,17 +339,12 @@ function AccountForm({ accountId, onClose, onSaved }: { accountId: string | null
             email: a.email, password: a.password ?? "",
             display_name: a.display_name ?? "", status: a.status ?? "Ready",
             notes: a.notes ?? "", balance: a.balance != null ? String(a.balance) : "0",
-            order_ids: a.order_ids ?? [],
           });
         }
       });
   }, [accountId]);
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
-  const toggleOrder = (id: string) => setForm(f => ({
-    ...f,
-    order_ids: f.order_ids.includes(id) ? f.order_ids.filter(o => o !== id) : [...f.order_ids, id],
-  }));
 
   const submit = async () => {
     if (!form.email) { setError("Email is required"); return; }
@@ -363,7 +354,6 @@ function AccountForm({ accountId, onClose, onSaved }: { accountId: string | null
       email: form.email, display_name: form.display_name || null,
       status: form.status, notes: form.notes || null,
       balance: parseFloat(form.balance) || 0,
-      order_ids: form.order_ids,
     };
     if (form.password) body.password = form.password;
     const res = await fetch(accountId ? `/api/msbiz/accounts/${accountId}` : "/api/msbiz/accounts", {
@@ -457,33 +447,6 @@ function AccountForm({ accountId, onClose, onSaved }: { accountId: string | null
               </select>
             </div>
           </div>
-
-          {accountId && (
-            <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1">
-                <Link2 className="w-3 h-3" /> Linked Orders
-                {form.order_ids.length > 0 && <span className="ml-1 text-amber-400 font-mono">[{form.order_ids.length}]</span>}
-              </label>
-              {orders.length === 0 ? (
-                <p className="text-xs text-gray-600">No orders available.</p>
-              ) : (
-                <div className="max-h-36 overflow-y-auto space-y-1 border border-gray-700 rounded-lg p-2 bg-gray-800/50">
-                  {orders.map(o => (
-                    <label key={o.id} className="flex items-center gap-2.5 cursor-pointer group px-1 py-1 rounded hover:bg-gray-700/40 transition-colors">
-                      <div onClick={() => toggleOrder(o.id)}
-                        className={`w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${
-                          form.order_ids.includes(o.id) ? "bg-amber-500 border-amber-500" : "bg-gray-800 border-gray-600"
-                        }`}>
-                        {form.order_ids.includes(o.id) && <Check className="w-2.5 h-2.5 text-white" />}
-                      </div>
-                      <span className="text-xs font-mono text-amber-400">{o.ms_order_number}</span>
-                      <span className="text-[10px] text-gray-500 capitalize">{o.status}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Notes</label>
