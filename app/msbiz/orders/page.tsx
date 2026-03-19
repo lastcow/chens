@@ -132,8 +132,8 @@ export default function OrdersPage() {
       {/* Table */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-clip">
         <table className="w-full text-sm">
-          <thead className="sticky top-[140px] z-[9] bg-gray-900 border-b border-gray-800">
-            <tr className="text-xs text-gray-500 uppercase tracking-wider">
+          <thead className="sticky top-[140px] z-[9] bg-gray-900">
+            <tr className="text-xs text-gray-500 uppercase tracking-wider border-b-2 border-gray-700">
               <th className="text-left px-3 py-3 w-6"></th>
               <th className="text-left px-3 py-3 whitespace-nowrap">Order</th>
               <th className="text-left px-3 py-3">Items</th>
