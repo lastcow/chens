@@ -776,7 +776,7 @@ function AccountOrdersDialog({
               <thead>
                 <tr className="text-[10px] text-gray-600 uppercase tracking-wider border-b border-gray-800">
                   <th className="text-left px-5 py-2.5">Order #</th>
-                  <th className="text-left px-4 py-2.5">Items</th>
+                  <th className="text-left px-4 py-2.5 w-full">Items</th>
                   <th className="text-center px-4 py-2.5">PM Status</th>
                   <th className="text-right px-5 py-2.5">Total</th>
                 </tr>
@@ -799,7 +799,7 @@ function AccountOrdersDialog({
                         </div>
                       </td>
                       {/* Items stacked */}
-                      <td className="px-4 py-3 align-top">
+                      <td className="px-4 py-3 align-top w-full">
                         <div className="space-y-0.5">
                           {Array.isArray(o.items) && o.items.length > 0 ? o.items.map((it, i) => (
                             <div key={i} className="text-xs text-gray-300 whitespace-nowrap">
