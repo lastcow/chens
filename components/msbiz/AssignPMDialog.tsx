@@ -40,9 +40,7 @@ const selectStyles = {
 export default function AssignPMDialog({ order, onClose, onSaved }: Props) {
   const [pmers, setPmers]       = useState<PMUser[]>([]);
   const [assignedTo, setAssignedTo] = useState("");
-  const [deadline, setDeadline] = useState(
-    order.pm_deadline_at ? order.pm_deadline_at.slice(0, 10) : ""
-  );
+  const deadline = order.pm_deadline_at ? order.pm_deadline_at.slice(0, 10) : null;
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState("");
 
@@ -92,10 +90,6 @@ export default function AssignPMDialog({ order, onClose, onSaved }: Props) {
     onSaved();
     setSaving(false);
   };
-
-  const pmDaysLeft = deadline
-    ? Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000)
-    : null;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -159,17 +153,7 @@ export default function AssignPMDialog({ order, onClose, onSaved }: Props) {
             />
           </div>
 
-          {/* PM deadline */}
-          <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">PM Deadline</label>
-            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-            {pmDaysLeft !== null && (
-              <p className={`text-[11px] mt-1 ${pmDaysLeft < 0 ? "text-red-400" : pmDaysLeft <= 3 ? "text-amber-400" : "text-gray-600"}`}>
-                {pmDaysLeft < 0 ? `Expired ${Math.abs(pmDaysLeft)} days ago` : pmDaysLeft === 0 ? "Due today" : `${pmDaysLeft} days remaining`}
-              </p>
-            )}
-          </div>
+
         </div>
 
         <div className="border-t border-gray-800 px-5 py-4 flex gap-3 shrink-0">
