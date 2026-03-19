@@ -7,6 +7,7 @@ import {
 import POFormDialog from "./POFormDialog";
 
 interface Item {
+  pm_eligible: boolean;
   id: string; name: string; upc: string | null; model: string | null;
   description: string | null; price: number; cost: number | null;
   stock: number; unit: string; status: string; image_url: string | null;
@@ -138,6 +139,9 @@ export default function AdminMerchandise() {
                 <td className="px-3 py-2.5 w-full min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="font-medium text-white text-sm truncate shrink min-w-0" title={item.name}>{item.name}</span>
+                    {item.pm_eligible === false && (
+                      <span className="shrink-0 text-[9px] font-medium px-1.5 py-0.5 rounded bg-gray-700 text-gray-500 uppercase tracking-wider">No PM</span>
+                    )}
 
                     {item.item_url && (
                       <>
@@ -293,9 +297,10 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
     cost: item?.cost != null ? String(item.cost) : "", stock: item?.stock != null ? String(item.stock) : "0",
     unit: item?.unit ?? "unit", status: item?.status ?? "active",
     image_url: item?.image_url ?? "", item_url: item?.item_url ?? "",
+    pm_eligible: item?.pm_eligible !== undefined ? item.pm_eligible : true,
   });
 
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
 
 
 
@@ -307,7 +312,7 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
       description: form.description || null, price: parseFloat(form.price) || 0,
       cost: form.cost ? parseFloat(form.cost) : null, stock: parseInt(form.stock, 10) || 0,
       unit: form.unit, status: form.status, image_url: form.image_url || null,
-      item_url: form.item_url || null,
+      item_url: form.item_url || null, pm_eligible: form.pm_eligible,
     };
     const res = await fetch(item ? `/api/admin/merchandise/${item.id}` : "/api/admin/merchandise", {
       method: item ? "PUT" : "POST", headers: { "Content-Type": "application/json" },
@@ -386,6 +391,21 @@ function MerchandiseForm({ item, onClose, onSaved }: { item: Item | null; onClos
                 <option key={s} value={s}>{s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</option>
               ))}
             </select>
+          </div>
+
+          {/* PM Eligible toggle */}
+          <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5">
+            <div>
+              <div className="text-sm text-white font-medium">PM Eligible</div>
+              <div className="text-[11px] text-gray-500 mt-0.5">Allow price match requests for this item</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => set("pm_eligible", !form.pm_eligible)}
+              className={`relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none ${form.pm_eligible ? "bg-amber-500" : "bg-gray-600"}`}
+            >
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${form.pm_eligible ? "translate-x-5" : "translate-x-0.5"}`} />
+            </button>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
