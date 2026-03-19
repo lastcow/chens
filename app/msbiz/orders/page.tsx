@@ -358,7 +358,12 @@ export default function OrdersPage() {
         <AssignPMDialog
           order={pmOrder}
           onClose={() => setPmOrder(null)}
-          onSaved={() => { setPmOrder(null); fetchOrders(); }}
+          onSaved={() => {
+            // Optimistic update — flip pm_status immediately
+            setOrders(prev => prev.map(o => o.id === pmOrder.id ? { ...o, pm_status: "submitted" } : o));
+            setPmOrder(null);
+            fetchOrders(); // then confirm from server
+          }}
         />
       )}
 
