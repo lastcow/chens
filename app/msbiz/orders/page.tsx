@@ -7,15 +7,22 @@ import AssignPMDialog from "@/components/msbiz/AssignPMDialog";
 
 interface OrderItem { id: string; merchandise_id: string; name: string; qty: number; unit_price: number; }
 interface Order {
-  id: string; ms_order_number: string; order_date: string; status: string;
-  items: OrderItem[]; total: number; pm_status: string; pm_deadline_at: string | null;
+  id: string; ms_order_number: string; order_date: string;
+  status: string;           // 'order.pending'
+  status_value: string;     // 'pending'
+  status_label: string;     // 'Pending'
+  status_color: string;     // '#6b7280'
+  items: OrderItem[]; total: number;
+  pm_status: string | null; // 'pm.submitted'
+  pm_status_value: string | null; // 'submitted'
+  pm_status_label: string | null; // 'Submitted'
+  pm_status_color: string | null; // '#3b82f6'
+  pm_deadline_at: string | null;
   account_email: string; account_name: string | null;
   tracking_number: string | null; carrier: string | null; inbound_status: string; exception_count: number;
 }
 
-// 5-bar stacked status indicator
-// bars from bottom→top: placed, processing, shipped, delivered, confirmed
-// exception: all red; cancelled: all gray
+// 5-bar stacked status indicator — uses status_value for step logic, status_color from API for filled bars
 const STATUS_STEP: Record<string, number> = {
   pending:    1,
   processing: 2,
@@ -25,30 +32,27 @@ const STATUS_STEP: Record<string, number> = {
   cancelled:  0,
   exception:  -1, // special: all red
 };
-const STATUS_BAR_COLORS = [
-  "bg-amber-400",   // bar 1 — placed
-  "bg-blue-400",    // bar 2 — processing
-  "bg-blue-500",    // bar 3 — shipped
-  "bg-green-500",   // bar 4 — delivered
-  "bg-green-400",   // bar 5 — confirmed
-];
+// Fixed hex colors per bar position (bar 1–5: placed → confirmed)
+const STATUS_BAR_HEX = ["#fbbf24", "#60a5fa", "#3b82f6", "#22c55e", "#4ade80"];
 
-function StatusBars({ status }: { status: string }) {
-  const step = STATUS_STEP[status] ?? 1;
+function StatusBars({ statusValue, statusColor }: { statusValue: string; statusColor: string }) {
+  const step = STATUS_STEP[statusValue] ?? 1;
   const isException = step === -1;
+  const isCancelled = step === 0;
   return (
-    <div className="flex flex-col-reverse gap-[2px] items-center" title={status}>
-      {STATUS_BAR_COLORS.map((color, i) => {
-        const filled = isException || i < step;
-        const barColor = isException ? "bg-red-500" : (filled ? color : "bg-gray-800");
+    <div className="flex flex-col-reverse gap-[2px] items-center" title={statusValue}>
+      {STATUS_BAR_HEX.map((hex, i) => {
+        const filled = isException || (!isCancelled && i < step);
+        const color = isException ? "#ef4444" : (filled ? (i === step - 1 ? statusColor : hex) : "#1f2937");
         return (
-          <div key={i} className={`w-[5px] h-[5px] rounded-sm ${barColor}`} />
+          <div key={i} className="w-[5px] h-[5px] rounded-sm" style={{ backgroundColor: color }} />
         );
       })}
     </div>
   );
 }
-// 3-bar stacked PM indicator (bottom→top): pending, in-progress, done
+
+// 3-bar stacked PM indicator — fixed bar colors (amber/blue/green), pm_status_value for logic
 const PM_STEP: Record<string, number> = {
   unpmed:    1,
   submitted: 2,
@@ -57,17 +61,19 @@ const PM_STEP: Record<string, number> = {
   expired:   -1,
   ineligible: 0, // all gray
 };
-const PM_BAR_COLORS = ["bg-amber-400", "bg-blue-400", "bg-green-500"];
+// Fixed hex colors: amber=step1, blue=step2, green=step3
+const PM_BAR_HEX = ["#f59e0b", "#3b82f6", "#22c55e"];
 
-function PmBars({ status }: { status: string }) {
-  const step = PM_STEP[status] ?? 1;
+function PmBars({ statusValue }: { statusValue: string | null }) {
+  const step = PM_STEP[statusValue ?? "unpmed"] ?? 1;
   const isError = step === -1;
+  const isGray = step === 0;
   return (
-    <div className="flex flex-col-reverse gap-[2px] items-center" title={status}>
-      {PM_BAR_COLORS.map((color, i) => {
-        const filled = isError || i < step;
-        const barColor = isError ? "bg-red-500" : (filled ? color : "bg-gray-800");
-        return <div key={i} className={`w-[5px] h-[7px] rounded-sm ${barColor}`} />;
+    <div className="flex flex-col-reverse gap-[2px] items-center" title={statusValue ?? "unpmed"}>
+      {PM_BAR_HEX.map((hex, i) => {
+        const filled = isError || (!isGray && i < step);
+        const color = isError ? "#ef4444" : (isGray ? "#1f2937" : (filled ? hex : "#1f2937"));
+        return <div key={i} className="w-[5px] h-[7px] rounded-sm" style={{ backgroundColor: color }} />;
       })}
     </div>
   );
@@ -135,7 +141,7 @@ export default function OrdersPage() {
   const totalPages = Math.ceil(total / limit) || 1;
 
   const pmDeadlineBadge = (o: Order) => {
-    if (!o.pm_deadline_at || o.pm_status !== "unpmed") return null;
+    if (!o.pm_deadline_at || o.pm_status_value !== "unpmed") return null;
     const days = Math.ceil((new Date(o.pm_deadline_at).getTime() - Date.now()) / 86400000);
     if (days < 0) return <span className="text-[10px] text-red-500">Expired</span>;
     if (days <= 3) return <span className="text-[10px] text-red-400 font-medium">{days}d left!</span>;
@@ -215,7 +221,7 @@ export default function OrdersPage() {
               <tr key={o.id} className="hover:bg-gray-800/30 transition-colors group">
                 {/* Status bars — narrow, full height */}
                 <td className="pl-3 pr-1 py-3 w-5 align-middle">
-                  <StatusBars status={o.status} />
+                  <StatusBars statusValue={o.status_value ?? o.status} statusColor={o.status_color ?? "#6b7280"} />
                 </td>
 
                 {/* Order # + relative date + account — no wrap */}
@@ -269,7 +275,7 @@ export default function OrdersPage() {
                 {/* PM indicator — 3-bar vertical */}
                 <td className="px-3 py-3 text-center whitespace-nowrap">
                   <div className="flex flex-col items-center gap-1">
-                    <PmBars status={o.pm_status} />
+                    <PmBars statusValue={o.pm_status_value ?? null} />
                     {pmDeadlineBadge(o)}
                   </div>
                 </td>
@@ -278,16 +284,16 @@ export default function OrdersPage() {
                 <td className="px-3 py-3 text-center whitespace-nowrap">
                   <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     {(() => {
-                      const pmActive = ["submitted","approved","rejected"].includes(o.pm_status);
+                      const pmActive = ["submitted","approved","rejected"].includes(o.pm_status_value ?? "");
                       return (
                         <button
                           onClick={() => !pmActive && setPmOrder(o)}
                           disabled={pmActive}
-                          title={pmActive ? `PM already ${o.pm_status}` : "Assign to PM Queue"}
+                          title={pmActive ? `PM already ${o.pm_status_label ?? o.pm_status_value}` : "Assign to PM Queue"}
                           className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
                             pmActive
                               ? "text-gray-700 cursor-not-allowed opacity-40"
-                              : o.pm_status === "unpmed"
+                              : o.pm_status_value === "unpmed"
                                 ? "text-amber-400 bg-amber-500/10 hover:bg-amber-500/20"
                                 : "text-gray-600 hover:text-amber-400 hover:bg-amber-500/10"
                           }`}>
@@ -360,7 +366,7 @@ export default function OrdersPage() {
           onClose={() => setPmOrder(null)}
           onSaved={() => {
             // Optimistic update — flip pm_status immediately
-            setOrders(prev => prev.map(o => o.id === pmOrder.id ? { ...o, pm_status: "submitted" } : o));
+            setOrders(prev => prev.map(o => o.id === pmOrder.id ? { ...o, pm_status: "pm.submitted", pm_status_value: "submitted", pm_status_label: "Submitted", pm_status_color: "#3b82f6" } : o));
             setPmOrder(null);
             fetchOrders(); // then confirm from server
           }}

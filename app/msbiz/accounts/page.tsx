@@ -647,24 +647,13 @@ function AdjustDialog({
 
 interface OrderRow {
   id: string; ms_order_number: string; order_date: string; status: string;
-  pm_status: string; total: number; subtotal: number; tax: number;
+  pm_status: string | null;
+  pm_status_value: string | null;
+  pm_status_label: string | null;
+  pm_status_color: string | null;
+  total: number; subtotal: number; tax: number;
   items: { name: string; qty: number; unit_price: number }[];
 }
-
-const PM_LABEL: Record<string, string> = {
-  unpmed: "Pending PM", submitted: "PM Submitted", approved: "PM Approved",
-  rejected: "PM Rejected", ineligible: "Not Eligible", expired: "PM Expired",
-};
-
-// Static lookup objects — no dynamic class interpolation (Turbopack constraint)
-const PM_BADGE_BG: Record<string, string> = {
-  unpmed: "bg-amber-900 border-amber-700 text-amber-300",
-  submitted: "bg-blue-900 border-blue-700 text-blue-300",
-  approved: "bg-green-900 border-green-700 text-green-300",
-  rejected: "bg-red-900 border-red-700 text-red-300",
-  ineligible: "bg-gray-800 border-gray-700 text-gray-400",
-  expired: "bg-red-950 border-red-800 text-red-500",
-};
 
 const ORD_LIMIT = 10;
 
@@ -759,8 +748,8 @@ function AccountOrdersDialog({
             className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-amber-500"
           >
             <option value="">All PM Status</option>
-            {["unpmed","submitted","approved","rejected","ineligible","expired"].map(s => (
-              <option key={s} value={s}>{PM_LABEL[s]}</option>
+            {[["unpmed","Pending PM"],["submitted","PM Submitted"],["approved","PM Approved"],["rejected","PM Rejected"],["ineligible","Not Eligible"],["expired","PM Expired"]].map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
             ))}
           </select>
         </div>
@@ -786,7 +775,6 @@ function AccountOrdersDialog({
               </thead>
               <tbody className="divide-y divide-gray-800">
                 {orders.map(o => {
-                  const pmClass = PM_BADGE_BG[o.pm_status] ?? "bg-gray-800 border-gray-700 text-gray-400";
                   return (
                     <tr key={o.id} className="hover:bg-gray-800/30 transition-colors">
                       {/* Order # */}
@@ -809,8 +797,10 @@ function AccountOrdersDialog({
                       </td>
                       {/* PM Status badge */}
                       <td className="px-4 py-3 align-top text-center">
-                        <span className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded-full border ${pmClass}`}>
-                          {PM_LABEL[o.pm_status] ?? o.pm_status}
+                        <span
+                          className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/10"
+                          style={{ color: o.pm_status_color ?? "#9ca3af", backgroundColor: `${o.pm_status_color ?? "#9ca3af"}22` }}>
+                          {o.pm_status_label ?? o.pm_status_value ?? o.pm_status ?? "—"}
                         </span>
                       </td>
                       {/* Total */}
