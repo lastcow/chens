@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { Package, Plus, Search, ExternalLink, AlertTriangle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit2, Truck } from "lucide-react";
+import { Package, Plus, Search, ExternalLink, AlertTriangle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit2, Truck, Tag } from "lucide-react";
 import OrderForm from "@/components/msbiz/OrderForm";
 import ShippingDialog from "@/components/msbiz/ShippingDialog";
+import AssignPMDialog from "@/components/msbiz/AssignPMDialog";
 
 interface OrderItem { merchandise_id: string; name: string; qty: number; unit_price: number; }
 interface Order {
@@ -112,6 +113,7 @@ export default function OrdersPage() {
   const [showForm, setShowForm]       = useState(false);
   const [editOrder, setEditOrder]     = useState<Order | null>(null);
   const [shippingOrder, setShipping]  = useState<Order | null>(null);
+  const [pmOrder, setPmOrder]         = useState<Order | null>(null);
   const limit = 25;
 
   const fetchOrders = useCallback(async () => {
@@ -275,6 +277,14 @@ export default function OrdersPage() {
                 {/* Actions */}
                 <td className="px-3 py-3 text-center whitespace-nowrap">
                   <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setPmOrder(o)} title="Assign to PM Queue"
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                        o.pm_status === "unpmed"
+                          ? "text-amber-400 bg-amber-500/10"
+                          : "text-gray-600 hover:text-amber-400 hover:bg-amber-500/10"
+                      }`}>
+                      <Tag className="w-3.5 h-3.5" />
+                    </button>
                     <button onClick={() => setShipping(o)} title="Add/Edit Shipping"
                       className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
                       <Truck className="w-3.5 h-3.5" />
@@ -331,6 +341,14 @@ export default function OrdersPage() {
           orderId={editOrder.id}
           onClose={() => setEditOrder(null)}
           onSaved={() => { setEditOrder(null); fetchOrders(); }}
+        />
+      )}
+
+      {pmOrder && (
+        <AssignPMDialog
+          order={pmOrder}
+          onClose={() => setPmOrder(null)}
+          onSaved={() => { setPmOrder(null); fetchOrders(); }}
         />
       )}
 
