@@ -227,12 +227,12 @@ export default function OrdersPage() {
                 </td>
               </tr>
 
-              {/* Full-width shipping progress bar */}
-              <tr key={`${o.id}-bar`} className="group">
-                <td colSpan={6} className="px-0 pt-1.5 pb-0">
-                  <div className="h-[3px] w-full bg-gray-800 rounded-none"
+              {/* Full-width shipping progress bar — same style as admin PO */}
+              <tr key={`${o.id}-bar`}>
+                <td colSpan={6} className="p-0">
+                  <div className="h-[3px] w-full bg-gray-800"
                     title={hasShipping ? `${INBOUND_LABEL[o.inbound_status] ?? o.inbound_status} (${shipPct}%)` : "No shipping info"}>
-                    <div className={`h-full transition-all ${shipColor}`} style={{ width: `${hasShipping ? Math.max(shipPct, 4) : 0}%` }} />
+                    <div className={`h-full transition-all duration-500 ${shipColor}`} style={{ width: `${hasShipping ? Math.max(shipPct, 4) : 0}%` }} />
                   </div>
                 </td>
               </tr>
