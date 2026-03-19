@@ -93,6 +93,12 @@ const INBOUND_LABEL: Record<string, string> = {
   delivered:         "Delivered",
 };
 
+const CARRIER_COLOR: Record<string, string> = {
+  UPS:   "text-amber-400",
+  FedEx: "text-purple-400",
+  USPS:  "text-blue-400",
+};
+
 
 
 export default function OrdersPage() {
@@ -243,8 +249,15 @@ export default function OrdersPage() {
                 <td className="px-3 py-3 whitespace-nowrap">
                   {hasShipping ? (
                     <div>
-                      <div className="text-[11px] text-gray-400">{INBOUND_LABEL[o.inbound_status] ?? o.inbound_status}</div>
-                      {o.tracking_number && <div className="text-[10px] text-gray-600 font-mono">···{o.tracking_number.slice(-6)}</div>}
+                      <div className="text-[11px] text-gray-400 flex items-center gap-1">
+                        {o.carrier && (
+                          <span className={`font-semibold ${CARRIER_COLOR[o.carrier] ?? "text-gray-400"}`}>{o.carrier}:</span>
+                        )}
+                        <span>{INBOUND_LABEL[o.inbound_status] ?? o.inbound_status}</span>
+                      </div>
+                      {o.tracking_number && (
+                        <div className="text-[10px] text-gray-600 font-mono mt-0.5">{o.tracking_number}</div>
+                      )}
                     </div>
                   ) : (
                     <span className="text-gray-700 text-xs">—</span>
