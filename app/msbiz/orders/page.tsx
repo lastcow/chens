@@ -47,29 +47,27 @@ function StatusBars({ status }: { status: string }) {
     </div>
   );
 }
-// 3-bar PM indicator: [bar1, bar2, bar3] colors
-// pending/unpmed:  top 1 yellow, rest gray
-// submitted:       top 2 blue,   rest gray
-// approved:        all 3 green
-// rejected/expired: all 3 red
-// ineligible:      all 3 gray
-const PM_BARS: Record<string, [string, string, string]> = {
-  unpmed:    ["bg-amber-400", "bg-gray-700", "bg-gray-700"],
-  submitted: ["bg-blue-400",  "bg-blue-400",  "bg-gray-700"],
-  approved:  ["bg-green-500", "bg-green-500", "bg-green-500"],
-  rejected:  ["bg-red-500",   "bg-red-500",   "bg-red-500"],
-  expired:   ["bg-red-700",   "bg-red-700",   "bg-red-700"],
-  ineligible:["bg-gray-700",  "bg-gray-700",  "bg-gray-700"],
+// 3-bar stacked PM indicator (bottom→top): pending, in-progress, done
+const PM_STEP: Record<string, number> = {
+  unpmed:    1,
+  submitted: 2,
+  approved:  3,
+  rejected:  -1, // all red
+  expired:   -1,
+  ineligible: 0, // all gray
 };
+const PM_BAR_COLORS = ["bg-amber-400", "bg-blue-400", "bg-green-500"];
 
 function PmBars({ status }: { status: string }) {
-  const bars = PM_BARS[status] ?? ["bg-gray-700", "bg-gray-700", "bg-gray-700"];
+  const step = PM_STEP[status] ?? 1;
+  const isError = step === -1;
   return (
-    <div className="flex items-end gap-[3px]" title={status}>
-      {bars.map((c, i) => (
-        <div key={i} className={`w-[4px] rounded-sm ${c}`}
-          style={{ height: `${(i + 1) * 5 + 3}px` }} />
-      ))}
+    <div className="flex flex-col-reverse gap-[2px] items-center" title={status}>
+      {PM_BAR_COLORS.map((color, i) => {
+        const filled = isError || i < step;
+        const barColor = isError ? "bg-red-500" : (filled ? color : "bg-gray-800");
+        return <div key={i} className={`w-[5px] h-[5px] rounded-sm ${barColor}`} />;
+      })}
     </div>
   );
 }
