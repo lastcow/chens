@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { Package, Plus, Search, Filter, ExternalLink, AlertTriangle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X } from "lucide-react";
+import { Package, Plus, Search, ExternalLink, AlertTriangle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit2, Truck } from "lucide-react";
 import OrderForm from "@/components/msbiz/OrderForm";
+import ShippingDialog from "@/components/msbiz/ShippingDialog";
 
 interface OrderItem { merchandise_id: string; name: string; qty: number; unit_price: number; }
 interface Order {
@@ -80,7 +81,9 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [pmFilter, setPmFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm]       = useState(false);
+  const [editOrder, setEditOrder]     = useState<Order | null>(null);
+  const [shippingOrder, setShipping]  = useState<Order | null>(null);
   const limit = 25;
 
   const fetchOrders = useCallback(async () => {
@@ -180,16 +183,16 @@ export default function OrdersPage() {
               return (
               <>
               <tr key={o.id} className="hover:bg-gray-800/30 transition-colors group">
-                {/* Status square */}
-                <td className="px-3 py-3 w-6">
-                  <div className={`w-6 h-6 rounded flex items-center justify-center text-[11px] font-bold shrink-0 ${STATUS_SQUARE[o.status] ?? "bg-gray-700 text-gray-400"}`}
+                {/* Status square — full cell height */}
+                <td className="pl-3 pr-1 py-0 w-8 align-middle">
+                  <div className={`w-6 h-full min-h-[52px] rounded flex items-center justify-center text-[11px] font-bold ${STATUS_SQUARE[o.status] ?? "bg-gray-700 text-gray-400"}`}
                     title={o.status}>
                     {STATUS_LETTER[o.status] ?? "?"}
                   </div>
                 </td>
 
                 {/* Order # + relative date + account — no wrap */}
-                <td className="px-3 py-3 whitespace-nowrap">
+                <td className="pl-1 pr-3 py-3 whitespace-nowrap">
                   <div className="flex items-baseline gap-2">
                     <span className="font-mono text-amber-400 text-sm font-semibold leading-tight">{o.ms_order_number}</span>
                     <span className="text-[11px] text-gray-500">{relDate(o.order_date)}</span>
@@ -237,12 +240,22 @@ export default function OrdersPage() {
                   </div>
                 </td>
 
-                {/* Detail link */}
-                <td className="px-3 py-3 text-center">
-                  <a href={`/msbiz/orders/${o.id}`}
-                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-gray-600 hover:text-amber-400 hover:bg-amber-500/10 transition-colors opacity-0 group-hover:opacity-100">
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
+                {/* Actions */}
+                <td className="px-3 py-3 text-center whitespace-nowrap">
+                  <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setShipping(o)} title="Add/Edit Shipping"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+                      <Truck className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => setEditOrder(o)} title="Edit Order"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <a href={`/msbiz/orders/${o.id}`} title="View Detail"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-300 hover:bg-gray-700/50 transition-colors">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
                 </td>
               </tr>
 
@@ -280,6 +293,30 @@ export default function OrdersPage() {
       </div>
 
       {showForm && <OrderForm onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); fetchOrders(); }} />}
+
+      {editOrder && (
+        <OrderForm
+          orderId={editOrder.id}
+          onClose={() => setEditOrder(null)}
+          onSaved={() => { setEditOrder(null); fetchOrders(); }}
+        />
+      )}
+
+      {shippingOrder && (
+        <ShippingDialog
+          orderId={shippingOrder.id}
+          initialTracking={shippingOrder.tracking_number}
+          initialCarrier={shippingOrder.carrier}
+          onClose={() => setShipping(null)}
+          onSaved={(tracking, carrier) => {
+            setOrders(prev => prev.map(o => o.id === shippingOrder.id
+              ? { ...o, tracking_number: tracking, carrier }
+              : o));
+            setShipping(null);
+            fetchOrders(); // refresh inbound_status from DB
+          }}
+        />
+      )}
     </div>
   );
 }
