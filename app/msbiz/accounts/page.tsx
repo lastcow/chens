@@ -9,27 +9,15 @@ import {
 
 interface Account {
   id: string; email: string; display_name: string | null; password?: string;
-  status: string; notes: string | null; balance: number;
+  status: string; // FK id e.g. 'account.Ready'
+  status_value: string; // e.g. 'Ready'
+  status_label: string; // display label
+  status_color: string; // hex color e.g. '#22c55e'
+  notes: string | null; balance: number;
   owner_id: string | null; owner_name: string | null; owner_email: string | null;
   last_used_at: string | null; created_at: string;
   order_count: number; pm_count: number;
 }
-
-const STATUS_COLORS: Record<string, string> = {
-  Ready:     "bg-green-900/30 text-green-400 border-green-700/30",
-  Suspended: "bg-red-900/30 text-red-400 border-red-700/30",
-  Topup:     "bg-amber-900/30 text-amber-400 border-amber-700/30",
-  Error:     "bg-red-900/50 text-red-300 border-red-600/40",
-  Hold:      "bg-gray-800 text-gray-400 border-gray-700",
-};
-
-const STATUS_BAR: Record<string, string> = {
-  Ready:     "bg-green-500",
-  Suspended: "bg-red-500",
-  Topup:     "bg-amber-500",
-  Error:     "bg-red-400",
-  Hold:      "bg-gray-500",
-};
 
 const LIMIT = 20;
 
@@ -102,7 +90,7 @@ export default function AccountsPage() {
         <select value={statusFilter} onChange={e => setStatus(e.target.value)}
           className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50">
           <option value="">All Statuses</option>
-          {["Ready","Suspended","Topup","Error","Hold"].map(s => <option key={s} value={s}>{s}</option>)}
+          {["Ready","Suspended","Topup","Error","Hold"].map(s => <option key={s} value={`account.${s}`}>{s}</option>)}
         </select>
       </div>
 
@@ -145,8 +133,9 @@ export default function AccountsPage() {
                 <tr key={acc.id} className="hover:bg-gray-800/30 transition-colors group">
                   {/* Status bar */}
                   <td className="pl-2 pr-0 py-0 w-1.5">
-                    <div className={`w-1 rounded-full h-7 mx-auto ${STATUS_BAR[acc.status] ?? "bg-gray-600"}`}
-                      title={acc.status} />
+                    <div className="w-1 rounded-full h-7 mx-auto"
+                      style={{ backgroundColor: acc.status_color ?? "#4b5563" }}
+                      title={acc.status_label ?? acc.status} />
                   </td>
                   {/* Account: email + password + copy-all */}
                   <td className="px-4 py-3 w-full min-w-0">
@@ -298,7 +287,8 @@ export default function AccountsPage() {
                 <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
                   <div className="text-sm font-medium text-white">{acc.display_name || acc.email}</div>
                   {acc.display_name && <div className="text-xs font-mono text-gray-500 mt-0.5">{acc.email}</div>}
-                  <div className={`text-[10px] mt-1 px-1.5 py-0.5 rounded-full border inline-block ${STATUS_COLORS[acc.status] ?? ""}`}>{acc.status}</div>
+                  <div className="text-[10px] mt-1 px-1.5 py-0.5 rounded-full border inline-block border-gray-600"
+                    style={{ color: acc.status_color ?? "#9ca3af" }}>{acc.status_label ?? acc.status_value ?? acc.status}</div>
                 </div>
               ) : null;
             })()}
@@ -319,14 +309,31 @@ export default function AccountsPage() {
   );
 }
 
+interface StatusOption {
+  id: string;
+  label: string;
+  color_hex: string;
+}
+
 function AccountForm({ accountId, onClose, onSaved }: { accountId: string | null; onClose: () => void; onSaved: () => void }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [statusOptions, setStatusOptions] = useState<StatusOption[]>([]);
   const [form, setForm] = useState({
-    email: "", password: "", display_name: "", status: "Ready",
+    email: "", password: "", display_name: "", status: "account.Ready",
     notes: "", balance: "",
   });
+
+  useEffect(() => {
+    fetch("/api/msbiz/statuses?type=account")
+      .then(r => r.json())
+      .then(d => {
+        if (Array.isArray(d.statuses)) setStatusOptions(d.statuses);
+        else if (Array.isArray(d)) setStatusOptions(d);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!accountId) return;
@@ -337,7 +344,7 @@ function AccountForm({ accountId, onClose, onSaved }: { accountId: string | null
           const a = d.account;
           setForm({
             email: a.email, password: a.password ?? "",
-            display_name: a.display_name ?? "", status: a.status ?? "Ready",
+            display_name: a.display_name ?? "", status: a.status ?? "account.Ready",
             notes: a.notes ?? "", balance: a.balance != null ? String(a.balance) : "0",
           });
         }
@@ -443,7 +450,10 @@ function AccountForm({ accountId, onClose, onSaved }: { accountId: string | null
               <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Status</label>
               <select value={form.status} onChange={e => set("status", e.target.value)}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-                {["Ready","Suspended","Topup","Error","Hold"].map(s => <option key={s} value={s}>{s}</option>)}
+                {statusOptions.length > 0
+                  ? statusOptions.map(s => <option key={s.id} value={s.id}>{s.label}</option>)
+                  : <option value={form.status}>{form.status}</option>
+                }
               </select>
             </div>
           </div>
