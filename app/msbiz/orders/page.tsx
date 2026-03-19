@@ -245,7 +245,7 @@ export default function OrdersPage() {
         </table>
 
         {/* Pagination */}
-        <div className="border-t border-gray-800 px-5 py-3 flex items-center justify-between">
+        <div className="px-5 py-3 flex items-center justify-between">
           <span className="text-xs text-gray-500">{total > 0 ? `${(page-1)*limit+1}–${Math.min(page*limit,total)} of ${total} orders` : "0 results"}</span>
           <div className="flex items-center gap-1">
             {[{icon: ChevronsLeft, action: () => setPage(1), disabled: page === 1},
