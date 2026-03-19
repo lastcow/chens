@@ -104,7 +104,6 @@ export default function AccountsPage() {
                 <th className="text-left px-4 py-2">Account</th>
                 <th className="text-left px-3 py-2 w-36">Balance</th>
                 <th className="text-center px-3 py-2 w-20">Orders</th>
-                <th className="text-center px-3 py-2 w-20"></th>
               </tr>
             </thead>
             <tbody className="">
@@ -130,7 +129,7 @@ export default function AccountsPage() {
                 const _btcol = _b <= 0 ? "#4b5563" : _b < 100 ? "#f87171" : _b < 400 ? "#fb923c" : "#4ade80";
                 return (
                 <>
-                <tr key={acc.id} className="hover:bg-gray-800/30 transition-colors group">
+                <tr key={acc.id} className="hover:bg-gray-800/30 transition-colors group relative">
                   {/* Status bar */}
                   <td className="pl-2 pr-0 py-1 w-1.5">
                     <div className="w-1 rounded-full h-7 mx-auto"
@@ -161,7 +160,7 @@ export default function AccountsPage() {
                   <td className="px-3 py-1 w-36">
                     <span style={{fontFamily:"monospace",fontSize:"0.875rem",fontWeight:600,color:_btcol}}>{"$" + _b.toFixed(2)}</span>
                   </td>
-                  {/* Orders — clickable */}
+                  {/* Orders — clickable, rightmost visible column */}
                   <td className="px-3 py-1 w-20 align-middle">
                     <div className="flex items-center justify-center">
                       {(acc.order_count ?? 0) > 0 ? (
@@ -180,31 +179,29 @@ export default function AccountsPage() {
                         <span className="text-gray-700 text-xs">—</span>
                       )}
                     </div>
-                  </td>
-                  {/* Actions */}
-                  <td className="px-3 py-1 w-20">
-                    <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Gmail-style action overlay — appears on row hover, floats over content */}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5 bg-gray-800 border border-gray-700 rounded-lg px-1 py-0.5 shadow-lg z-10">
                       <button onClick={() => setAdjustAcc(acc)} title="Adjust balance"
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+                        className="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
                         <DollarSign className="w-3.5 h-3.5" />
                       </button>
                       <button onClick={() => setOrdersAcc(acc)} title="View orders"
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+                        className="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
                         <Package className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => { setEditId(acc.id); setShowForm(true); }}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+                      <button onClick={() => { setEditId(acc.id); setShowForm(true); }} title="Edit account"
+                        className="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => setDeletingId(acc.id)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-900/20 transition-colors">
+                      <button onClick={() => setDeletingId(acc.id)} title="Delete account"
+                        className="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-900/20 transition-colors">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </td>
                 </tr>
                 <tr>
-                  <td colSpan={5} className="p-0">
+                  <td colSpan={4} className="p-0">
                     <div className="h-[3px] w-full" style={{backgroundColor:"#1f2937"}}>
                       <div className="h-full transition-all duration-500" style={{width:_bpct,backgroundColor:_bcol}} />
                     </div>
