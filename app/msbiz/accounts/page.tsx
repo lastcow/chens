@@ -180,7 +180,7 @@ export default function AccountsPage() {
                       )}
                     </div>
                     {/* Gmail-style action overlay — appears on row hover, floats over content */}
-                    <div className="absolute right-0 top-0 bottom-0 hidden group-hover:flex items-center gap-0.5 bg-gray-800 border border-gray-700 rounded-lg px-1 my-0.5 shadow-lg z-10">
+                    <div className="absolute right-0 top-0 bottom-0 hidden group-hover:flex items-center gap-0.5 px-1 z-10">
                       <button onClick={() => setAdjustAcc(acc)} title="Adjust balance"
                         className="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
                         <DollarSign className="w-3.5 h-3.5" />
