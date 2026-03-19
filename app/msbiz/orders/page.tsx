@@ -3,30 +3,45 @@ import { useEffect, useState, useCallback } from "react";
 import { Package, Plus, Search, Filter, ExternalLink, AlertTriangle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X } from "lucide-react";
 import OrderForm from "@/components/msbiz/OrderForm";
 
+interface OrderItem { merchandise_id: string; name: string; qty: number; unit_price: number; }
 interface Order {
   id: string; ms_order_number: string; order_date: string; status: string;
-  total: number; pm_status: string; pm_deadline_at: string | null;
+  items: OrderItem[]; total: number; pm_status: string; pm_deadline_at: string | null;
   account_email: string; account_name: string | null;
   tracking_number: string | null; inbound_status: string; exception_count: number;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending:    "bg-gray-800 text-gray-400 border-gray-700",
-  processing: "bg-blue-900/30 text-blue-400 border-blue-700/30",
-  shipped:    "bg-amber-900/30 text-amber-400 border-amber-700/30",
-  delivered:  "bg-green-900/30 text-green-400 border-green-700/30",
-  cancelled:  "bg-gray-900 text-gray-600 border-gray-800",
-  exception:  "bg-red-900/30 text-red-400 border-red-700/30",
+const STATUS_LETTER: Record<string, string> = {
+  pending: "P", processing: "R", shipped: "S", delivered: "D", cancelled: "C", exception: "!",
+};
+const STATUS_SQUARE: Record<string, string> = {
+  pending:    "bg-gray-700 text-gray-300",
+  processing: "bg-blue-600 text-white",
+  shipped:    "bg-amber-500 text-white",
+  delivered:  "bg-green-600 text-white",
+  cancelled:  "bg-gray-800 text-gray-600",
+  exception:  "bg-red-600 text-white",
+};
+const PM_DOT: Record<string, string> = {
+  unpmed:    "bg-amber-400",
+  submitted: "bg-blue-400",
+  approved:  "bg-green-500",
+  rejected:  "bg-red-500",
+  ineligible:"bg-gray-600",
+  expired:   "bg-red-800",
 };
 
-const PM_COLORS: Record<string, string> = {
-  unpmed:    "bg-amber-900/20 text-amber-400 border-amber-700/20",
-  submitted: "bg-blue-900/20 text-blue-400 border-blue-700/20",
-  approved:  "bg-green-900/20 text-green-400 border-green-700/20",
-  rejected:  "bg-red-900/20 text-red-400 border-red-700/20",
-  ineligible:"bg-gray-800 text-gray-500 border-gray-700",
-  expired:   "bg-red-900/10 text-red-600 border-red-900/30",
-};
+function relDate(dateStr: string) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = Math.round((now.getTime() - d.getTime()) / 86400000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  if (diff < 30)  return `${diff}d ago`;
+  if (diff < 365) return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" });
+}
+
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -108,68 +123,82 @@ export default function OrdersPage() {
         <table className="w-full text-sm">
           <thead className="sticky top-[140px] z-[9] bg-gray-900 border-b border-gray-800">
             <tr className="text-xs text-gray-500 uppercase tracking-wider">
-              <th className="text-left px-5 py-3">Order #</th>
-              <th className="text-left px-3 py-3">Account</th>
-              <th className="text-center px-3 py-3">Date</th>
-              <th className="text-center px-3 py-3">Total</th>
-              <th className="text-center px-3 py-3">Status</th>
-              <th className="text-center px-3 py-3">PM</th>
-              <th className="text-center px-3 py-3">Tracking</th>
+              <th className="text-left px-3 py-3 w-6"></th>
+              <th className="text-left px-3 py-3">Order</th>
+              <th className="text-left px-3 py-3">Items</th>
+              <th className="text-center px-3 py-3 whitespace-nowrap">PM</th>
               <th className="text-center px-3 py-3 w-8"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800/50">
             {loading ? (
-              <tr><td colSpan={8} className="text-center text-gray-600 py-10 animate-pulse">Loading…</td></tr>
+              <tr><td colSpan={5} className="text-center text-gray-600 py-10 animate-pulse">Loading…</td></tr>
             ) : orders.length === 0 ? (
-              <tr><td colSpan={8} className="text-center text-gray-600 py-10">No orders found.</td></tr>
-            ) : orders.map(o => (
-              <tr key={o.id} className="hover:bg-gray-800/30 transition-colors">
-                <td className="px-5 py-3">
-                  <div className="font-mono text-amber-400 text-sm font-medium">{o.ms_order_number}</div>
+              <tr><td colSpan={5} className="text-center text-gray-600 py-10">No orders found.</td></tr>
+            ) : orders.map(o => {
+              const itemList: OrderItem[] = Array.isArray(o.items) ? o.items : [];
+              return (
+              <tr key={o.id} className="hover:bg-gray-800/30 transition-colors group">
+                {/* Status square */}
+                <td className="px-3 py-3 w-6">
+                  <div className={`w-6 h-6 rounded flex items-center justify-center text-[11px] font-bold shrink-0 ${STATUS_SQUARE[o.status] ?? "bg-gray-700 text-gray-400"}`}
+                    title={o.status}>
+                    {STATUS_LETTER[o.status] ?? "?"}
+                  </div>
+                </td>
+
+                {/* Order # + account + date */}
+                <td className="px-3 py-3 min-w-0">
+                  <div className="font-mono text-amber-400 text-sm font-semibold leading-tight">{o.ms_order_number}</div>
+                  <div className="text-[11px] text-gray-500 mt-0.5 truncate max-w-[140px]">{o.account_name || o.account_email}</div>
+                  <div className="text-[10px] text-gray-600 mt-0.5">{relDate(o.order_date)}</div>
                   {o.exception_count > 0 && (
                     <div className="flex items-center gap-1 text-[10px] text-red-400 mt-0.5">
-                      <AlertTriangle className="w-3 h-3" /> {o.exception_count} exception{o.exception_count > 1 ? "s" : ""}
+                      <AlertTriangle className="w-3 h-3" /> {o.exception_count}
                     </div>
                   )}
                 </td>
-                <td className="px-3 py-3 text-gray-400 text-xs truncate max-w-32">{o.account_name || o.account_email}</td>
-                <td className="px-3 py-3 text-center text-xs text-gray-500 font-mono">
-                  {new Date(o.order_date).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"2-digit" })}
+
+                {/* Items */}
+                <td className="px-3 py-3 w-full min-w-0 max-w-0">
+                  <div className="space-y-0.5">
+                    {itemList.length === 0 ? (
+                      <span className="text-gray-600 text-xs">—</span>
+                    ) : itemList.map((it, idx) => (
+                      <div key={idx} className="flex items-baseline gap-1.5 text-xs">
+                        <span className="text-gray-500 font-mono shrink-0">{it.qty}×</span>
+                        <span className="text-gray-300 truncate">{it.name}</span>
+                        <span className="text-gray-600 shrink-0 font-mono">${Number(it.unit_price).toFixed(2)}/ea</span>
+                      </div>
+                    ))}
+                  </div>
                 </td>
-                <td className="px-3 py-3 text-center font-mono text-gray-300">${Number(o.total).toFixed(2)}</td>
-                <td className="px-3 py-3 text-center">
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${STATUS_COLORS[o.status] ?? "bg-gray-800 text-gray-500 border-gray-700"}`}>
-                    {o.status}
-                  </span>
-                </td>
-                <td className="px-3 py-3 text-center">
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${PM_COLORS[o.pm_status] ?? ""}`}>
-                      {o.pm_status}
-                    </span>
+
+                {/* PM indicator */}
+                <td className="px-3 py-3 text-center whitespace-nowrap">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className={`w-2.5 h-2.5 rounded-full ${PM_DOT[o.pm_status] ?? "bg-gray-700"}`}
+                      title={o.pm_status} />
                     {pmDeadlineBadge(o)}
                   </div>
                 </td>
-                <td className="px-3 py-3 text-center">
-                  {o.tracking_number
-                    ? <span className="font-mono text-xs text-blue-400">{o.tracking_number}</span>
-                    : <span className="text-gray-700 text-xs">—</span>}
-                </td>
+
+                {/* Detail link */}
                 <td className="px-3 py-3 text-center">
                   <a href={`/msbiz/orders/${o.id}`}
-                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-gray-600 hover:text-amber-400 hover:bg-amber-500/10 transition-colors opacity-0 group-hover:opacity-100">
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
 
         {/* Pagination */}
         <div className="border-t border-gray-800 px-5 py-3 flex items-center justify-between">
-          <span className="text-xs text-gray-500">{total > 0 ? `${(page-1)*limit+1}–${Math.min(page*limit,total)} of ${total}` : "0 results"}</span>
+          <span className="text-xs text-gray-500">{total > 0 ? `${(page-1)*limit+1}–${Math.min(page*limit,total)} of ${total} orders` : "0 results"}</span>
           <div className="flex items-center gap-1">
             {[{icon: ChevronsLeft, action: () => setPage(1), disabled: page === 1},
               {icon: ChevronLeft,  action: () => setPage(p => p-1), disabled: page === 1},
