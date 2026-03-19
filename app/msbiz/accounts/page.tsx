@@ -161,7 +161,7 @@ export default function AccountsPage() {
                     <span style={{fontFamily:"monospace",fontSize:"0.875rem",fontWeight:600,color:_btcol}}>{"$" + _b.toFixed(2)}</span>
                   </td>
                   {/* Orders — clickable, rightmost visible column */}
-                  <td className="px-3 py-1 w-20 align-middle relative">
+                  <td className="px-3 py-1 w-20 align-middle">
                     <div className="flex items-center justify-center">
                       {(acc.order_count ?? 0) > 0 ? (
                         <button onClick={() => setOrdersAcc(acc)}
@@ -179,8 +179,10 @@ export default function AccountsPage() {
                         <span className="text-gray-700 text-xs">—</span>
                       )}
                     </div>
-                    {/* Gmail-style action overlay — appears on row hover, floats over content */}
-                    <div className="absolute right-0 top-0 bottom-0 hidden group-hover:flex items-center gap-0.5 px-1 z-10">
+                  </td>
+                  {/* Actions — w-0 hidden, expands on hover → table reflows, all cols compress */}
+                  <td className="w-0 overflow-hidden group-hover:w-32 transition-all duration-150 py-1 pr-2">
+                    <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                       <button onClick={() => setAdjustAcc(acc)} title="Adjust balance"
                         className="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
                         <DollarSign className="w-3.5 h-3.5" />
@@ -201,7 +203,7 @@ export default function AccountsPage() {
                   </td>
                 </tr>
                 <tr>
-                  <td colSpan={4} className="p-0">
+                  <td colSpan={5} className="p-0">
                     <div className="h-[3px] w-full" style={{backgroundColor:"#1f2937"}}>
                       <div className="h-full transition-all duration-500" style={{width:_bpct,backgroundColor:_bcol}} />
                     </div>
