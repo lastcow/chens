@@ -44,6 +44,7 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
   const [accounts, setAccounts]   = useState<Account[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [merch, setMerch]         = useState<Merch[]>([]);
+  const [originalTotal, setOriginalTotal] = useState(0); // order's previous total when editing
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState("");
 
@@ -79,6 +80,7 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
           shipping_address_id: o.shipping_address_id ?? "",
           notes: o.notes ?? "",
         });
+        setOriginalTotal(parseFloat(o.total) || 0);
         if (Array.isArray(o.items) && o.items.length > 0) {
           setItems(o.items.map((it: Record<string, unknown>) => ({
             _key: newKey(),
@@ -210,8 +212,12 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
 
   const selectedAccount = accounts.find(a => a.id === form.account_id) ?? null;
   const total = parseFloat(form.total) || 0;
-  const balance = selectedAccount?.balance != null ? Number(selectedAccount.balance) : null;
-  const insufficientBalance = form.account_id !== "" && balance !== null && balance < total;
+  const rawBalance = selectedAccount?.balance != null ? Number(selectedAccount.balance) : null;
+  // When editing, original total was already spent — add it back to get effective available
+  const effectiveBalance = rawBalance !== null
+    ? (orderId ? rawBalance + originalTotal : rawBalance)
+    : null;
+  const insufficientBalance = form.account_id !== "" && effectiveBalance !== null && effectiveBalance < total;
   const hasItems = items.some(i => i.merchandise_id !== "");
   const canSubmit = !saving && form.account_id !== "" && !insufficientBalance && hasItems;
 
@@ -404,13 +410,13 @@ export default function OrderForm({ onClose, onSaved, orderId }: Props) {
           {/* Balance warning */}
           {insufficientBalance && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-xs text-red-400 flex items-center justify-between">
-              <span>Insufficient balance — account has <span className="font-mono font-semibold">${Number(balance).toFixed(2)}</span>, order total is <span className="font-mono font-semibold">${total.toFixed(2)}</span></span>
+              <span>Insufficient balance — available <span className="font-mono font-semibold">${Number(effectiveBalance).toFixed(2)}</span>, order total <span className="font-mono font-semibold">${total.toFixed(2)}</span></span>
             </div>
           )}
-          {form.account_id && !insufficientBalance && balance !== null && total > 0 && (
+          {form.account_id && !insufficientBalance && effectiveBalance !== null && total > 0 && (
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2 text-xs text-emerald-400 flex items-center justify-between">
-              <span>Balance after order: <span className="font-mono font-semibold">${(balance - total).toFixed(2)}</span></span>
-              <span className="text-gray-600 font-mono">${Number(balance).toFixed(2)} − ${total.toFixed(2)}</span>
+              <span>Balance after {orderId ? "update" : "order"}: <span className="font-mono font-semibold">${(effectiveBalance - total).toFixed(2)}</span></span>
+              <span className="text-gray-600 font-mono">${Number(effectiveBalance).toFixed(2)} − ${total.toFixed(2)}</span>
             </div>
           )}
           <div className="flex gap-3">
