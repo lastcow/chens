@@ -142,7 +142,7 @@ export default function OrdersPage() {
               <th className="text-center px-3 py-3 w-8"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-800/50">
+          <tbody>
             {loading ? (
               <tr><td colSpan={6} className="text-center text-gray-600 py-10 animate-pulse">Loading…</td></tr>
             ) : orders.length === 0 ? (
