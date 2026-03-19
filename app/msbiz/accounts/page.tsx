@@ -132,13 +132,13 @@ export default function AccountsPage() {
                 <>
                 <tr key={acc.id} className="hover:bg-gray-800/30 transition-colors group">
                   {/* Status bar */}
-                  <td className="pl-2 pr-0 py-1.5 w-1.5">
+                  <td className="pl-2 pr-0 py-1 w-1.5">
                     <div className="w-1 rounded-full h-7 mx-auto"
                       style={{ backgroundColor: acc.status_color ?? "#4b5563" }}
                       title={acc.status_label ?? acc.status} />
                   </td>
                   {/* Account: email + password + copy-all */}
-                  <td className="px-4 py-1.5 w-full min-w-0">
+                  <td className="px-4 py-1 w-full min-w-0">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="text-sm font-mono text-white truncate">{acc.email}</span>
                       <button
@@ -158,11 +158,11 @@ export default function AccountsPage() {
                     )}
                   </td>
                   {/* Balance */}
-                  <td className="px-3 py-1.5 w-36">
+                  <td className="px-3 py-1 w-36">
                     <span style={{fontFamily:"monospace",fontSize:"0.875rem",fontWeight:600,color:_btcol}}>{"$" + _b.toFixed(2)}</span>
                   </td>
                   {/* Orders — clickable */}
-                  <td className="px-3 py-1.5 w-20 align-middle">
+                  <td className="px-3 py-1 w-20 align-middle">
                     <div className="flex items-center justify-center">
                       {(acc.order_count ?? 0) > 0 ? (
                         <button onClick={() => setOrdersAcc(acc)}
@@ -182,7 +182,7 @@ export default function AccountsPage() {
                     </div>
                   </td>
                   {/* Actions */}
-                  <td className="px-3 py-1.5 w-20">
+                  <td className="px-3 py-1 w-20">
                     <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => setAdjustAcc(acc)} title="Adjust balance"
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
