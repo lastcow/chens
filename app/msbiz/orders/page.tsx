@@ -115,6 +115,7 @@ export default function OrdersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [pmFilter, setPmFilter] = useState("all");
+  const [hasPmFilter, setHasPmFilter] = useState("all"); // "all" | "yes" | "no"
   const [page, setPage] = useState(1);
   const [showForm, setShowForm]       = useState(false);
   const [editOrder, setEditOrder]     = useState<Order | null>(null);
@@ -128,15 +129,16 @@ export default function OrdersPage() {
     if (search)             p.set("search", search);
     if (statusFilter !== "all") p.set("status", statusFilter);
     if (pmFilter !== "all")     p.set("pm_status", pmFilter);
+    if (hasPmFilter !== "all")  p.set("has_pm", hasPmFilter);
     const res = await fetch(`/api/msbiz/orders?${p}`);
     const d = await res.json();
     setOrders(d.orders ?? []);
     setTotal(d.total ?? 0);
     setLoading(false);
-  }, [page, search, statusFilter, pmFilter]);
+  }, [page, search, statusFilter, pmFilter, hasPmFilter]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
-  useEffect(() => { setPage(1); }, [search, statusFilter, pmFilter]);
+  useEffect(() => { setPage(1); }, [search, statusFilter, pmFilter, hasPmFilter]);
 
   const totalPages = Math.ceil(total / limit) || 1;
 
@@ -183,6 +185,12 @@ export default function OrdersPage() {
           {["unpmed","submitted","approved","rejected","ineligible","expired"].map(s => (
             <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>
           ))}
+        </select>
+        <select value={hasPmFilter} onChange={e => setHasPmFilter(e.target.value)}
+          className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-amber-500/50">
+          <option value="all">PM Linked</option>
+          <option value="yes">✓ Has PM</option>
+          <option value="no">✗ No PM</option>
         </select>
       </div>
 
