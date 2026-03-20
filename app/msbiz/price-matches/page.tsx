@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { CreditCard, Plus, Search, AlertTriangle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, DollarSign } from "lucide-react";
+import { CreditCard, Plus, Search, AlertTriangle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, DollarSign, Trash2 } from "lucide-react";
 import PriceMatchForm from "@/components/msbiz/PriceMatchForm";
 import RecordPMDialog from "@/components/msbiz/RecordPMDialog";
 
@@ -67,6 +67,16 @@ export default function PriceMatchesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState("");
   const [recordPM, setRecordPM] = useState<PriceMatch | null>(null);
+  const [deletingPm, setDeletingPm] = useState<PriceMatch | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const confirmDelete = async (pm: PriceMatch) => {
+    setDeleting(true);
+    await fetch(`/api/msbiz/price-matches/${pm.id}`, { method: "DELETE" });
+    setDeletingPm(null);
+    setDeleting(false);
+    fetchPMs();
+  };
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const limit = 20;
 
@@ -223,19 +233,25 @@ export default function PriceMatchesPage() {
                           onClick={() => setRecordPM(pm)}
                           title="Record PM"
                           style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            width: "32px",
-                            height: "32px",
-                            borderRadius: "8px",
-                            backgroundColor: "#1c1608",
-                            border: "1px solid #92400e",
-                            color: "#f59e0b",
-                            cursor: "pointer",
+                            display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            width: "28px", height: "28px", borderRadius: "6px",
+                            backgroundColor: "#1c1608", border: "1px solid #92400e",
+                            color: "#f59e0b", cursor: "pointer", marginRight: "4px",
                           }}
                         >
-                          <DollarSign style={{ width: "14px", height: "14px" }} />
+                          <DollarSign style={{ width: "13px", height: "13px" }} />
+                        </button>
+                        <button
+                          onClick={() => setDeletingPm(pm)}
+                          title="Unassign PM"
+                          style={{
+                            display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            width: "28px", height: "28px", borderRadius: "6px",
+                            backgroundColor: "#1c0808", border: "1px solid #7f1d1d",
+                            color: "#f87171", cursor: "pointer",
+                          }}
+                        >
+                          <Trash2 style={{ width: "13px", height: "13px" }} />
                         </button>
                       </div>
                     </td>
@@ -292,6 +308,33 @@ export default function PriceMatchesPage() {
           onClose={() => setRecordPM(null)}
           onSaved={() => { setRecordPM(null); fetchPMs(); }}
         />
+      )}
+
+      {/* Unassign PM confirmation dialog */}
+      {deletingPm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm p-6 space-y-4">
+            <h3 className="text-white font-bold text-base">Unassign PM Record?</h3>
+            <p className="text-gray-400 text-sm">
+              This will delete the PM record for order{" "}
+              <span className="font-mono text-amber-400">{deletingPm.ms_order_number}</span>
+              {deletingPm.items?.[0] && (
+                <> · <span className="text-gray-300">{deletingPm.items[0].name}</span></>
+              )}{" "}
+              and reset the order&apos;s PM status to <span className="text-gray-300">unpmed</span>.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeletingPm(null)}
+                className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 text-sm transition-colors">
+                Cancel
+              </button>
+              <button onClick={() => confirmDelete(deletingPm)} disabled={deleting}
+                className="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors disabled:opacity-50">
+                {deleting ? "Removing…" : "Unassign"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
