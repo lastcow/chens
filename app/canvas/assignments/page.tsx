@@ -936,7 +936,8 @@ function AssignmentsContent() {
                   const isRequested = requested.has(a.id);
                   const isLoading = requesting === a.id;
                   const hasStaging = Number(a.staging_count) > 0;
-                  const canRequest = Number(a.ungraded_count) > 0 && !hasStaging && !isRequested;
+                  // ungraded_count already excludes submissions in pending staging — so if > 0, there are genuinely new submissions
+                  const canRequest = Number(a.ungraded_count) > 0 && !isRequested;
 
                   return (
                     <tr key={a.id} className="hover:bg-gray-800/30 transition-colors">
@@ -1000,7 +1001,7 @@ function AssignmentsContent() {
                           <button
                             onClick={() => !isLoading && setConfirm(a)}
                             disabled={isLoading}
-                            title={`Request AI grading (${a.ungraded_count} ungraded)`}
+                            title={`Request AI grading (${a.ungraded_count} new submission${Number(a.ungraded_count) !== 1 ? 's' : ''}${hasStaging ? ' — staging also pending review' : ''})`}
                             className="inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
                           >
                             {isLoading
