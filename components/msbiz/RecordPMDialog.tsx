@@ -254,7 +254,7 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
           {/* Actions */}
           <div style={{ display:"flex",gap:"10px" }}>
             <button onClick={onClose} style={{ flex:1,padding:"11px",borderRadius:"10px",
-              border:"1px solid #374151",backgroundColor:"transparent",color:"#9ca3af",
+              border:"1px solid #7f1d1d",backgroundColor:"#2d0f0f",color:"#fca5a5",
               cursor:"pointer",fontSize:"14px",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px" }}>
               <XCircle style={{ width:"15px",height:"15px" }} /> Cancel
             </button>
