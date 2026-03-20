@@ -70,23 +70,20 @@ export default function AssignPMDialog({ order, onClose, onSaved }: Props) {
       setSaving(false); return;
     }
 
-    // 2. Create one PM entry per item (each item may have different PM strategy)
+    // 2. Create ONE PM record for the entire order (all items together)
     const items = Array.isArray(order.items) ? order.items : [];
-    for (const item of items) {
-      const itemTotal = Number(item.unit_price) * Number(item.qty ?? 1);
-      await fetch("/api/msbiz/price-matches", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          order_id:       order.id,
-          order_item_id:  item.id,
-          original_price: itemTotal,
-          match_price:    itemTotal,  // placeholder, pmer will update
-          expires_at:     deadline || null,
-          notes:          assignedTo ? `Assigned to: ${pmers.find(u => u.id === assignedTo)?.name ?? assignedTo}` : null,
-        }),
-      });
-    }
+    const orderTotal = items.reduce((sum, item) => sum + Number(item.unit_price) * Number(item.qty ?? 1), 0);
+    await fetch("/api/msbiz/price-matches", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        order_id:       order.id,
+        original_price: orderTotal || Number(order.total),
+        match_price:    orderTotal || Number(order.total),
+        expires_at:     deadline || null,
+        notes:          assignedTo ? `Assigned to: ${pmers.find(u => u.id === assignedTo)?.name ?? assignedTo}` : null,
+      }),
+    });
 
     onSaved();
     setSaving(false);
