@@ -44,13 +44,25 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
   const parsedRefund = parseFloat(refundAmount) || 0;
   const refundRatio = originalPrice > 0 ? parsedRefund / originalPrice : 0;
 
-  // 3-tier auto-computed refund type
+  // 3-tier blended reward (mirrors server logic)
   const refundTier = refundRatio >= 1.0 ? "full" : refundRatio >= 0.25 ? "partial_over" : "partial";
-  const tierRate = refundTier === "full" ? fullRate : refundTier === "partial_over" ? partialOverRate : partialRate;
   const tierLabel = refundTier === "full" ? "Full Refund" : refundTier === "partial_over" ? "Partial (≥25%)" : "Partial (<25%)";
   const tierColor = refundTier === "full" ? "#4ade80" : refundTier === "partial_over" ? "#60a5fa" : "#fb923c";
 
-  const computedReward = parsedRefund * tierRate;
+  let computedReward = 0;
+  if (refundTier === "full") {
+    computedReward = parsedRefund * fullRate;
+  } else if (refundTier === "partial_over") {
+    const firstPart = originalPrice * 0.25;
+    const overPart  = parsedRefund - firstPart;
+    computedReward = firstPart * partialRate + overPart * partialOverRate;
+  } else {
+    computedReward = parsedRefund * partialRate;
+  }
+  computedReward = Math.round(computedReward * 100) / 100;
+
+  // Effective rate for display (reward / refund), precise to 2 decimal places
+  const effectiveRatePct = parsedRefund > 0 ? (computedReward / parsedRefund * 100).toFixed(2) : "0.00";
   const isValid = parsedRefund > 0 && parsedRefund <= originalPrice;
 
   async function handleSubmit() {
@@ -193,7 +205,11 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
               <div style={{ display:"flex",alignItems:"center",gap:"6px",marginTop:"6px" }}>
                 <div style={{ width:"8px",height:"8px",borderRadius:"50%",backgroundColor:tierColor,flexShrink:0 }} />
                 <span style={{ fontSize:"12px",color:tierColor,fontWeight:500 }}>{tierLabel}</span>
-                <span style={{ fontSize:"11px",color:"#6b7280" }}>— {(tierRate*100).toFixed(0)}% reward rate</span>
+                <span style={{ fontSize:"11px",color:"#6b7280" }}>
+                  {refundTier === "partial_over"
+                    ? `blended: 25%×${(partialRate*100).toFixed(2)}% + rest×${(partialOverRate*100).toFixed(2)}% = ${effectiveRatePct}% eff.`
+                    : `— ${effectiveRatePct}% reward rate`}
+                </span>
                 <span style={{ fontSize:"10px",color:"#4b5563",marginLeft:"auto" }}>
                   {refundRatio < 0.25 ? "< 25% of order" : refundRatio < 1.0 ? "25–99% of order" : "= full order"}
                 </span>
@@ -207,7 +223,7 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
             <div style={{ fontSize:"13px",color:"#9ca3af" }}>
               ${parsedRefund.toFixed(2)}
               <span style={{ margin:"0 6px",color:"#374151" }}>×</span>
-              <span style={{ color:tierColor }}>{(tierRate*100).toFixed(0)}%</span>
+              <span style={{ color:tierColor }}>{effectiveRatePct}%</span>
             </div>
             <div style={{ textAlign:"right" }}>
               <div style={{ fontSize:"11px",color:"#6b7280",marginBottom:"2px" }}>Reward to Pmer</div>
