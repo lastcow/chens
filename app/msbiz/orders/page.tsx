@@ -108,6 +108,19 @@ const CARRIER_COLOR: Record<string, string> = {
   USPS:  "text-blue-400",
 };
 
+const TRACKING_URL: Record<string, (n: string) => string> = {
+  UPS:   n => `https://www.ups.com/track?tracknum=${n}`,
+  FedEx: n => `https://www.fedex.com/fedextrack/?trknbr=${n}`,
+  USPS:  n => `https://tools.usps.com/go/TrackConfirmAction?tLabels=${n}`,
+  DHL:   n => `https://www.dhl.com/us-en/home/tracking.html?tracking-id=${n}`,
+};
+
+function trackingUrl(carrier: string | null, tracking: string): string {
+  if (!carrier) return `https://www.google.com/search?q=${encodeURIComponent(tracking + " tracking")}`;
+  const fn = TRACKING_URL[carrier] ?? TRACKING_URL[carrier.toUpperCase()];
+  return fn ? fn(tracking) : `https://www.google.com/search?q=${encodeURIComponent(carrier + " " + tracking + " tracking")}`;
+}
+
 
 
 export default function OrdersPage() {
@@ -266,7 +279,19 @@ export default function OrdersPage() {
                         <span>{INBOUND_LABEL[o.inbound_status] ?? o.inbound_status}</span>
                       </div>
                       {o.tracking_number && (
-                        <div className="text-[10px] text-gray-600 font-mono mt-0.5">{o.tracking_number}</div>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span className="text-[10px] text-gray-600 font-mono">{o.tracking_number}</span>
+                          <a
+                            href={trackingUrl(o.carrier, o.tracking_number)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={`Track with ${o.carrier ?? "carrier"}`}
+                            onClick={e => e.stopPropagation()}
+                            className="text-gray-600 hover:text-blue-400 transition-colors"
+                          >
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        </div>
                       )}
                     </div>
                   ) : (
