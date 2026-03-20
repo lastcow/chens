@@ -15,12 +15,12 @@ interface PriceMatch {
 interface Props { pm: PriceMatch; onClose: () => void; onSaved: () => void; }
 
 export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
-  const [refundType, setRefundType] = useState<"full" | "partial">("full");
   const [refundAmount, setRefundAmount] = useState<string>(String(pm.original_price));
   const [notes, setNotes] = useState(pm.notes ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [fullRate, setFullRate] = useState(0.15);
+  const [partialOverRate, setPartialOverRate] = useState(0.12);
   const [partialRate, setPartialRate] = useState(0.10);
   const originalPrice = Number(pm.original_price);
 
@@ -29,8 +29,9 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
     fetch("/api/msbiz/price-matches/rates")
       .then(r => r.json())
       .then(d => {
-        if (d.full_refund_rate) setFullRate(d.full_refund_rate);
-        if (d.partial_refund_rate) setPartialRate(d.partial_refund_rate);
+        if (d.full_refund_rate)         setFullRate(d.full_refund_rate);
+        if (d.partial_over_refund_rate) setPartialOverRate(d.partial_over_refund_rate);
+        if (d.partial_refund_rate)      setPartialRate(d.partial_refund_rate);
       })
       .catch(() => {});
   }, []);
@@ -40,13 +41,16 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
     ? `${pm.pmer_name} (${pm.pmer_email})`
     : pm.pmer_email ?? pm.pmer_name ?? null;
 
-  useEffect(() => {
-    if (refundType === "full") setRefundAmount(String(originalPrice));
-  }, [refundType, originalPrice]);
-
   const parsedRefund = parseFloat(refundAmount) || 0;
-  const rate = refundType === "full" ? fullRate : partialRate;
-  const computedReward = parsedRefund * rate;
+  const refundRatio = originalPrice > 0 ? parsedRefund / originalPrice : 0;
+
+  // 3-tier auto-computed refund type
+  const refundTier = refundRatio >= 1.0 ? "full" : refundRatio >= 0.25 ? "partial_over" : "partial";
+  const tierRate = refundTier === "full" ? fullRate : refundTier === "partial_over" ? partialOverRate : partialRate;
+  const tierLabel = refundTier === "full" ? "Full Refund" : refundTier === "partial_over" ? "Partial (≥25%)" : "Partial (<25%)";
+  const tierColor = refundTier === "full" ? "#4ade80" : refundTier === "partial_over" ? "#60a5fa" : "#fb923c";
+
+  const computedReward = parsedRefund * tierRate;
   const isValid = parsedRefund > 0 && parsedRefund <= originalPrice;
 
   async function handleSubmit() {
@@ -59,7 +63,6 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           refund_amount: parsedRefund,
-          refund_type: refundType,
           notes: notes || null,
           rewarded_to: pm.rewarded_to || null,
         }),
@@ -166,35 +169,7 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
             </div>
           </div>
 
-          {/* Refund type toggle */}
-          <div>
-            <label style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.05em",
-              color:"#6b7280",display:"block",marginBottom:"8px" }}>Refund Type</label>
-            <div style={{ display:"flex",gap:"8px" }}>
-              {(["full","partial"] as const).map(type => {
-                const active = refundType === type;
-                const r = type === "full" ? fullRate : partialRate;
-                return (
-                  <button key={type} onClick={() => setRefundType(type)} style={{
-                    flex:1,padding:"10px",borderRadius:"10px",
-                    border: active ? "1px solid #f59e0b" : "1px solid #374151",
-                    backgroundColor: active ? "#1c1608" : "#1f2937",
-                    color: active ? "#fbbf24" : "#9ca3af",
-                    cursor:"pointer",fontSize:"13px",fontWeight: active ? 600 : 400,
-                    transition:"all 0.15s",
-                  }}>
-                    {type === "full" ? "Full" : "Partial"} Refund
-                    <span style={{ fontSize:"11px",marginLeft:"4px",
-                      color: active ? "#f59e0b" : "#6b7280" }}>
-                      ({(r * 100).toFixed(0)}% reward)
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Refund amount */}
+          {/* Refund amount + auto tier */}
           <div>
             <label style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.05em",
               color:"#6b7280",display:"block",marginBottom:"8px" }}>Refund Amount</label>
@@ -203,17 +178,26 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
                 color:"#9ca3af",fontSize:"14px",pointerEvents:"none" }}>$</span>
               <input type="number" value={refundAmount}
                 onChange={e => setRefundAmount(e.target.value)}
-                disabled={refundType === "full"} min={0} max={originalPrice} step={0.01}
-                style={{ width:"100%",backgroundColor: refundType === "full" ? "#1a1f2e" : "#1f2937",
-                  border:"1px solid #374151",borderRadius:"10px",padding:"10px 12px 10px 28px",
-                  color: refundType === "full" ? "#6b7280" : "#f3f4f6",fontSize:"14px",
-                  fontFamily:"monospace",outline:"none",boxSizing:"border-box",
-                  cursor: refundType === "full" ? "not-allowed" : "text" }} />
+                min={0} max={originalPrice} step={0.01}
+                style={{ width:"100%",backgroundColor:"#1f2937",border:"1px solid #374151",
+                  borderRadius:"10px",padding:"10px 12px 10px 28px",color:"#f3f4f6",
+                  fontSize:"14px",fontFamily:"monospace",outline:"none",boxSizing:"border-box" }} />
             </div>
-            {refundType === "partial" && parsedRefund > originalPrice && (
+            {parsedRefund > originalPrice && (
               <p style={{ fontSize:"12px",color:"#ef4444",marginTop:"4px" }}>
                 Cannot exceed ${originalPrice.toFixed(2)}
               </p>
+            )}
+            {/* Auto-tier indicator */}
+            {parsedRefund > 0 && (
+              <div style={{ display:"flex",alignItems:"center",gap:"6px",marginTop:"6px" }}>
+                <div style={{ width:"8px",height:"8px",borderRadius:"50%",backgroundColor:tierColor,flexShrink:0 }} />
+                <span style={{ fontSize:"12px",color:tierColor,fontWeight:500 }}>{tierLabel}</span>
+                <span style={{ fontSize:"11px",color:"#6b7280" }}>— {(tierRate*100).toFixed(0)}% reward rate</span>
+                <span style={{ fontSize:"10px",color:"#4b5563",marginLeft:"auto" }}>
+                  {refundRatio < 0.25 ? "< 25% of order" : refundRatio < 1.0 ? "25–99% of order" : "= full order"}
+                </span>
+              </div>
             )}
           </div>
 
@@ -223,7 +207,7 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
             <div style={{ fontSize:"13px",color:"#9ca3af" }}>
               ${parsedRefund.toFixed(2)}
               <span style={{ margin:"0 6px",color:"#374151" }}>×</span>
-              <span style={{ color:"#6b7280" }}>{(rate*100).toFixed(0)}%</span>
+              <span style={{ color:tierColor }}>{(tierRate*100).toFixed(0)}%</span>
             </div>
             <div style={{ textAlign:"right" }}>
               <div style={{ fontSize:"11px",color:"#6b7280",marginBottom:"2px" }}>Reward to Pmer</div>
