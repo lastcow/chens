@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { X, DollarSign, Package, User } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, DollarSign, Package, User, XCircle, CheckCircle, Loader2 } from "lucide-react";
 
 interface PMItem { name: string; qty: number; unit_price: number; }
 interface PriceMatch {
@@ -193,7 +193,9 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
                 min={0} max={originalPrice} step={0.01}
                 style={{ width:"100%",backgroundColor:"#1f2937",border:"1px solid #374151",
                   borderRadius:"10px",padding:"10px 12px 10px 28px",color:"#f3f4f6",
-                  fontSize:"14px",fontFamily:"monospace",outline:"none",boxSizing:"border-box" }} />
+                  fontSize:"14px",fontFamily:"monospace",outline:"none",boxSizing:"border-box",
+                  MozAppearance:"textfield" } as React.CSSProperties}
+                className="[&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
             </div>
             {parsedRefund > originalPrice && (
               <p style={{ fontSize:"12px",color:"#ef4444",marginTop:"4px" }}>
@@ -253,14 +255,19 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
           <div style={{ display:"flex",gap:"10px" }}>
             <button onClick={onClose} style={{ flex:1,padding:"11px",borderRadius:"10px",
               border:"1px solid #374151",backgroundColor:"transparent",color:"#9ca3af",
-              cursor:"pointer",fontSize:"14px" }}>Cancel</button>
+              cursor:"pointer",fontSize:"14px",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px" }}>
+              <XCircle style={{ width:"15px",height:"15px" }} /> Cancel
+            </button>
             <button onClick={handleSubmit} disabled={submitting || !isValid} style={{
               flex:2,padding:"11px",borderRadius:"10px",border:"none",
               backgroundColor: submitting || !isValid ? "#374151" : "#d97706",
               color: submitting || !isValid ? "#6b7280" : "#fff",
               cursor: submitting || !isValid ? "not-allowed" : "pointer",
-              fontSize:"14px",fontWeight:600 }}>
-              {submitting ? "Recording…" : `Record PM · Reward $${computedReward.toFixed(2)}`}
+              fontSize:"14px",fontWeight:600,
+              display:"flex",alignItems:"center",justifyContent:"center",gap:"6px" }}>
+              {submitting
+                ? <><Loader2 style={{ width:"15px",height:"15px",animation:"spin 1s linear infinite" }} /> Recording…</>
+                : <><CheckCircle style={{ width:"15px",height:"15px" }} /> Record PM · Reward ${computedReward.toFixed(2)}</>}
             </button>
           </div>
         </div>
