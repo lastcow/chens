@@ -936,7 +936,7 @@ function AssignmentsContent() {
                   const isRequested = requested.has(a.id);
                   const isLoading = requesting === a.id;
                   const hasStaging = Number(a.staging_count) > 0;
-                  // ungraded_count already excludes submissions in pending staging — so if > 0, there are genuinely new submissions
+                  // ungraded_count excludes 'staged' workflow_state — so if > 0, these are genuinely new submissions
                   const canRequest = Number(a.ungraded_count) > 0 && !isRequested;
 
                   return (
