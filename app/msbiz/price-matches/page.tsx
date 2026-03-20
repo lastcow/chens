@@ -6,7 +6,12 @@ import PriceMatchForm from "@/components/msbiz/PriceMatchForm";
 interface PriceMatch {
   id: string; order_id: string; ms_order_number: string; subtotal: number;
   current_unit_cost: number; matched_unit_cost: number; unit_count: number;
-  savings: number; status: string; submission_date: string;
+  savings: number;
+  status: string;           // 'price_match.pending'
+  status_value: string;     // 'pending'
+  status_label: string;     // 'Pending'
+  status_color: string;     // '#f59e0b'
+  submission_date: string;
   approved_at: string | null; approved_by: string | null; notes: string | null;
   order_deadline_at: string | null; days_until_deadline: number | null;
   urgent: boolean;
@@ -21,8 +26,10 @@ const PM_STEP_COLORS: Record<string, string> = {
 };
 
 function PmProgressBar({ status }: { status: string }) {
-  const isRejected = status === "rejected" || status === "expired";
-  const stepIdx = PM_STEPS.indexOf(status); // -1 if not found
+  // accept either 'pending' or 'price_match.pending'
+  const val = status.includes(".") ? status.split(".").slice(1).join(".") : status;
+  const isRejected = val === "rejected" || val === "expired";
+  const stepIdx = PM_STEPS.indexOf(val); // -1 if not found
   return (
     <div className="flex w-full h-[3px]">
       {PM_STEPS.map((step, i) => {
@@ -64,8 +71,8 @@ export default function PriceMatchesPage() {
   useEffect(() => { setPage(1); }, [search, statusFilter, urgentOnly]);
 
   const totalPages = Math.ceil(total / limit) || 1;
-  const totalSavings = pms.filter(pm => pm.status === "approved").reduce((s, pm) => s + Number(pm.savings), 0);
-  const totalPending = pms.filter(pm => pm.status === "pending").reduce((s, pm) => s + Number(pm.savings), 0);
+  const totalSavings = pms.filter(pm => pm.status_value === "approved").reduce((s, pm) => s + Number(pm.savings), 0);
+  const totalPending = pms.filter(pm => pm.status_value === "pending").reduce((s, pm) => s + Number(pm.savings), 0);
 
   return (
     <div className="space-y-5">
@@ -144,7 +151,7 @@ export default function PriceMatchesPage() {
                   <span className="inline-block font-bold text-green-400 font-mono">
                     ${Number(pm.savings).toFixed(2)}
                   </span>
-                  {pm.status === "approved" && pm.approved_at && (
+                  {pm.status_value === "approved" && pm.approved_at && (
                     <div className="text-[10px] text-gray-500 mt-0.5">
                       by {pm.approved_by || "system"}
                     </div>
@@ -164,7 +171,7 @@ export default function PriceMatchesPage() {
                         <div className="text-xs text-gray-500">{pm.days_until_deadline}d</div>
                       )}
                     </div>
-                  ) : pm.status === "approved" ? (
+                  ) : pm.status_value === "approved" ? (
                     <div className="flex items-center justify-center text-green-400">
                       <CheckCircle className="w-4 h-4" />
                     </div>
@@ -181,7 +188,7 @@ export default function PriceMatchesPage() {
               </tr>
               <tr key={`${pm.id}-bar`}>
                 <td colSpan={7} className="p-0">
-                  <PmProgressBar status={pm.status} />
+                  <PmProgressBar status={pm.status_value ?? pm.status} />
                 </td>
               </tr>
               </>
