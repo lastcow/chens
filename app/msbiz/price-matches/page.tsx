@@ -24,6 +24,7 @@ interface PriceMatch {
   reward_amount: number | null;
   account_email: string | null;
   account_name: string | null;
+  order_item_id: string | null;
   items: PMItem[] | null;
   expires_at: string | null;
   urgent: boolean;
@@ -179,17 +180,6 @@ export default function PriceMatchesPage() {
                             <AlertTriangle className="w-3 h-3" /> Urgent
                           </div>
                         )}
-                        {/* Status badge */}
-                        <div
-                          className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
-                          style={{
-                            backgroundColor: pm.status_color ? pm.status_color + "22" : "#1f2937",
-                            color: pm.status_color ?? "#9ca3af",
-                            border: `1px solid ${pm.status_color ? pm.status_color + "44" : "#374151"}`,
-                          }}
-                        >
-                          {pm.status_label ?? pm.status_value}
-                        </div>
                       </div>
                     </td>
 

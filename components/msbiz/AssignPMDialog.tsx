@@ -70,16 +70,18 @@ export default function AssignPMDialog({ order, onClose, onSaved }: Props) {
       setSaving(false); return;
     }
 
-    // 2. Create PM entries for each item
+    // 2. Create one PM entry per item (each item may have different PM strategy)
     const items = Array.isArray(order.items) ? order.items : [];
     for (const item of items) {
+      const itemTotal = Number(item.unit_price) * Number(item.qty ?? 1);
       await fetch("/api/msbiz/price-matches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           order_id:       order.id,
-          original_price: Number(item.unit_price),
-          match_price:    Number(item.unit_price),  // placeholder, pmer will update
+          order_item_id:  item.id,
+          original_price: itemTotal,
+          match_price:    itemTotal,  // placeholder, pmer will update
           expires_at:     deadline || null,
           notes:          assignedTo ? `Assigned to: ${pmers.find(u => u.id === assignedTo)?.name ?? assignedTo}` : null,
         }),
