@@ -24,10 +24,24 @@ export async function HEAD(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  // Verify drain secret
-  const secret = req.headers.get("x-vercel-log-drain-token");
-  if (DRAIN_SECRET && secret !== DRAIN_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // During validation, Vercel sends a POST with x-vercel-verify header
+  const verifyToken = req.headers.get("x-vercel-verify");
+  if (verifyToken) {
+    return new NextResponse(verifyToken, {
+      status: 200,
+      headers: { "x-vercel-verify": verifyToken, "content-type": "text/plain" },
+    });
+  }
+
+  // Vercel sends secret as x-vercel-log-drain-token
+  // If no secret configured, allow all
+  if (DRAIN_SECRET) {
+    const token = req.headers.get("x-vercel-log-drain-token") ??
+                  req.headers.get("x-vercel-signature") ??
+                  req.headers.get("authorization")?.replace("Bearer ", "");
+    if (token !== DRAIN_SECRET) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   let logs: Record<string, unknown>[];
