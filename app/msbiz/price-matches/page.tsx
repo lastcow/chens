@@ -12,14 +12,28 @@ interface PriceMatch {
   urgent: boolean;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  draft:     "bg-gray-800 text-gray-400 border-gray-700",
-  pending:   "bg-amber-900/30 text-amber-400 border-amber-700/30",
-  submitted: "bg-blue-900/30 text-blue-400 border-blue-700/30",
-  approved:  "bg-green-900/30 text-green-400 border-green-700/30",
-  rejected:  "bg-red-900/30 text-red-400 border-red-700/30",
-  expired:   "bg-gray-900/50 text-gray-500 border-gray-700",
+// PM progress bar: pending→submitted→approved, rejected/expired = all red
+const PM_STEPS = ["pending", "submitted", "approved"];
+const PM_STEP_COLORS: Record<string, string> = {
+  pending:   "#f59e0b",
+  submitted: "#3b82f6",
+  approved:  "#22c55e",
 };
+
+function PmProgressBar({ status }: { status: string }) {
+  const isRejected = status === "rejected" || status === "expired";
+  const stepIdx = PM_STEPS.indexOf(status); // -1 if not found
+  return (
+    <div className="flex w-full h-[3px]">
+      {PM_STEPS.map((step, i) => {
+        let color = "#1f2937"; // unfilled
+        if (isRejected) color = "#ef4444";
+        else if (i <= stepIdx) color = PM_STEP_COLORS[step];
+        return <div key={step} className="flex-1" style={{ backgroundColor: color }} />;
+      })}
+    </div>
+  );
+}
 
 export default function PriceMatchesPage() {
   const [pms, setPms] = useState<PriceMatch[]>([]);
@@ -105,20 +119,18 @@ export default function PriceMatchesPage() {
               <th className="text-center px-3 py-3 w-8"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-800/50">
+          <tbody>
             {loading ? (
               <tr><td colSpan={7} className="text-center text-gray-600 py-10 animate-pulse">Loading…</td></tr>
             ) : pms.length === 0 ? (
               <tr><td colSpan={7} className="text-center text-gray-600 py-10">No price matches found.</td></tr>
             ) : pms.map(pm => (
-              <tr key={pm.id} className="hover:bg-gray-800/30 transition-colors">
+              <>
+              <tr key={pm.id} className="hover:bg-gray-800/30 transition-colors border-t border-gray-800/50">
                 <td className="px-5 py-3">
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     <div className="font-mono text-blue-400 text-sm font-medium">{pm.ms_order_number}</div>
-                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${STATUS_COLORS[pm.status] ?? ""}`}>
-                      {pm.status}
-                    </span>
-                    {pm.urgent && <div className="flex items-center gap-1 text-[10px] text-red-400 mt-0.5"><AlertTriangle className="w-3 h-3" /> Urgent</div>}
+                    {pm.urgent && <div className="flex items-center gap-1 text-[10px] text-red-400"><AlertTriangle className="w-3 h-3" /> Urgent</div>}
                   </div>
                 </td>
                 <td className="px-3 py-3 text-center font-mono text-gray-300">
@@ -167,6 +179,12 @@ export default function PriceMatchesPage() {
                   </button>
                 </td>
               </tr>
+              <tr key={`${pm.id}-bar`}>
+                <td colSpan={7} className="p-0">
+                  <PmProgressBar status={pm.status} />
+                </td>
+              </tr>
+              </>
             ))}
           </tbody>
         </table>
