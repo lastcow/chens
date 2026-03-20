@@ -8,6 +8,7 @@ interface PriceMatch {
   status: string; status_value: string; status_label: string; status_color: string;
   original_price: number; refund_amount: number | null; refund_type: string | null;
   reward_amount: number | null; rewarded_to: string | null;
+  assigned_pmer_id: string | null; pmer_name: string | null; pmer_email: string | null;
   account_email: string | null; account_name: string | null;
   items: PMItem[] | null; expires_at: string | null; urgent: boolean; notes: string | null;
 }
@@ -21,8 +22,6 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
   const [error, setError] = useState("");
   const [fullRate, setFullRate] = useState(0.15);
   const [partialRate, setPartialRate] = useState(0.10);
-  const [assigneeName, setAssigneeName] = useState<string | null>(null);
-
   const originalPrice = Number(pm.original_price);
 
   // Fetch rates from API (sourced from Vercel env vars)
@@ -36,20 +35,10 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
       .catch(() => {});
   }, []);
 
-  // Resolve assignee name from notes or rewarded_to
-  useEffect(() => {
-    const notesMatch = pm.notes?.match(/Assigned to:\s*(.+)/i);
-    if (notesMatch) { setAssigneeName(notesMatch[1].trim()); return; }
-    if (pm.rewarded_to) {
-      fetch(`/api/msbiz/users?role=pmer`)
-        .then(r => r.json())
-        .then(d => {
-          const user = (d.users ?? []).find((u: { id: string; name: string; email: string }) => u.id === pm.rewarded_to);
-          if (user) setAssigneeName(user.name || user.email);
-        })
-        .catch(() => {});
-    }
-  }, [pm.notes, pm.rewarded_to]);
+  // Assignee display: "Name (email)" from pmer_name + pmer_email on the PM record
+  const assigneeDisplay = pm.pmer_name && pm.pmer_email
+    ? `${pm.pmer_name} (${pm.pmer_email})`
+    : pm.pmer_email ?? pm.pmer_name ?? null;
 
   useEffect(() => {
     if (refundType === "full") setRefundAmount(String(originalPrice));
@@ -172,7 +161,7 @@ export default function RecordPMDialog({ pm, onClose, onSaved }: Props) {
                 Assigned Pmer
               </div>
               <div style={{ fontSize:"13px",color:"#d1d5db",marginTop:"1px" }}>
-                {assigneeName ?? <span style={{ color:"#6b7280",fontStyle:"italic" }}>Unassigned</span>}
+                {assigneeDisplay ?? <span style={{ color:"#6b7280",fontStyle:"italic" }}>Unassigned</span>}
               </div>
             </div>
           </div>

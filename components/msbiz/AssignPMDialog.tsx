@@ -70,18 +70,22 @@ export default function AssignPMDialog({ order, onClose, onSaved }: Props) {
       setSaving(false); return;
     }
 
-    // 2. Create ONE PM record for the entire order (all items together)
+    // 2. Create ONE PM record for the entire order
     const items = Array.isArray(order.items) ? order.items : [];
     const orderTotal = items.reduce((sum, item) => sum + Number(item.unit_price) * Number(item.qty ?? 1), 0);
+    const assignedUser = pmers.find(u => u.id === assignedTo);
     await fetch("/api/msbiz/price-matches", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        order_id:       order.id,
-        original_price: orderTotal || Number(order.total),
-        match_price:    orderTotal || Number(order.total),
-        expires_at:     deadline || null,
-        notes:          assignedTo ? `Assigned to: ${pmers.find(u => u.id === assignedTo)?.name ?? assignedTo}` : null,
+        order_id:         order.id,
+        assigned_pmer_id: assignedTo || null,
+        original_price:   orderTotal || Number(order.total),
+        match_price:      orderTotal || Number(order.total),
+        expires_at:       deadline || null,
+        notes:            assignedUser
+          ? `Assigned to: ${assignedUser.name ? `${assignedUser.name} (${assignedUser.email})` : assignedUser.email}`
+          : null,
       }),
     });
 

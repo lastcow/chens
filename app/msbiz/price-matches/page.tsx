@@ -24,6 +24,9 @@ interface PriceMatch {
   reward_amount: number | null;
   account_email: string | null;
   account_name: string | null;
+  assigned_pmer_id: string | null;
+  pmer_name: string | null;
+  pmer_email: string | null;
   items: PMItem[] | null;
   expires_at: string | null;
   urgent: boolean;
